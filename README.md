@@ -10,7 +10,7 @@ Bu proje, bir denge robotu (balancing robot) mekaniği üzerine inşa edilmiş, 
 
 ### 🧠 Sistem Mimarisi
 1. **Alt Seviye (Refleks):** STM32F103C8T6 (Bluepill) + MPU-6050 (Denge ve Hareket).
-2. **Üst Seviye (Zeka):** Raspberry Pi 5 + Hailo-10H AI Kit (Görüntü İşleme ve LLM).
+2. **Üst Seviye (Zeka):** Raspberry Pi 5 + Hailo-10H AI Kit (Görüntü İşleme ve LLM) ya da 8 AI (Raspberry Pi 5 İçin Hailo-8 M.2 AI Hızlandırıcı Modülü).
 3. **İletişim:** UART üzerinden hiyerarşik veri akışı.
 
 ### 📂 Klasör Yapısı
