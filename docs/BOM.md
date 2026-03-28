@@ -10,9 +10,9 @@ Bu liste, **AI-Friend-Robot** projesinin 4WD (4 Tekerlekli) ve Edge-AI odaklı g
 | **Raspberry Pi 5 (8GB)** | 1 | Ana İşletim Sistemi & AI Yönetimi | Sistemin yüksek seviye beyni. (Stok bekleniyor). |
 | **Raspberry Pi AI HAT+ (13T)** | 1 | Yapay Zeka Hızlandırıcı | Yüz tanıma ve LLM işlemleri için (Satın Alındı). |
 | **Samsung PM981 256GB SSD** | 1 | Yüksek Hızlı Depolama | İşletim sistemi ve modellerin hızlı yüklenmesi için. |
-| **Ugreen NVMe SSD Kutusu** | 1 | SSD-USB Köprüsü | USB 3.1 üzerinden yüksek hızlı veri transferi. |
-| **STM32F103C8T6 (64K)** | 1 | Hareket ve Sensör Kontrolü | Robotun alt seviye "Omurilik" sistemi. |
-| **ST-Link V2** | 1 | Programlayıcı | STM32'ye kod yüklemek için. |
+| **Ugreen NVMe SSD Kutusu** | 1 | SSD-USB Köprüsü | USB 3.1 üzerinden yüksek hızlı veri transferi. [Ürün Linki](https://www.amazon.com.tr/dp/B07NPFV21H) |
+| **STM32F103C8T6 (64K)** | 1 | Hareket ve Sensör Kontrolü | Robotun alt seviye "Omurilik" sistemi (64K Flash versiyonu). |
+| **ST-Link V2** | 1 | Programlayıcı | STM32'ye kod yüklemek için kullanılır. |
 | **Raspberry Pi Aktif Soğutucu** | 1 | Termal Yönetim | Pi 5 ve AI modülünü soğutmak için (Satın Alındı). |
 
 ---
@@ -21,22 +21,22 @@ Bu liste, **AI-Friend-Robot** projesinin 4WD (4 Tekerlekli) ve Edge-AI odaklı g
 | Malzeme | Adet | Görev | Notlar |
 | :--- | :---: | :--- | :--- |
 | **Rpi Camera Module 3** | 1 | Görsel Giriş | Tanem'i tanımak için kullanılır. |
-| **USB Mikrofon Dizisi** | 1 | Ses Girişi | Sesli komutları almak için. |
+| **USB Mikrofon Dizisi** | 1 | Ses Girişi | Sesli komutları almak için kullanılır. |
 | **0.96" I2C OLED Ekran** | 1 | Yüz İfadeleri | Robotun duygusal durumunu gösterir. |
 | **HC-SR04** | 2 | Engel Algılama | Güvenli sürüş için mesafe sensörü. |
-| **MPU-6050** | 1 | İvmeölçer & Jiroskop | Yön tayini ve stabilizasyon desteği için. |
+| **MPU-6050** | 1 | İvmeölçer & Jiroskop | Yön tayini ve stabilizasyon desteği için kullanılır. |
 
 ---
 
 ## ⚙️ 3. Hareket ve Güç Katmanı (Kaslar)
 | Malzeme | Adet | Görev | Notlar |
 | :--- | :---: | :--- | :--- |
-| **DC Motor (4WD uyumlu)** | 4 | Tahrik Sistemi | 6V-12V arası çalışan standart motorlar. |
-| **TB6612FNG** | 1 | Motor Sürücü | STM32 üzerinden çift kanal kontrol. |
-| **4WD Şasi Kiti** | 1 | İskelet | Tekerlekler ve montaj platformu dahil. |
-| **18650 Pil (3.7V)** | 4 | Enerji Kaynağı | 4S (14.8V) konfigürasyonunda kullanılacak. |
-| **4S 18650 Pil Yuvası** | 1 | Pil Taşıyıcı | Seri bağlantı sağlar. |
-| **5V 5A Buck Converter** | 1 | Regülatör | 14.8V'u Pi 5 için 5V'a düşürür. |
+| **JGB37-520 12V 333RPM** | 4 | Ana Tahrik Motorları | Enkoderli, yüksek torklu metal motorlar. [Ürün Linki](https://www.direnc.net/jgb37-520-12v-330rpm-enkoderli-motor) |
+| **TB6612FNG Motor Sürücü** | 2 | Motor Güç Yönetimi | Isı dengesi için 2 adet tercih edilmiştir. [Ürün Linki](https://www.direnc.net/tb6612fng-dc-ve-step-motor-surucu-modulu) |
+| **18650 Pil (3.7V)** | 4 | Enerji Kaynağı | 4S (14.8V) konfigürasyonunda kullanılacaktır. |
+| **4S 40A Balanslı BMS** | 1 | Pil Güvenliği | Olt - Mor Model. [Ürün Linki](https://www.pilpaketi.com/olt-lityum-iyon-bms-4s-40a-balansli-mor) |
+| **16.8V 2A Şarj Adaptörü** | 1 | Güç Girişi | Pilleri güvenli şarj etmek için. [Ürün Linki](https://www.trendyol.com/weko/4s-lityum-batarya-sarj-adaptoru-16-8-volt-2a-p-878198638) |
+| **5V 5A Buck Converter** | 1 | Voltaj Regülatörü | 14.8V'u Pi 5 için 5V'a düşürür. |
 
 ---
 
@@ -44,13 +44,13 @@ Bu liste, **AI-Friend-Robot** projesinin 4WD (4 Tekerlekli) ve Edge-AI odaklı g
 | Malzeme | Adet | Görev | Notlar |
 | :--- | :---: | :--- | :--- |
 | **Jumper Kablo Seti** | 1 | Bağlantılar | Dişi-Dişi ve Erkek-Dişi karışık paket. |
-| **4S BMS Kartı** | 1 | Pil Koruması | Aşırı deşarj ve kısa devre koruması için. |
+| **4S 18650 Pil Yuvası** | 1 | Pil Taşıyıcı | Seri bağlantı sağlar. |
 | **27W USB-C Adaptör** | 1 | Masaüstü Güç | Pi 5 geliştirme aşamasında kullanılır (Orijinal). |
 
 ---
 
 ## 📝 Teknik Karar Notları
-* **Mekanik Değişiklik:** Denge (Balancing) mekanizmasından, stabilite ve AI odaklı çalışma için 4WD (4 Tekerlekli) şasiye geçilmiştir.
-* **Hızlandırıcı Seçimi:** Fiyat/Performans dengesi nedeniyle Raspberry Pi AI HAT+ (13 TOPS) tercih edilmiştir.
+* **Mekanik Değişiklik:** Orta boy Poodle boyutlarındaki stabilite ihtiyacı nedeniyle 4WD (4 Tekerlekli) şasiye geçilmiştir.
+* **Motor & Sürücü Senkronizasyonu:** Tahmini 3-5 kg ağırlığı halıda kararlı yürütebilmek için JGB37-520 (333 RPM) motorlar ve akım yükünü paylaştırmak için çift TB6612FNG sürücü seçilmiştir.
 * **Depolama Stratejisi:** PCIe yolu AI modülüne ayrıldığı için SSD, Ugreen USB 3.1 kutusu ile sisteme dahil edilmiştir.
-* **Kontrol Mimarisi:** Motor kontrolü STM32 üzerinde, yapay zeka görevleri Pi 5 üzerinde koşturulmaktadır.
+* **Güç Güvenliği:** Hücre dengelemesi ve güvenli şarj için "Balanslı" BMS ve buna uygun 16.8V adaptör eklenmiştir.
