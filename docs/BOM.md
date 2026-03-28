@@ -17,12 +17,13 @@ Bu liste, **AI-Friend-Robot** projesinin 4WD (4 Tekerlekli) ve Edge-AI odaklı g
 
 ---
 
-## 👁️ 2. Sensörler ve Etkileşim (Duyular)
+## 👁️ 2. Sensörler ve Etkileşim (Duyular & Yüz)
 | Malzeme | Adet | Görev | Notlar |
 | :--- | :---: | :--- | :--- |
-| **Rpi Camera Module 3** | 1 | Görsel Giriş | Tanem'i tanımak için kullanılır. |
+| **Waveshare 7" QLED Touch** | 1 | Robotun Yüzü & Arayüz | 1024x600, Kapasitif Dokunmatik, G+G Cam. [Ürün Linki](https://www.waveshare.com/7hp-capqled.htm) |
+| **Rpi Camera Module 3** | 1 | Görsel Giriş | Tanem'i tanımak için kullanılır (Ekran üzerine monte edilecek). |
 | **USB Mikrofon Dizisi** | 1 | Ses Girişi | Sesli komutları almak için kullanılır. |
-| **0.96" I2C OLED Ekran** | 1 | Yüz İfadeleri | Robotun duygusal durumunu gösterir. |
+| **Küçük Hoparlör Seti** | 1 | Ses Çıkışı | Ekranın ses çıkışına bağlanacak (Konuşma/Havlama sesleri). |
 | **HC-SR04** | 2 | Engel Algılama | Güvenli sürüş için mesafe sensörü. |
 | **MPU-6050** | 1 | İvmeölçer & Jiroskop | Yön tayini ve stabilizasyon desteği için kullanılır. |
 
@@ -41,7 +42,7 @@ Bu liste, **AI-Friend-Robot** projesinin 4WD (4 Tekerlekli) ve Edge-AI odaklı g
 | **18650 Pil (3.7V)** | 4 | Enerji Kaynağı | 4S (14.8V) konfigürasyonunda kullanılacaktır. (**Elimizde 4 adet var.**) |
 | **4S 40A Balanslı BMS** | 1 | Pil Güvenliği | Olt - Mor Model. [Ürün Linki](https://www.pilpaketi.com/olt-lityum-iyon-bms-4s-40a-balansli-mor) |
 | **16.8V 2A Şarj Adaptörü** | 1 | Güç Girişi | Pilleri güvenli şarj etmek için. [Ürün Linki](https://www.trendyol.com/weko/4s-lityum-batarya-sarj-adaptoru-16-8-volt-2a-p-878198638) |
-| **5V 5A Buck Converter** | 1 | Voltaj Regülatörü | 14.8V'u Pi 5 için 5V'a düşürür. |
+| **5V 5A Buck Converter** | 1 | Voltaj Regülatörü | 14.8V'u Pi 5 ve 7" Ekran için 5V'a düşürür. |
 
 ---
 
@@ -55,7 +56,6 @@ Bu liste, **AI-Friend-Robot** projesinin 4WD (4 Tekerlekli) ve Edge-AI odaklı g
 ---
 
 ## 📝 Teknik Karar Notları
-* **Özel Şasi Tasarımı:** JGB37 motorların yüksek torkunu karşılamak amacıyla 30x30 cm özel levha, metal L-braketler ve **6 mm çelik kaplinler** üzerinden "yüksek şasi" mimarisi kurgulanmıştır.
-* **Tekerlek Seçimi:** Engel aşma kabiliyeti ve estetik bütünlük için 100 mm çapında büyük kauçuk tekerlekler tercih edilmiştir.
-* **Motor & Sürücü Mimarisi:** Termal kararlılık için her motor için bağımsız 1 adet TB6612FNG sürücü kullanılacaktır.
-* **Depolama Stratejisi:** PCIe yolu AI modülüne ayrıldığı için SSD, Ugreen USB 3.1 kutusu ile sisteme dahil edilmiştir.
+* **Görsel Etkileşim:** 0.96" OLED ekran yerine, Tanem ile yüksek çözünürlüklü etkileşim kurabilmek ve dokunmatik kontrol sağlamak amacıyla 7 inçlik Waveshare QLED ekran tercih edilmiştir.
+* **Özel Şasi Tasarımı:** 30x30 cm levha, metal L-braketler ve 6 mm çelik kaplinler üzerinden dayanıklı bir 4WD altyapısı kurgulanmıştır.
+* **Güç Yönetimi:** 7 inç ekranın ve Pi 5'in yüksek akım ihtiyacı nedeniyle 5A çıkışlı Buck Converter seçilmiştir.
