@@ -20,7 +20,7 @@ Bu liste, **AI-Friend-Robot** projesinin 4WD (4 Tekerlekli) ve Edge-AI odaklı g
 ## 👁️ 2. Sensörler ve Etkileşim (Duyular & Yüz)
 | Malzeme | Adet | Görev | Notlar |
 | :--- | :---: | :--- | :--- |
-| **Waveshare 7" QLED Touch** | 1 | Robotun Yüzü & Arayüz | 1024x600, Kapasitif Dokunmatik, G+G Cam. [Ürün Linki](https://www.waveshare.com/7hp-capqled.htm) |
+| **Waveshare 7" QLED Touch** | 1 | Robotun Yüzü & Arayüz | 1024x600, Kapasitif Dokunmatik, G+G Cam. [Ürün Linki](https://www.robotistan.com/7-inc-qled-display-module) |
 | **Rpi Camera Module 3** | 1 | Görsel Giriş | Tanem'i tanımak için kullanılır (Ekran üzerine monte edilecek). |
 | **USB Mikrofon Dizisi** | 1 | Ses Girişi | Sesli komutları almak için kullanılır. |
 | **Küçük Hoparlör Seti** | 1 | Ses Çıkışı | Ekranın ses çıkışına bağlanacak (Konuşma/Havlama sesleri). |
