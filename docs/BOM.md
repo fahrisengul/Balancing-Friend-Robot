@@ -11,9 +11,9 @@ Bu liste, **AI-Friend-Robot** projesinin 4WD (4 Tekerlekli) ve Edge-AI odaklı g
 | **Raspberry Pi AI HAT+ (13T)** | 1 | Yapay Zeka Hızlandırıcı | Yüz tanıma ve LLM işlemleri için (**Satın Alındı - 4.299,99 TL**). |
 | **Samsung PM981 256GB SSD** | 1 | Yüksek Hızlı Depolama | İşletim sistemi ve modellerin hızlı yüklenmesi için. (**Elimizde var.**) |
 | **Ugreen NVMe SSD Kutusu** | 1 | SSD-USB Köprüsü | USB 3.1 üzerinden yüksek hızlı veri transferi. [Ürün Linki](https://www.amazon.com.tr/dp/B07NPFV21H) |
-| **STM32F103C8T6 (64K)** | 1 | Hareket ve Sensör Kontrolü | Robotun alt seviye "Omurilik" sistemi (64K Flash versiyonu). Ürün Linki](https://www.hepsiburada.com/stm32f103c8t6-gelistirme-devre-kart-modulu-p-HBCV0000DKLHL3?magaza=prat%C4%B1ksepet) | 
-| **ST-Link V2** | 1 | Programlayıcı | STM32'ye kod yüklemek için kullanılır. Amazon 'daki sepette. | 
-| **Raspberry Pi Aktif Soğutucu** | 1 | Termal Yönetim | Pi 5 ve AI modülünü soğutmak için (**Satın Alındı. 472,40 TL**). |
+| **STM32F103C8T6 (64K)** | 1 | Hareket ve Sensör Kontrolü | Robotun alt seviye "Omurilik" sistemi (64K Flash versiyonu). [Ürün Linki](https://www.hepsiburada.com/stm32f103c8t6-gelistirme-devre-kart-modulu-p-HBCV0000DKLHL3?magaza=prat%C4%B1ksepet) |
+| **ST-Link V2** | 1 | Programlayıcı | STM32'ye kod yüklemek için kullanılır. (Amazon sepetinde). |
+| **Raspberry Pi Aktif Soğutucu** | 1 | Termal Yönetim | Pi 5 ve AI modülünü soğutmak için (**Satın Alındı - 472,40 TL**). |
 
 ---
 
@@ -32,9 +32,13 @@ Bu liste, **AI-Friend-Robot** projesinin 4WD (4 Tekerlekli) ve Edge-AI odaklı g
 | Malzeme | Adet | Görev | Notlar |
 | :--- | :---: | :--- | :--- |
 | **JGB37-520 12V 333RPM** | 4 | Ana Tahrik Motorları | Enkoderli, yüksek torklu metal motorlar. [Ürün Linki](https://www.direnc.net/jgb37-520-12v-330rpm-enkoderli-motor) |
-| **TB6612FNG Motor Sürücü** | 4 | Motor Güç Yönetimi | Her motor için bağımsız 1 adet sürücü (Maksimum kararlılık). [Ürün Linki](https://www.direnc.net/tb6612fng-dc-ve-step-motor-surucu-modulu) |
+| **37mm Metal Motor Tutucu** | 4 | Motor Montaj Aparatı | [Ürün Linki](https://www.robotzade.com/urun/37-mm-motor-tutucu-aparat-metal) |
+| **6mm Kaplin (D-Şaft)** | 4 | Güç Aktarımı | Motor milini tekerleğe bağlar. [Ürün Linki](https://www.direnc.net/6mm-motor-kaplini) |
+| **100 mm Kauçuk Tekerlek** | 4 | Hareket (4WD) | Kaplin uyumlu, yüksek arazi kabiliyeti. |
+| **30x30 cm Şasi Levhası** | 1 | Ana Taşıyıcı İskelet | Alüminyum veya Kompozit (Özel Kesim). |
+| **TB6612FNG Motor Sürücü** | 4 | Motor Güç Yönetimi | Her motor için bağımsız 1 adet sürücü. [Ürün Linki](https://www.direnc.net/tb6612fng-dc-ve-step-motor-surucu-modulu) |
 | **Alüminyum Soğutucu Blok** | 4 | Termal Koruma | Sürücü çiplerinin üzerine yapıştırılacak minik plakalar. |
-| **18650 Pil (3.7V)** | 4 | Enerji Kaynağı | 4S (14.8V) konfigürasyonunda kullanılacaktır.  (**Elimizde 4 adet var.**)|
+| **18650 Pil (3.7V)** | 4 | Enerji Kaynağı | 4S (14.8V) konfigürasyonunda kullanılacaktır. (**Elimizde 4 adet var.**) |
 | **4S 40A Balanslı BMS** | 1 | Pil Güvenliği | Olt - Mor Model. [Ürün Linki](https://www.pilpaketi.com/olt-lityum-iyon-bms-4s-40a-balansli-mor) |
 | **16.8V 2A Şarj Adaptörü** | 1 | Güç Girişi | Pilleri güvenli şarj etmek için. [Ürün Linki](https://www.trendyol.com/weko/4s-lityum-batarya-sarj-adaptoru-16-8-volt-2a-p-878198638) |
 | **5V 5A Buck Converter** | 1 | Voltaj Regülatörü | 14.8V'u Pi 5 için 5V'a düşürür. |
@@ -51,7 +55,7 @@ Bu liste, **AI-Friend-Robot** projesinin 4WD (4 Tekerlekli) ve Edge-AI odaklı g
 ---
 
 ## 📝 Teknik Karar Notları
-* **Mekanik Değişiklik:** Orta boy Poodle boyutlarındaki stabilite ihtiyacı nedeniyle 4WD (4 Tekerlekli) şasiye geçilmiştir.
-* **Motor & Sürücü Mimarisi:** Robotun tahmini 3-5 kg ağırlığını ve tork ihtiyacını karşılamak için JGB37-520 motorlar seçilmiştir. Termal kararlılık ve hata izolasyonu amacıyla her motor için bağımsız 1 adet TB6612FNG sürücü (toplam 4 adet) kullanılması kararlaştırılmıştır.
+* **Özel Şasi Tasarımı:** JGB37 motorların yüksek torkunu karşılamak amacıyla 30x30 cm özel levha, metal L-braketler ve **6 mm çelik kaplinler** üzerinden "yüksek şasi" mimarisi kurgulanmıştır.
+* **Tekerlek Seçimi:** Engel aşma kabiliyeti ve estetik bütünlük için 100 mm çapında büyük kauçuk tekerlekler tercih edilmiştir.
+* **Motor & Sürücü Mimarisi:** Termal kararlılık için her motor için bağımsız 1 adet TB6612FNG sürücü kullanılacaktır.
 * **Depolama Stratejisi:** PCIe yolu AI modülüne ayrıldığı için SSD, Ugreen USB 3.1 kutusu ile sisteme dahil edilmiştir.
-* **Güç Güvenliği:** Hücre dengelemesi ve güvenli şarj için "Balanslı" BMS ve buna uygun 16.8V adaptör sisteme entegre edilmiştir.
