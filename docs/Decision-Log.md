@@ -1,0 +1,3 @@
+- **28 Mart 2026:** Projenin ana odağını Yapay Zeka ve LLM yeteneklerine kaydırmak amacıyla 'Denge' mekanizmasından '4 Tekerlekli Stabil Şasi' mimarisine geçiş yapılmıştır.
+- **28 Mart 2026:** Donanım uyumluluğu kontrolü: Hailo AI HAT+ modülünün PCIe desteği gerektirmesi nedeniyle Raspberry Pi 4 modelleri elenmiş, Raspberry Pi 5 mimarisine sadık kalınmıştır.
+- **Karar Notu (28 Mart 2026):** Projenin ana odağını Yapay Zeka, Görüntü İşleme ve LLM yeteneklerine yoğunlaştırmak amacıyla mekanik altyapı "Balancing" (Denge) modelinden "4WD" (4 Tekerlekli Sabit Şasi) modeline güncellenmiştir. Bu sayede Raspberry Pi 5 ve Hailo modülü için daha güvenli ve stabil bir çalışma ortamı hedeflenmiştir.
