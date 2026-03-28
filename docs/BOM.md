@@ -32,7 +32,8 @@ Bu liste, **AI-Friend-Robot** projesinin 4WD (4 Tekerlekli) ve Edge-AI odaklı g
 | Malzeme | Adet | Görev | Notlar |
 | :--- | :---: | :--- | :--- |
 | **JGB37-520 12V 333RPM** | 4 | Ana Tahrik Motorları | Enkoderli, yüksek torklu metal motorlar. [Ürün Linki](https://www.direnc.net/jgb37-520-12v-330rpm-enkoderli-motor) |
-| **TB6612FNG Motor Sürücü** | 2 | Motor Güç Yönetimi | Isı dengesi için 2 adet tercih edilmiştir. [Ürün Linki](https://www.direnc.net/tb6612fng-dc-ve-step-motor-surucu-modulu) |
+| **TB6612FNG Motor Sürücü** | 4 | Motor Güç Yönetimi | Her motor için bağımsız 1 adet sürücü (Maksimum kararlılık). [Ürün Linki](https://www.direnc.net/tb6612fng-dc-ve-step-motor-surucu-modulu) |
+| **Alüminyum Soğutucu Blok** | 4 | Termal Koruma | Sürücü çiplerinin üzerine yapıştırılacak minik plakalar. |
 | **18650 Pil (3.7V)** | 4 | Enerji Kaynağı | 4S (14.8V) konfigürasyonunda kullanılacaktır. |
 | **4S 40A Balanslı BMS** | 1 | Pil Güvenliği | Olt - Mor Model. [Ürün Linki](https://www.pilpaketi.com/olt-lityum-iyon-bms-4s-40a-balansli-mor) |
 | **16.8V 2A Şarj Adaptörü** | 1 | Güç Girişi | Pilleri güvenli şarj etmek için. [Ürün Linki](https://www.trendyol.com/weko/4s-lityum-batarya-sarj-adaptoru-16-8-volt-2a-p-878198638) |
@@ -51,6 +52,6 @@ Bu liste, **AI-Friend-Robot** projesinin 4WD (4 Tekerlekli) ve Edge-AI odaklı g
 
 ## 📝 Teknik Karar Notları
 * **Mekanik Değişiklik:** Orta boy Poodle boyutlarındaki stabilite ihtiyacı nedeniyle 4WD (4 Tekerlekli) şasiye geçilmiştir.
-* **Motor & Sürücü Senkronizasyonu:** Tahmini 3-5 kg ağırlığı halıda kararlı yürütebilmek için JGB37-520 (333 RPM) motorlar ve akım yükünü paylaştırmak için çift TB6612FNG sürücü seçilmiştir.
+* **Motor & Sürücü Mimarisi:** Robotun tahmini 3-5 kg ağırlığını ve tork ihtiyacını karşılamak için JGB37-520 motorlar seçilmiştir. Termal kararlılık ve hata izolasyonu amacıyla her motor için bağımsız 1 adet TB6612FNG sürücü (toplam 4 adet) kullanılması kararlaştırılmıştır.
 * **Depolama Stratejisi:** PCIe yolu AI modülüne ayrıldığı için SSD, Ugreen USB 3.1 kutusu ile sisteme dahil edilmiştir.
-* **Güç Güvenliği:** Hücre dengelemesi ve güvenli şarj için "Balanslı" BMS ve buna uygun 16.8V adaptör eklenmiştir.
+* **Güç Güvenliği:** Hücre dengelemesi ve güvenli şarj için "Balanslı" BMS ve buna uygun 16.8V adaptör sisteme entegre edilmiştir.
