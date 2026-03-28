@@ -1,6 +1,6 @@
 # 🤖 Balancing-Friend-Robot (Tanem'in Robot Arkadaşı)
 
-Bu proje, bir denge robotu (balancing robot) mekaniği üzerine inşa edilmiş, **Hailo-10H** ve **Raspberry Pi 5** ile güçlendirilmiş, internet bağımsız (Full-Edge AI) çalışan bir sosyal robot arkadaş projesidir.
+Bu proje, bir denge robotu (balancing robot) mekaniği üzerine inşa edilmiş, **Hailo-10H ya da 8 AI** ve **Raspberry Pi 5** ile güçlendirilmiş, internet bağımsız (Full-Edge AI) çalışan bir sosyal robot arkadaş projesidir.
 
 ### 🎯 Proje Hedefleri
 - **Denge Kontrolü:** İki tekerlek üzerinde kusursuz denge (STM32 PID Control).
