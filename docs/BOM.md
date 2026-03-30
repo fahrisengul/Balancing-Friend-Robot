@@ -2,30 +2,23 @@
 
 Bu liste, **AI-Friend-Robot** projesinin 4WD (4 Tekerlekli) ve Edge-AI odaklı güncel bileşenlerini içerir.
 
-
-| Malzeme | Adet | Görev | Faz | Notlar |
+| Malzeme | Adet | Görev | Faz | Durum |
 | :--- | :---: | :--- | :---: | :--- |
-| **Raspberry Pi 5 (4GB/8GB)** | 1 | Ana Beyin | 1 | Araştırılıyor (Stok Bekleniyor). |
-| **Raspberry Pi AI HAT+ (13T)** | 1 | AI Hızlandırıcı | 1 | **Satın Alındı (Geldi).** |
-| **Raspberry Pi Aktif Soğutucu** | 1 | Termal Yönetim | 1 | **Satın Alındı (Bekleniyor).** |
-| **Waveshare 7" QLED Touch** | 1 | Robotun Yüzü | 1 | Robotistan/Waveshare Sepette. |
-| **Rpi Camera Module 3** | 1 | Görsel Giriş | 1 | Sepette. |
-| **Samsung PM981 256GB SSD** | 1 | Depolama | 1 | **Elimizde Var.** |
-| **Ugreen NVMe SSD Kutusu** | 1 | SSD Bağlantı | 1 | Sepette. |
-| **USB Mikrofon Dizisi** | 1 | Ses Girişi | 2 | Sepette. |
-| **Küçük Hoparlör Seti** | 1 | Ses Çıkışı | 2 | Sepette. |
-| **JGB37-520 12V 333RPM** | 4 | Motorlar | 3 | Sepette. |
-| **37mm Metal Motor Tutucu** | 4 | Montaj Aparatı | 3 | Sepette. |
-| **6mm Kaplin (D-Şaft)** | 4 | Güç Aktarımı | 3 | Sepette. |
-| **100 mm Kauçuk Tekerlek** | 4 | Hareket | 3 | Sepette. |
-| **30x30 cm Şasi Levhası** | 1 | İskelet | 3 | Özel Kesim / Sipariş Edilecek. |
-| **STM32F103C8T6 (64K)** | 1 | Alt Kontrolcü | 4 | Sepette. |
-| **ST-Link V2** | 1 | Programlayıcı | 4 | Sepette. |
-| **TB6612FNG Motor Sürücü** | 4 | Motor Sürücü | 4 | Sepette. |
-| **4S 18650 Pil (3.7V)** | 4 | Enerji | 4 | **Elimizde Var.** |
-| **4S 40A Balanslı BMS** | 1 | Pil Güvenliği | 4 | Sepette. |
-| **16.8V 2A Şarj Cihazı** | 1 | Şarj | 4 | Sepette. |
-| **5V 5A Buck Converter** | 1 | Voltaj Reg. | 4 | Sepette. |
+| **Raspberry Pi 5 (8GB)** | 1 | Ana İşlemci | 1 | Araştırılıyor |
+| **Raspberry Pi AI HAT+ (13T)** | 1 | AI Hızlandırıcı | 1 | **Satın Alındı (Geldi)** |
+| **8" Capacitive Touch LCD** | 1 | Kullanıcı Arayüzü | 1 | Sepette (Salı) |
+| **Raspberry Pi Camera Module 3** | 1 | Görsel Giriş | 1 | Sepette (Salı) |
+| **Samsung PM981 256GB SSD** | 1 | Depolama | 1 | **Elimizde Var** |
+| **Ugreen NVMe Enclosure** | 1 | SSD-USB Köprüsü | 1 | Sepette (Salı) |
+| **Raspberry Pi Active Cooler** | 1 | İşlemci Soğutma | 1 | **Satın Alındı (Bekleniyor)** |
+| **40x40mm Exhaust Fan** | 1 | Kasa Havalandırma | 1 | Sepette (Salı) |
+| **Ø16mm Power Button** | 1 | Harici Güç Kontrolü | 1 | Sepette (Salı) |
+| **USB Mikrofon Dizisi** | 1 | Ses Girişi | 2 | Sepette (Salı) |
+| **Stereo Hoparlör Seti** | 1 | Ses Çıkışı | 2 | Sepette (Salı) |
+| **JGB37-520 12V Motor** | 4 | Tahrik Sistemi | 3 | Sepette (Salı) |
+| **100mm Kauçuk Tekerlek** | 4 | Hareket | 3 | Sepette (Salı) |
+| **STM32F103C8T6** | 1 | Alt Seviye Kontrol | 4 | Sepette (Salı) |
+| **5V 5A Buck Converter** | 1 | Voltaj Regülasyonu | 4 | Sepette (Salı) |
 
 
 
