@@ -1,45 +1,21 @@
-# 🗺️ AI-Friend-Robot Proje Yol Haritası (Roadmap)
+# 🗺️ AI-Friend-Robot: Roadmapping & Vision
 
-Bu belge, robotun teknik gelişimini ve Tanem ile olan etkileşim seviyelerini fazlara ayırarak takip etmemizi sağlar.
-
----
+Bu proje, Tanem için geliştirilen, Hailo-8 AI hızlandırıcılı ve Raspberry Pi 5 tabanlı bir "Eğitim ve Gelişim Yoldaşı" robot projesidir.
 
 ## 🏁 FAZ 1: "Dijital Doğum" (Elektronik Temel)
-**Hedef:** Sistemin elektronik olarak ayağa kaldırılması.
-* **Donanım:** Pi 5 + Hailo-8 + 7" QLED Ekran + Camera Module 3.
-* **Görevler:** - Raspberry Pi OS ve Hailo-8 sürücülerinin kurulumu.
-  - 7" Ekran ve Dokunmatik panel entegrasyonu.
-  - Kamera görüntüsünün ekrana aktarılması.
-* **Başarı Kriteri:** Ekranın açılması ve temel sistem bileşenlerinin birbirini tanıması.
+* **Odak:** Premium Wedge Kasa üretimi ve donanım entegrasyonu.
+* **Bileşenler:** Pi 5 + Hailo-8 + 8" Touch LCD + Camera Module 3.
+* **Kritik Hedef:** Sistemin termal kararlılıkla (hava tüneli) ayağa kalkması.
 
----
+## 🧠 FAZ 2: "Karakterin Ruhu" (AI & Eğitim Koçu)
+* **Eğitim Modülü:** Sohbet arkadaşı, ödev hatırlatıcı ve sorumluluk takipçisi.
+* **Dil Desteği:** İngilizce pratik ve interaktif dil eğitimi.
+* **AI:** Hailo-8 üzerinden yerel LLM (Llama 3 vb.) ve sıfır gecikmeli yüz tanıma.
 
-## 🧠 FAZ 2: "Karakterin Ruhu" (Yazılım Derinliği & AI Eğitim)
-**Hedef:** Tanem ile etkileşime giren akıllı asistan kimliğinin kazanılması.
-* **Gelişmiş AI Etkileşimi:** - **Yüz Tanıma:** Tanem'i gördüğünde ismini söyleyerek karşılama.
-  - **LLM (Llama 3 vb.):** Sohbet yeteneği ve "Bellek" (Tanem'in sevdiklerini hatırlama).
-  - **Eğitim Modülü:** Günlük ödev ve sorumluluk hatırlatıcı (Soru-cevap şeklinde).
-  - **Dil Desteği:** İngilizce pratik yapma seansları.
-* **Görevler:** - Speech-to-Text ve Text-to-Speech entegrasyonu.
-  - "KUTU" formu yerleşim dizaynı ve prototipleme.
-* **Başarı Kriteri:** Robotun masanın üzerinde dururken Tanem ile sesli ve görüntülü iletişim kurması.
-
----
-
-## 🐕 FAZ 3: "Fiziksel Kimlik" (Poodle Estetiği & Montaj)
-**Hedef:** Robotun mekanik montajı ve Poodle formuna kavuşması.
-* **Donanım:** 30x30 Şasi + Metal Braketler + Motorlar + 100mm Tekerlekler.
-* **Görevler:** - Mekanik şasi montajı.
-  - Poodle peluş/plastik dış kabuk uygulaması.
-  - 7" Ekranın "Kafa" bölgesine, kameranın "Göz" bölgesine yerleşimi.
-* **Başarı Kriteri:** Robotun fiziksel olarak bir "Poodle" gibi görünmesi.
-
----
+## 🐕 FAZ 3: "Fiziksel Kimlik" (Poodle Estetiği)
+* **Mekanik:** 30x30 Metal Şasi üzerine montaj.
+* **Görsel:** Terminalin "Kafa" birimi olarak şasiye entegrasyonu ve Poodle giydirmesi.
 
 ## 🚀 FAZ 4: "Otonom Hayat" (Hareket ve Saha Eğitimi)
-**Hedef:** Zekanın hareketle birleşmesi ve tam otonom asistanlık.
-* **Donanım:** STM32 + 4x Motor Sürücü + 4S Pil Sistemi + Sensörler.
-* **Görevler:** - STM32 motor kontrol yazılımı.
-  - Engel algılama ve Tanem'i otonom takip algoritmaları.
-  - Hareket halindeyken eğitim ve oyun seansları.
-* **Başarı Kriteri:** Robotun evin içinde güvenli bir şekilde dolaşarak Tanem'e eşlik etmesi.
+* **Otonom Sürüş:** Engel algılama ve Tanem'i takip etme algoritmaları.
+* **Eğitim:** Hareket halindeyken çevreyi tanıma ve etkileşimli eğitim seansları.
