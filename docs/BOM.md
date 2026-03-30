@@ -20,62 +20,62 @@ Bu liste, **AI-Friend-Robot** projesinin 4WD (4 Tekerlekli) ve Edge-AI odaklı g
 | **STM32F103C8T6** | 1 | Alt Seviye Kontrol | 4 | Sepette (Salı) |
 | **5V 5A Buck Converter** | 1 | Voltaj Regülasyonu | 4 | Sepette (Salı) |
 
-
-
 ---
 
 ## 🧠 1. Kontrol ve Zeka Katmanı (Beyin)
 | Malzeme | Adet | Görev | Notlar |
 | :--- | :---: | :--- | :--- |
-| **Raspberry Pi 5 (8GB)** | 1 | Ana İşletim Sistemi & AI Yönetimi | Sistemin yüksek seviye beyni. (**Stok bekleniyor**). |
-| **Raspberry Pi AI HAT+ (13T)** | 1 | Yapay Zeka Hızlandırıcı | Yüz tanıma ve LLM işlemleri için (**Satın Alındı - 4.299,99 TL**). |
-| **Samsung PM981 256GB SSD** | 1 | Yüksek Hızlı Depolama | İşletim sistemi ve modellerin hızlı yüklenmesi için. (**Elimizde var.**) |
-| **Ugreen NVMe SSD Kutusu** | 1 | SSD-USB Köprüsü | USB 3.1 üzerinden yüksek hızlı veri transferi. [Ürün Linki](https://www.amazon.com.tr/dp/B07NPFV21H) |
-| **STM32F103C8T6 (64K)** | 1 | Hareket ve Sensör Kontrolü | Robotun alt seviye "Omurilik" sistemi (64K Flash versiyonu). [Ürün Linki](https://www.hepsiburada.com/stm32f103c8t6-gelistirme-devre-kart-modulu-p-HBCV0000DKLHL3?magaza=prat%C4%B1ksepet) |
-| **ST-Link V2** | 1 | Programlayıcı | STM32'ye kod yüklemek için kullanılır. (Amazon sepetinde). |
-| **Raspberry Pi Aktif Soğutucu** | 1 | Termal Yönetim | Pi 5 ve AI modülünü soğutmak için (**Satın Alındı - 472,40 TL**). |
+| **Raspberry Pi 5 (8GB)** | 1 | Ana İşletim Sistemi | Sistemin yüksek seviye beyni. (Stok bekleniyor). |
+| **Raspberry Pi AI HAT+ (13T)** | 1 | AI Hızlandırıcı | Hailo-8 tabanlı AI modülü. (**Satın Alındı**). |
+| **Samsung PM981 256GB SSD** | 1 | Yüksek Hızlı Depolama | OS ve Modellerin hızlı yüklenmesi için. (**Elimizde var**) |
+| **Ugreen NVMe SSD Kutusu** | 1 | SSD-USB Köprüsü | USB 3.1 üzerinden yüksek hızlı veri transferi. |
+| **Raspberry Pi Aktif Soğutucu** | 1 | Termal Yönetim | Pi 5 ve AI modülünü doğrudan soğutmak için. (**Satın Alındı**) |
+| **STM32F103C8T6 (64K)** | 1 | Hareket Kontrolü | Robotun alt seviye "Omurilik" sistemi. |
+| **ST-Link V2** | 1 | Programlayıcı | STM32'ye kod yüklemek için kullanılır. |
 
 ---
 
-## 👁️ 2. Sensörler ve Etkileşim (Duyular & Yüz)
+## 👁️ 2. Arayüz, Sensörler ve Terminal (Duyular & Yüz)
 | Malzeme | Adet | Görev | Notlar |
 | :--- | :---: | :--- | :--- |
-| **Waveshare 7" QLED Touch** | 1 | Robotun Yüzü & Arayüz | 1024x600, Kapasitif Dokunmatik, G+G Cam. [Ürün Linki](https://www.robotistan.com/7-inc-qled-display-module) |
-| **Rpi Camera Module 3** | 1 | Görsel Giriş | Tanem'i tanımak için kullanılır (Ekran üzerine monte edilecek). |
-| **USB Mikrofon Dizisi** | 1 | Ses Girişi | Sesli komutları almak için kullanılır. |
-| **Küçük Hoparlör Seti** | 1 | Ses Çıkışı | Ekranın ses çıkışına bağlanacak (Konuşma/Havlama sesleri). |
-| **HC-SR04** | 2 | Engel Algılama | Güvenli sürüş için mesafe sensörü. |
-| **MPU-6050** | 1 | İvmeölçer & Jiroskop | Yön tayini ve stabilizasyon desteği için kullanılır. |
+| **8" Capacitive Touch LCD** | 1 | Robotun Yüzü & Arayüz | Premium Wedge kasaya uygun büyük format panel. |
+| **Rpi Camera Module 3** | 1 | Görsel Giriş | Tanem'i tanımak için (Ø12mm yuvaya monte edilecek). |
+| **USB Mikrofon Dizisi** | 1 | Ses Girişi | Sesli komutlar ve İngilizce eğitimi için. |
+| **Stereo Hoparlör Seti** | 1 | Ses Çıkışı | Robotun konuşması ve sesli yanıtları için. |
+| **40x40mm Exhaust Fan** | 1 | Kasa Tahliye Fanı | Kasa içi hava tüneli çıkış fanı (Arka Panel). |
+| **Ø16mm Power Button** | 1 | Güç Düğmesi | Işıklı, bas-bırak buton (Kasa yan panel). |
+| **HC-SR04** | 2 | Engel Algılama | Güvenli otonom sürüş için mesafe sensörü. |
+| **MPU-6050** | 1 | Stabilizasyon | İvmeölçer & Jiroskop (Yön tayini için). |
 
 ---
 
 ## ⚙️ 3. Hareket ve Güç Katmanı (Kaslar)
 | Malzeme | Adet | Görev | Notlar |
 | :--- | :---: | :--- | :--- |
-| **JGB37-520 12V 333RPM** | 4 | Ana Tahrik Motorları | Enkoderli, yüksek torklu metal motorlar. [Ürün Linki](https://www.direnc.net/jgb37-520-12v-330rpm-enkoderli-motor) |
-| **37mm Metal Motor Tutucu** | 4 | Motor Montaj Aparatı | [Ürün Linki](https://www.robotzade.com/urun/37-mm-motor-tutucu-aparat-metal) |
-| **6mm Kaplin (D-Şaft)** | 4 | Güç Aktarımı | Motor milini tekerleğe bağlar. [Ürün Linki](https://www.direnc.net/6mm-motor-kaplini) |
-| **100 mm Kauçuk Tekerlek** | 4 | Hareket (4WD) | Kaplin uyumlu, yüksek arazi kabiliyeti. |
-| **30x30 cm Şasi Levhası** | 1 | Ana Taşıyıcı İskelet | Alüminyum veya Kompozit (Özel Kesim). |
-| **TB6612FNG Motor Sürücü** | 4 | Motor Güç Yönetimi | Her motor için bağımsız 1 adet sürücü. [Ürün Linki](https://www.direnc.net/tb6612fng-dc-ve-step-motor-surucu-modulu) |
-| **Alüminyum Soğutucu Blok** | 4 | Termal Koruma | Sürücü çiplerinin üzerine yapıştırılacak minik plakalar. |
-| **18650 Pil (3.7V)** | 4 | Enerji Kaynağı | 4S (14.8V) konfigürasyonunda kullanılacaktır. (**Elimizde 4 adet var.**) |
-| **4S 40A Balanslı BMS** | 1 | Pil Güvenliği | Olt - Mor Model. [Ürün Linki](https://www.pilpaketi.com/olt-lityum-iyon-bms-4s-40a-balansli-mor) |
-| **16.8V 2A Şarj Adaptörü** | 1 | Güç Girişi | Pilleri güvenli şarj etmek için. [Ürün Linki](https://www.trendyol.com/weko/4s-lityum-batarya-sarj-adaptoru-16-8-volt-2a-p-878198638) |
-| **5V 5A Buck Converter** | 1 | Voltaj Regülatörü | 14.8V'u Pi 5 ve 7" Ekran için 5V'a düşürür. |
+| **JGB37-520 12V 333RPM** | 4 | Ana Tahrik Motorları | Enkoderli, yüksek torklu metal motorlar. |
+| **37mm Metal Motor Tutucu** | 4 | Motor Montajı | Şasiye sabitleme için L-braketler. |
+| **6mm Kaplin (D-Şaft)** | 4 | Güç Aktarımı | Motor milini 100mm tekerleğe bağlar. |
+| **100 mm Kauçuk Tekerlek** | 4 | Hareket (4WD) | Yüksek tutunuşlu, büyük çaplı tekerlekler. |
+| **TB6612FNG Motor Sürücü** | 4 | Güç Yönetimi | Her motor için bağımsız kanal. |
+| **18650 Pil (3.7V)** | 4 | Enerji Kaynağı | 4S (14.8V) konfigürasyonu. (**Elimizde 4 adet var**) |
+| **4S 40A Balanslı BMS** | 1 | Pil Güvenliği | Hücre dengeleme ve güvenli deşarj. |
+| **5V 5A Buck Converter** | 1 | Voltaj Regülatörü | 14.8V'u Pi 5 ve 8" ekran için 5V'a düşürür. |
+| **16.8V 2A Şarj Adaptörü** | 1 | Şarj Girişi | Pilleri güvenli şarj etmek için. |
 
 ---
 
-## 🏗️ 4. Bağlantı ve Sarf Malzemeleri
+## 🏗️ 4. Şasi ve Sarf Malzemeleri
 | Malzeme | Adet | Görev | Notlar |
 | :--- | :---: | :--- | :--- |
+| **Premium Wedge Kasa** | 1 | Masaüstü Terminal | 3D Baskı (PETG) veya Özel Üretim gövde. |
+| **30x30 cm Şasi Levhası** | 1 | Ana Taşıyıcı | Robotun yürüyen iskeleti (Metal/Kompozit). |
 | **Jumper Kablo Seti** | 1 | Bağlantılar | Dişi-Dişi ve Erkek-Dişi karışık paket. |
-| **4S 18650 Pil Yuvası** | 1 | Pil Taşıyıcı | Seri bağlantı sağlar. |
-| **27W USB-C Adaptör** | 1 | Masaüstü Güç | Pi 5 geliştirme aşamasında kullanılır (Orijinal). |
+| **27W USB-C Adaptör** | 1 | Masaüstü Güç | Geliştirme aşamasında (Faz 1-2) doğrudan besleme. |
 
 ---
 
 ## 📝 Teknik Karar Notları
-* **Görsel Etkileşim:** 0.96" OLED ekran yerine, Tanem ile yüksek çözünürlüklü etkileşim kurabilmek ve dokunmatik kontrol sağlamak amacıyla 7 inçlik Waveshare QLED ekran tercih edilmiştir.
-* **Özel Şasi Tasarımı:** 30x30 cm levha, metal L-braketler ve 6 mm çelik kaplinler üzerinden dayanıklı bir 4WD altyapısı kurgulanmıştır.
-* **Güç Yönetimi:** 7 inç ekranın ve Pi 5'in yüksek akım ihtiyacı nedeniyle 5A çıkışlı Buck Converter seçilmiştir.
+* **Kasa Tasarımı:** "Premium Wedge" formu, 8 inçlik ekran için optimize edilmiş olup, sağdan sola hava tüneli ve arka egzoz fanı ile termal yönetim sağlar.
+* **Terminal Konforu:** Kullanıcı deneyimini artırmak için Ø16mm harici güç butonu ve arkada sabit adaptör girişi tasarlanmıştır.
+* **Ses ve Görüntü:** 8" ekran ve stereo hoparlörlerle robotun "Eğitim Koçu" kimliği güçlendirilmiştir.
+* **Güç Stratejisi:** Yüksek akım çeken Pi 5 ve 8" ekranın aynı anda beslenmesi için 5 Amperlik regülatör zorunlu tutulmuştur.
