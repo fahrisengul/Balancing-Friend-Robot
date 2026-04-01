@@ -32,9 +32,9 @@ Bu dosya, projenin Faz 1 (Terminal) ve Faz 2 (Etkileşim) aşamalarındaki tüm 
 | **DIY UPS Seti (BMS+Buck+Jack)** | Güç Yönetimi | 1 | 500 TL | 🟠 Sepette | 1 |
 | **Kasa Tasarımı & 3D Baskı** | Gövde | 1 | 1.000 TL | ⚙️ Üretimde | 1 |
 | **Stereo Hoparlör & USB Mic** | Ses Etkileşim | 1 | 1.250 TL | 🟠 Sepette | 2 |
-| **Montaj Seti (Vida+Kablo)** | Bağlantı Elemanları | 1 | 1.150 TL | 🟢 Planlandı | 1-2 |
-| **40mm Fan** |FAN | 1 | 1.000,00 TL | 🟢 Orta | FAN |
-| **Ø16mm Güç Butonu** | 1.000,00 TL | 🟢 Orta | Kasa Bileşenleri. |
+| **Montaj Seti (Vida+Kablo)** | Bağlantı Elemanları | 1 | 1.150 TL | 🟢 Planlandı | 1|
+| **40mm Fan** |FAN | 1 | 1.000,00 TL | 🟢 Orta | 1 |
+| **Ø16mm Güç Butonu** | BUTON | 1 | 1.000,00 TL | 🟢 Orta | 1 |
 | **BEKLEYEN TOPLAM** | | | **18.642,52 TL** | |
 
 ---
