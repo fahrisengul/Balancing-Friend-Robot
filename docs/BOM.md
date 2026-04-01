@@ -22,16 +22,18 @@ Bu dosya, projenin Faz 1 (Terminal) ve Faz 2 (Etkileşim) aşamalarındaki tüm 
 ---
 
 ## 🛒 2. Satın Alınacaklar (Faz 1 & Faz 2 Eksiksiz Liste)
-| Ürün | Tahmini Fiyat | Öncelik | Notlar |
-| :--- | :--- | :---: | :--- |
-| **Raspberry Pi 5 (8GB)** | 7.000,00 TL | 🔴 Kritik | Beyin (Stok bekleniyor). |
-| **Waveshare 7inch DSI LCD (C)** | 4.000,00 TL | 🟠 Yüksek | Robotun Yüzü. |
-| **Raspberry Pi Camera Module 3** | 1.250,00 TL | 🟠 Yüksek | Tanem'i Tanıyan Göz (Atlanmıştı, eklendi). |
-| **Ugreen M.2 NVMe SSD Kutusu** | 1.900,00 TL | 🟠 Yüksek | USB 3.1 Yüksek Hız Köprüsü. |
-| **BMS + Buck Conv. + Jack + Switch** | 500,00 TL | 🟠 Yüksek | DIY Güç Ünitesi (UPS) Seti. |
-| **Stereo Hoparlör + USB Mikrofon** | 1.250,00 TL | 🟠 Yüksek | Sesli Etkileşim (Faz 2). |
+
+| Malzeme | Görev | Miktar | Birim Fiyat | Durum | Faz |
+| :--- | :--- | :---: | :--- | :--- | :---: |
+| **Raspberry Pi 5 (8GB)** | Ana İşlemci | 1 | 7.000 TL | 🔴 Stok Bekleniyor | 1 |
+| **Waveshare 7" DSI LCD (C)** | Kullanıcı Arayüzü | 1 | 3.850 TL | 🟠 Sepette | 1 |
+| **RPi Camera Module 3** | Görsel Giriş | 1 | 1.250 TL | 🟠 Sepette | 1 |
+| **Ugreen NVMe Enclosure** | SSD-USB Köprüsü | 1 | 1.900 TL | 🟠 Sepette | 1 |
+| **DIY UPS Seti (BMS+Buck+Jack)** | Güç Yönetimi | 1 | 500 TL | 🟠 Sepette | 1 |
+| **Kasa Tasarımı & 3D Baskı** | Gövde | 1 | 1.000 TL | ⚙️ Üretimde | 1 |
+| **Stereo Hoparlör & USB Mic** | Ses Etkileşim | 1 | 1.250 TL | 🟠 Sepette | 2 |
+| **Montaj Seti (Vida+Kablo)** | Bağlantı Elemanları | 1 | 1.150 TL | 🟢 Planlandı | 1-2 |
 | **40mm Fan + Ø16mm Güç Butonu** | 1.000,00 TL | 🟢 Orta | Kasa Bileşenleri. |
-| **Montaj ve Bağlantı Seti** | 500,00 TL | 🟢 Orta | Vida, Somun, Yassı HDMI, Uzun Cam Flex. |
 | **BEKLEYEN TOPLAM** | | | **18.642,52 TL** | |
 
 ---
