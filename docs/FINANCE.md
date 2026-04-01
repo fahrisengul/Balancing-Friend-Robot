@@ -30,7 +30,7 @@ Bu dosya, projenin başlangıcından itibaren yapılan tüm harcamaları ve büt
 | BMS + Buck Converter + Jack + Switch | 500,00 TL | 🟠 Yüksek | DIY Güç Ünitesi parçaları. |
 | 40mm Fan + Ø16mm Güç Butonu | 1.000,00 TL | 🟢 Orta | Kasa bileşenleri. |
 | Kablolama + Vida + Kamera Flex Kablo | 1.150,00 TL | 🟢 Orta | Montaj ve sarf malzemeler. |
-| DSI KABLO : Raspberry Pi 5 uyumlu 22-pin to 15-pin DSI FPC kablo | 🟢 Orta | Bağlantı kablosu. |
+| DSI KABLO : Raspberry Pi 5 uyumlu 22-pin to 15-pin DSI FPC kablo | x  TL | 🟢 Orta | Bağlantı kablosu. |
 
 ---
 
