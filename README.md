@@ -1,58 +1,51 @@
-# 🤖 AI-Friend-Robot (Project: Tanem's Companion)
+# 🤖 AI-Friend-Robot (Premium Wedge V4)
 
-Bu proje, Raspberry Pi 5 ve Edge-AI teknolojilerini kullanarak geliştirilen, orta boy bir Poodle boyutlarında, 4 tekerlekli (4WD) otonom bir robot projesidir. Projenin ana amacı, **Tanem** için etkileşimli, yüz tanıyan ve sesli komutlarla iletişim kurabilen akıllı bir robot arkadaş geliştirmektir.
-
----
-
-## 🚀 Proje Vizyonu
-* **Boyut:** Orta Boy Poodle (Heybetli ve stabil gövde).
-* **Zeka:** Raspberry Pi 5 (8GB) + Raspberry Pi AI HAT+ (13 TOPS) ile yerel yapay zeka.
-* **Hareket:** 4 adet JGB37-520 (333 RPM) yüksek torklu enkoderli motor.
-* **Dayanıklılık:** Her motor için bağımsız TB6612FNG sürücü (Redundancy & Termal Kararlılık).
-* **Hafıza:** Samsung PM981 NVMe SSD + Ugreen USB 3.1 Gen2 yüksek hızlı depolama.
+**AI-Friend-Robot**, Raspberry Pi 5 ve Hailo-8 (13T) AI hızlandırıcı tabanlı, 7 inç dokunmatik arayüze sahip, eğitim ve etkileşim odaklı bir **Edge-AI Terminalidir.** Bu proje; Tanem için bir eğitim koçu, İngilizce pratik arkadaşı ve yüksek performanslı bir yapay zeka platformu olarak tasarlanmıştır.
 
 ---
 
-## 🏗️ Sistem Mimarisi
-
-### 1. Beyin (Yüksek Seviye)
-* **Raspberry Pi 5 (8GB):** Görüntü işleme, doğal dil işleme ve genel mantık katmanı.
-* **SSD Depolama:** İşletim sistemi ve LLM modellerinin hızlı yüklenmesi için NVMe çözümü.
-* **Soğutma:** Pi 5 ve AI modülü için aktif fanlı soğutucu blok.
-
-### 2. Omurilik (Alt Seviye)
-* **STM32F103C8T6 (Bluepill):** 72MHz hızında motor kontrolü, sensör füzyonu ve gerçek zamanlı tepkiler.
-* **Geri Bildirim:** Manyetik enkoderler ile milimetrik yol ölçümü (Odometry).
-
-### 3. Enerji Sistemi
-* **Batarya:** 4S 18650 Li-ion Paket (14.8V Nominal).
-* **Koruma:** Olt 4S 40A Balanslı BMS (Mor Seri).
-* **Şarj:** 16.8V 2A CC/CV Akıllı Şarj Sistemi.
+## 🌟 Öne Çıkan Özellikler
+* **Yüksek Performanslı AI:** Raspberry Pi AI HAT+ (13T TOPS) ile gerçek zamanlı nesne tanıma ve ses işleme.
+* **Premium Arayüz:** 7" Waveshare DSI IPS Dokunmatik Ekran (1024x600).
+* **Kesintisiz Güç (DIY UPS):** 4S Li-ion (14.8V) batarya grubu ve 5V 5A regülatör ile mobil kullanım.
+* **Gelişmiş Etkileşim:** Camera Module 3 (Autofocus), Stereo Hoparlör ve USB Mikrofon Dizisi.
+* **Şık Tasarım:** 3D baskı (PETG) "Premium Wedge" masaüstü formu.
 
 ---
 
-## 📂 Proje Yapısı
-* `/docs`: Donanım seçimleri (BOM), güç sistemi ve mimari detaylar.
-* `/firmware`: STM32 için C++ / Bare-metal kodları.
-* `/ai_models`: Yüz tanıma ve ses işleme modelleri.
-* `/scripts`: Raspberry Pi 5 yönetim ve entegrasyon scriptleri.
+## 📅 Proje Fazları ve Durum
+
+### ✅ Faz 1: Kontrol ve Terminal (Tamamlanmak Üzere)
+* [x] Pi 5 & AI HAT Tedariği.
+* [x] 7" DSI Ekran Seçimi ve Tasarım Entegrasyonu.
+* [x] DIY Güç Sistemi (UPS) Tasarımı.
+* [ ] Kasa Üretimi (3D Baskı - Süreçte).
+
+### 🎙️ Faz 2: Duyular ve Etkileşim (Planlama Aşamasında)
+* [ ] Sesli Komut ve Yanıt Sistemi (Python + OpenAI/Local LLM).
+* [ ] Tanem için Yüz Tanıma ve Özelleştirilmiş Eğitim Modülleri.
+* [ ] USB Mikrofon ve Stereo Hoparlör Montajı.
+
+### ⚙️ Faz 3: Hareket ve Mobilite (Gelecek Vizyonu)
+* [ ] 4WD Tahrik Sistemi ve Otonom Sürüş.
 
 ---
 
-## 📝 Güncel Durum (Mart 2026)
-- [x] AI Hızlandırıcı ve Soğutucu temin edildi.
-- [x] SSD ve USB 3.1 NVMe Kutusu kararlaştırıldı.
-- [x] Motor (JGB37) ve Sürücü (4x TB6612) konfigürasyonu onaylandı.
-- [x] Güç sistemi (4S BMS + Adaptör) kesinleşti.
-- [ ] STM32 Bluepill ve ST-Link V2 (Sipariş bekleniyor).
-- [ ] Raspberry Pi 5 (Stok bekleniyor).
+## 🛠️ Hızlı Başlangıç ve Dökümantasyon
+Projenin detaylı teknik dökümanlarına aşağıdaki linklerden ulaşabilirsiniz:
+
+1. [📋 **BOM.md**](./BOM.md): Malzeme Listesi ve Bütçe Takibi.
+2. [⚙️ **DESIGN_SPEC.md**](./DESIGN_SPEC.md): Kasa Tasarımı ve Teknik Çizim Ölçüleri.
+3. [🚀 **Pre-Flight-Check.md**](./Pre-Flight-Check.md): İlk Çalıştırma Öncesi Kontrol Listesi.
 
 ---
 
-## 🤝 Katkıda Bulunanlar
-* **Fahri:** Proje Lideri & Donanım Mimarı.
-* **Tanem:** Robotun En Yakın Arkadaşı & Test Pilotu.
-* **Gemini:** Mühendislik Danışmanı.
+## 🔋 Güç ve Termal Strateji
+Sistem, 4 adet 18650 pilden oluşan 4S paketi üzerinden beslenir. Isı yönetimi, Pi 5 Active Cooler ve kasa arkasındaki 40mm tahliye fanı ile sağlanan bir hava tüneli üzerinden gerçekleştirilir.
 
 ---
-*Bu proje "Donanım Kararlılığı ve Güvenlik" önceliğiyle geliştirilmektedir.*
+
+## 👨‍💻 Geliştirici
+**Fahri** | *Teknoloji Hub & Ekosistem Stratejisti*
+
+*"Tanem için, geleceğin teknolojisiyle bugün tanışma fırsatı."*
