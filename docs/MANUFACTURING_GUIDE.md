@@ -46,4 +46,20 @@ Bu doküman, "Premium Wedge" kasanın 3D tasarım, prototipleme ve üretim stand
 - **Vida Delikleri:** +0.2 mm
 - **Geçme ve Slotlar:** +0.3 mm
 ---
+
+
+# 🛠️ Manufacturing Guide (DIY Power Update)
+
+## 🏗️ Yapısal Gereksinimler
+- **Alt Kapak:** Batarya değişimi ve BMS kontrolü için kolay sökülebilir (M3 vida) olmalıdır.
+- **İzolasyon:** 18650 pil grubu ve BMS kartı kasa içinde kısa devreye karşı yalıtılmalıdır.
+
+## 🌡️ Termal Yönetim
+- **Hava Akışı:** Sağ panel giriş slotları -> Pi 5/AI HAT -> 40mm Arka Egzoz Fanı.
+- **Isı Kaynakları:** Buck Converter ve BMS kartı, fanın hava akış hattı üzerinde konumlandırılmalıdır.
+
+## ⚡ Montaj Uyarısı
+- Şarj girişi (DC Jack) doğrudan BMS "P+" ve "P-" uçlarına bağlanmalıdır.
+- Pi 5 beslemesi Buck Converter üzerinden geçmeli, voltaj 5.1V üzerine çıkmamalıdır.
+
 **Not:** Tasarımcıdan STL ve düzenlenebilir STEP formatlarında teslimat beklenmektedir. Kasa içi kablo yönetim kanalları eklenmeli ve batarya ağırlık merkezinin cihazın stabilitesini artıracak şekilde konumlandırılması sağlanmalıdır.
