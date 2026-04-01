@@ -4,7 +4,7 @@ Bu dosya, projenin başlangıcından itibaren yapılan tüm harcamaları ve büt
 
 ## 📊 Genel Özet
 * **Toplam Harcanan:** 5.772,38 TL
-* **Kalan Bütçe Tahmini:** 16.792,52 TL (Yeni eklemeler dahil)
+* **Kalan Bütçe Tahmini:** 18.042,52 TL
 * **Son Güncelleme:** 1 Nisan 2026 (Ekstre Günü)
 
 ---
@@ -24,14 +24,15 @@ Bu dosya, projenin başlangıcından itibaren yapılan tüm harcamaları ve büt
 | :--- | :--- | :---: | :--- |
 | Raspberry Pi 5 (4GB/8GB) | 7.000,00 TL | 🔴 Kritik | Stok bekleniyor. |
 | Waveshare 8" HDMI LCD (H) | 5.242,52 TL | 🟠 Yüksek | Satın alması yapılacak. |
-| BMS + Buck Converter + Jack + Switch | 500,00 TL | 🟠 Yüksek | DIY Güç Ünitesi parçaları. |
 | Ugreen M.2 NVMe SSD Disk Kutusu | 1.900,00 TL | 🟠 Yüksek | Type-C 3.1 Gen2. |
+| Stereo Hoparlör Seti + USB Mikrofon | 1.250,00 TL | 🟠 Yüksek | Robotun "Ağzı ve Kulağı". |
+| BMS + Buck Converter + Jack + Switch | 500,00 TL | 🟠 Yüksek | DIY Güç Ünitesi parçaları. |
 | 40mm Fan + Ø16mm Güç Butonu | 1.000,00 TL | 🟢 Orta | Kasa bileşenleri. |
 | Kablolama + Vida + Kamera Flex Kablo | 1.150,00 TL | 🟢 Orta | Montaj ve sarf malzemeler. |
 
 ---
 
 ## 📝 Finansal Notlar
-* **Sarf Malzeme:** Bütçeye montaj için gereken vida, yassı HDMI kablosu ve uzun kamera flex kablosu eklenmiştir.
+* **Ses Donanımı:** Tanem ile etkileşim için stereo hoparlör ve gürültü engelleyici mikrofon dizisi bütçeye eklenmiştir.
+* **Sarf Malzeme:** Bütçeye montaj için gereken vida, yassı HDMI kablosu ve uzun kamera flex kablosu dahildir.
 * **Fiyat Dalgalanması:** Döviz kurları nedeniyle teknolojik ürünlerde ±%10 sapma olabilir.
-* **Stok Takibi:** Pi 5 alımı için bütçede 7.000 TL pay ayrılmıştır.
