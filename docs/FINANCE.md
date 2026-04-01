@@ -23,7 +23,7 @@ Bu dosya, projenin başlangıcından itibaren yapılan tüm harcamaları ve büt
 | Ürün | Tahmini Fiyat | Öncelik | Notlar |
 | :--- | :--- | :---: | :--- |
 | Raspberry Pi 5 (4GB/8GB) | 7.000,00 TL | 🔴 Kritik | Stok bekleniyor. |
-| Raspberry Pi için 7inç Kapasitif Dokunmatik LCD Ekran Modülü - DSI Arayüz - 1024x600 Piksel IPS | 3.693,25 TL | 🟠 Yüksek | Satın alması yapılacak. |
+| Raspberry Pi için 7inç Kapasitif Dokunmatik LCD Ekran Modülü - DSI Arayüz - 1024x600 Piksel IPS  (Waveshare 7inch DSI LCD (C)) | 3.693,25 TL | 🟠 Yüksek | Satın alması yapılacak. |
 | Ugreen M.2 NVMe SSD Disk Kutusu | 1.900,00 TL | 🟠 Yüksek | Type-C 3.1 Gen2. |
 | Stereo Hoparlör Seti + USB Mikrofon | 1.250,00 TL | 🟠 Yüksek | Robotun "Ağzı ve Kulağı". |
 | BMS + Buck Converter + Jack + Switch | 500,00 TL | 🟠 Yüksek | DIY Güç Ünitesi parçaları. |
