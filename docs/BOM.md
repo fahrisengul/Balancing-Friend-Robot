@@ -1,101 +1,43 @@
-# 📋 Detaylı Malzeme Listesi (BOM - Bill of Materials)
+# 💰 Proje Bütçesi ve Maliyet Takibi (AI-Friend-Robot)
 
-Bu liste, **AI-Friend-Robot** projesinin 4WD (4 Tekerlekli) ve Edge-AI odaklı güncel bileşenlerini içerir.
+Bu dosya, projenin Faz 1 (Terminal) ve Faz 2 (Etkileşim) aşamalarındaki tüm ihtiyaçları kapsar.
 
-| Malzeme | Adet | Görev | Faz | Durum |
-| :--- | :---: | :--- | :---: | :--- |
-| **Raspberry Pi 5 (8GB)** | 1 | Ana İşlemci | 1 | Araştırılıyor |
-| **Raspberry Pi AI HAT+ (13T)** | 1 | AI Hızlandırıcı | 1 | **Satın Alındı (Geldi)** |
-| **Waveshare 8" HDMI LCD (H)** | 1 | Kullanıcı Arayüzü | 1 | Sepette (Salı - Bugün) |
-| **Raspberry Pi Camera Module 3** | 1 | Görsel Giriş | 1 | Sepette (Salı - Bugün) |
-| **Baseus Adaman 22.5W Slim** | 1 | Mobil Güç Kaynağı | 1 | Sepette (Salı - Bugün) |
-| **Samsung PM981 256GB SSD** | 1 | Depolama | 1 | **Elimizde Var** |
-| **Ugreen NVMe Enclosure** | 1 | SSD-USB Köprüsü | 1 | Sepette (Salı - Bugün) |
-| **Raspberry Pi Active Cooler** | 1 | İşlemci Soğutma | 1 | **Satın Alındı (Bekleniyor)** |
-| **40x40mm Exhaust Fan** | 1 | Kasa Havalandırma | 1 | Sepette (Salı - Bugün) |
-| **Ø16mm Power Button** | 1 | Harici Güç Kontrolü | 1 | Sepette (Salı - Bugün) |
-| **USB Mikrofon Dizisi** | 1 | Ses Girişi | 2 | Sepette (Salı - Bugün) |
-| **Stereo Hoparlör Seti** | 1 | Ses Çıkışı | 2 | Sepette (Salı - Bugün) |
-| **JGB37-520 12V Motor** | 4 | Tahrik Sistemi | 3 | Sepette (Salı - Bugün) |
-| **100mm Kauçuk Tekerlek** | 4 | Hareket | 3 | Sepette (Salı - Bugün) |
-| **Raspberry Pi 5 (4GB/8GB)** | 1 | Ana İşlemci | 🔴 Stok Bekleniyor |
-| **Raspberry Pi AI HAT+ (13T)** | 1 | AI Hızlandırıcı | ✅ Stokta |
-| **Waveshare 8" HDMI LCD (H)** | 1 | Kullanıcı Arayüzü | 🟠 Sepette |
-| **18650 Lityum Pil (3.7V)** | 4 | Enerji Depolama | ✅ Stokta |
-| **4S 40A Balanslı BMS** | 1 | Batarya Yönetimi | 🟠 Sipariş Edilecek |
-| **5V 5A Buck Converter** | 1 | Voltaj Regülatörü | 🟠 Sipariş Edilecek |
-| **4'lü 18650 Pil Yuvası** | 1 | Batarya Yuvası | ✅ Stokta |
-| **16.8V 2A Li-ion Adaptör** | 1 | Şarj Cihazı | ✅ Stokta |
-| **Ugreen NVMe Enclosure** | 1 | USB-SSD Bağlantısı | 🟠 Sepette |
-| **Ø16mm Power Button** | 1 | Güç Kontrolü | 🟠 Sepette |
-| **DC Jack (5.5x2.1mm)** | 1 | Şarj Girişi | 🟠 Sepette |
+## 📊 Genel Özet
+* **Toplam Harcanan:** 5.772,38 TL
+* **Kalan Bütçe Tahmini:** 18.642,52 TL
+* **Son Güncelleme:** 1 Nisan 2026 (Ekstre Günü - Kesinleşmiş Liste)
 
 ---
 
-## 🧠 1. Kontrol ve Zeka Katmanı (Beyin)
-| Malzeme | Adet | Görev | Notlar |
-| :--- | :---: | :--- | :--- |
-| **Raspberry Pi 5 (8GB)** | 1 | Ana İşletim Sistemi | Sistemin yüksek seviye beyni. (Stok bekleniyor). |
-| **Raspberry Pi AI HAT+ (13T)** | 1 | AI Hızlandırıcı | Hailo-8 tabanlı AI modülü. (**Satın Alındı**). |
-| **Samsung PM981 256GB SSD** | 1 | Yüksek Hızlı Depolama | OS ve Modellerin hızlı yüklenmesi için. (**Elimizde var**) |
-| **Ugreen NVMe SSD Kutusu** | 1 | SSD-USB Köprüsü | USB 3.1 üzerinden yüksek hızlı veri transferi. |
-| **Raspberry Pi Aktif Soğutucu** | 1 | Termal Yönetim | Pi 5 ve AI modülünü doğrudan soğutmak için. (**Satın Alındı**) |
-| **STM32F103C8T6 (64K)** | 1 | Hareket Kontrolü | Robotun alt seviye "Omurilik" sistemi. |
-| **ST-Link V2** | 1 | Programlayıcı | STM32'ye kod yüklemek için kullanılır. |
+## 🛠️ 1. Satın Alınan / Elimizde Olan Bileşenler
+| Tarih | Ürün | Miktar | Birim Fiyat | Toplam | Durum |
+| :--- | :--- | :---: | :--- | :--- | :--- |
+| 23.03.2026 | Raspberry Pi AI HAT+ (13T) | 1 | 4.299,99 TL | 4.299,99 TL | ✅ Stokta |
+| 24.03.2026 | Raspberry Pi Active Cooler | 1 | 472,39 TL | 472,39 TL | ✅ Stokta |
+| 01.04.2026 | Özel Kasa Tasarımı & 3D Baskı | 1 | 1.000,00 TL | 1.000,00 TL | ⚙️ Üretimde |
+| - | Samsung PM981 256GB SSD | 1 | 0,00 TL | 0,00 TL | ✅ Elimizde Var |
+| - | 18650 Pil (4 Adet) + Yuva | 1 | 0,00 TL | 0,00 TL | ✅ Elimizde Var |
+| **TOPLAM** | | | | **5.772,38 TL** | |
 
 ---
 
-## 👁️ 2. Arayüz, Sensörler ve Terminal (Duyular & Yüz)
-| Malzeme | Adet | Görev | Notlar |
-| :--- | :---: | :--- | :--- |
-| **8" Capacitive Touch LCD** | 1 | Robotun Yüzü & Arayüz | Premium Wedge kasaya uygun büyük format panel. |
-| **Rpi Camera Module 3** | 1 | Görsel Giriş | Tanem'i tanımak için (Ø12mm yuvaya monte edilecek). |
-| **USB Mikrofon Dizisi** | 1 | Ses Girişi | Sesli komutlar ve İngilizce eğitimi için. |
-| **Stereo Hoparlör Seti** | 1 | Ses Çıkışı | Robotun konuşması ve sesli yanıtları için. |
-| **40x40mm Exhaust Fan** | 1 | Kasa Tahliye Fanı | Kasa içi hava tüneli çıkış fanı (Arka Panel). |
-| **Ø16mm Power Button** | 1 | Güç Düğmesi | Işıklı, bas-bırak buton (Kasa yan panel). |
-| **HC-SR04** | 2 | Engel Algılama | Güvenli otonom sürüş için mesafe sensörü. |
-| **MPU-6050** | 1 | Stabilizasyon | İvmeölçer & Jiroskop (Yön tayini için). |
+## 🛒 2. Satın Alınacaklar (Faz 1 & Faz 2 Eksiksiz Liste)
+| Ürün | Tahmini Fiyat | Öncelik | Notlar |
+| :--- | :--- | :---: | :--- |
+| **Raspberry Pi 5 (8GB)** | 7.000,00 TL | 🔴 Kritik | Beyin (Stok bekleniyor). |
+| **Waveshare 8" HDMI LCD (H)** | 5.242,52 TL | 🟠 Yüksek | Robotun Yüzü. |
+| **Raspberry Pi Camera Module 3** | 1.250,00 TL | 🟠 Yüksek | Tanem'i Tanıyan Göz (Atlanmıştı, eklendi). |
+| **Ugreen M.2 NVMe SSD Kutusu** | 1.900,00 TL | 🟠 Yüksek | USB 3.1 Yüksek Hız Köprüsü. |
+| **BMS + Buck Conv. + Jack + Switch** | 500,00 TL | 🟠 Yüksek | DIY Güç Ünitesi (UPS) Seti. |
+| **Stereo Hoparlör + USB Mikrofon** | 1.250,00 TL | 🟠 Yüksek | Sesli Etkileşim (Faz 2). |
+| **40mm Fan + Ø16mm Güç Butonu** | 1.000,00 TL | 🟢 Orta | Kasa Bileşenleri. |
+| **Montaj ve Bağlantı Seti** | 500,00 TL | 🟢 Orta | Vida, Somun, Yassı HDMI, Uzun Cam Flex. |
+| **BEKLEYEN TOPLAM** | | | **18.642,52 TL** | |
 
 ---
 
-## ⚙️ 3. Hareket ve Güç Katmanı (Kaslar)
-| Malzeme | Adet | Görev | Notlar |
-| :--- | :---: | :--- | :--- |
-| **JGB37-520 12V 333RPM** | 4 | Ana Tahrik Motorları | Enkoderli, yüksek torklu metal motorlar. |
-| **37mm Metal Motor Tutucu** | 4 | Motor Montajı | Şasiye sabitleme için L-braketler. |
-| **6mm Kaplin (D-Şaft)** | 4 | Güç Aktarımı | Motor milini 100mm tekerleğe bağlar. |
-| **100 mm Kauçuk Tekerlek** | 4 | Hareket (4WD) | Yüksek tutunuşlu, büyük çaplı tekerlekler. |
-| **TB6612FNG Motor Sürücü** | 4 | Güç Yönetimi | Her motor için bağımsız kanal. |
-| **18650 Pil (3.7V)** | 4 | Enerji Kaynağı | 4S (14.8V) konfigürasyonu. (**Elimizde 4 adet var**) |
-| **4S 40A Balanslı BMS** | 1 | Pil Güvenliği | Hücre dengeleme ve güvenli deşarj. |
-| **5V 5A Buck Converter** | 1 | Voltaj Regülatörü | 14.8V'u Pi 5 ve 8" ekran için 5V'a düşürür. |
-| **16.8V 2A Şarj Adaptörü** | 1 | Şarj Girişi | Pilleri güvenli şarj etmek için. |
-
----
-
-## 🏗️ 4. Şasi ve Sarf Malzemeleri
-| Malzeme | Adet | Görev | Notlar |
-| :--- | :---: | :--- | :--- |
-| **Premium Wedge Kasa** | 1 | Masaüstü Terminal | 3D Baskı (PETG) veya Özel Üretim gövde. |
-| **30x30 cm Şasi Levhası** | 1 | Ana Taşıyıcı | Robotun yürüyen iskeleti (Metal/Kompozit). |
-| **Jumper Kablo Seti** | 1 | Bağlantılar | Dişi-Dişi ve Erkek-Dişi karışık paket. |
-| **27W USB-C Adaptör** | 1 | Masaüstü Güç | Geliştirme aşamasında (Faz 1-2) doğrudan besleme. |
-
----
-
-## 📝 Teknik Karar Notları
-* **Kasa Tasarımı:** "Premium Wedge" formu, 8 inçlik ekran için optimize edilmiş olup, sağdan sola hava tüneli ve arka egzoz fanı ile termal yönetim sağlar.
-* **Terminal Konforu:** Kullanıcı deneyimini artırmak için Ø16mm harici güç butonu ve arkada sabit adaptör girişi tasarlanmıştır.
-* **Ses ve Görüntü:** 8" ekran ve stereo hoparlörlerle robotun "Eğitim Koçu" kimliği güçlendirilmiştir.
-* **Güç Stratejisi:** Yüksek akım çeken Pi 5 ve 8" ekranın aynı anda beslenmesi için 5 Amperlik regülatör zorunlu tutulmuştur.
-
-## 📝 Önemli Notlar
-* **Görsel:** 8" 1280x800 IPS panel, HDMI üzerinden Pi 5'e bağlanacak.
-
-## ⚡ Güç Sistemi Notları
-* Hazır powerbank yerine **4S DIY Li-ion Paket** kullanılacaktır.
-* Pi 5, **5V 5A** kapasiteli regülatör üzerinden beslenecek, AI performansı korunacaktır.
-* Pil durumu yazılımsal olarak (Python + Gerilim Bölücü) takip edilecektir.
-* **Güç:** Baseus Adaman Slim Powerbank, kasanın arka tabanına sabitlenerek mobilite sağlayacak.
-* **Soğutma:** Sağ panel hava girişi ve arka panel egzoz fanı ile hava tüneli oluşturulacak.
+## 📝 Finansal ve Teknik Notlar
+* **Kamera:** "Görsel Giriş" için Camera Module 3 bütçeye dahil edilmiştir.
+* **Besleme:** Powerbank yerine 5V 5A Buck Converter + 4S Pil sistemiyle AI performansı %100 korunacaktır.
+* **Ses:** USB Mikrofon dizisi sayesinde Tanem'in komutları gürültüden arındırılarak alınacaktır.
+* **Kritik Uyarı:** Pi 5 8GB fiyatı stok durumuna göre ±%15 değişkenlik gösterebilir.
