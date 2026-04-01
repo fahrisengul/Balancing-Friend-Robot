@@ -18,6 +18,17 @@ Bu liste, **AI-Friend-Robot** projesinin 4WD (4 Tekerlekli) ve Edge-AI odaklı g
 | **Stereo Hoparlör Seti** | 1 | Ses Çıkışı | 2 | Sepette (Salı - Bugün) |
 | **JGB37-520 12V Motor** | 4 | Tahrik Sistemi | 3 | Sepette (Salı - Bugün) |
 | **100mm Kauçuk Tekerlek** | 4 | Hareket | 3 | Sepette (Salı - Bugün) |
+| **Raspberry Pi 5 (4GB/8GB)** | 1 | Ana İşlemci | 🔴 Stok Bekleniyor |
+| **Raspberry Pi AI HAT+ (13T)** | 1 | AI Hızlandırıcı | ✅ Stokta |
+| **Waveshare 8" HDMI LCD (H)** | 1 | Kullanıcı Arayüzü | 🟠 Sepette |
+| **18650 Lityum Pil (3.7V)** | 4 | Enerji Depolama | ✅ Stokta |
+| **4S 40A Balanslı BMS** | 1 | Batarya Yönetimi | 🟠 Sipariş Edilecek |
+| **5V 5A Buck Converter** | 1 | Voltaj Regülatörü | 🟠 Sipariş Edilecek |
+| **4'lü 18650 Pil Yuvası** | 1 | Batarya Yuvası | ✅ Stokta |
+| **16.8V 2A Li-ion Adaptör** | 1 | Şarj Cihazı | ✅ Stokta |
+| **Ugreen NVMe Enclosure** | 1 | USB-SSD Bağlantısı | 🟠 Sepette |
+| **Ø16mm Power Button** | 1 | Güç Kontrolü | 🟠 Sepette |
+| **DC Jack (5.5x2.1mm)** | 1 | Şarj Girişi | 🟠 Sepette |
 
 ---
 
@@ -81,5 +92,10 @@ Bu liste, **AI-Friend-Robot** projesinin 4WD (4 Tekerlekli) ve Edge-AI odaklı g
 
 ## 📝 Önemli Notlar
 * **Görsel:** 8" 1280x800 IPS panel, HDMI üzerinden Pi 5'e bağlanacak.
+
+## ⚡ Güç Sistemi Notları
+* Hazır powerbank yerine **4S DIY Li-ion Paket** kullanılacaktır.
+* Pi 5, **5V 5A** kapasiteli regülatör üzerinden beslenecek, AI performansı korunacaktır.
+* Pil durumu yazılımsal olarak (Python + Gerilim Bölücü) takip edilecektir.
 * **Güç:** Baseus Adaman Slim Powerbank, kasanın arka tabanına sabitlenerek mobilite sağlayacak.
 * **Soğutma:** Sağ panel hava girişi ve arka panel egzoz fanı ile hava tüneli oluşturulacak.
