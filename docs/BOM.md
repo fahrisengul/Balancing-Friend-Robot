@@ -25,7 +25,7 @@ Bu dosya, projenin Faz 1 (Terminal) ve Faz 2 (Etkileşim) aşamalarındaki tüm 
 | Ürün | Tahmini Fiyat | Öncelik | Notlar |
 | :--- | :--- | :---: | :--- |
 | **Raspberry Pi 5 (8GB)** | 7.000,00 TL | 🔴 Kritik | Beyin (Stok bekleniyor). |
-| **Waveshare 8" HDMI LCD (H)** | 5.242,52 TL | 🟠 Yüksek | Robotun Yüzü. |
+| **Waveshare 7inch DSI LCD (C)** | 4.000,00 TL | 🟠 Yüksek | Robotun Yüzü. |
 | **Raspberry Pi Camera Module 3** | 1.250,00 TL | 🟠 Yüksek | Tanem'i Tanıyan Göz (Atlanmıştı, eklendi). |
 | **Ugreen M.2 NVMe SSD Kutusu** | 1.900,00 TL | 🟠 Yüksek | USB 3.1 Yüksek Hız Köprüsü. |
 | **BMS + Buck Conv. + Jack + Switch** | 500,00 TL | 🟠 Yüksek | DIY Güç Ünitesi (UPS) Seti. |
