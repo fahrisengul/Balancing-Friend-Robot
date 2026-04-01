@@ -1,11 +1,11 @@
-# 🛠️ Üretim ve 3D Baskı Kılavuzu (V1 - AI Eğitim Terminali)
+# 🛠️ Üretim ve 3D Baskı Kılavuzu (V2 - AI Eğitim Terminali)
 
 Bu doküman, "Premium Wedge" kasanın 3D tasarım, prototipleme ve üretim standartlarını içerir. Bu proje bir hobi kutusu değil, son kullanıcıya sunulacak bir ürünün ilk prototipidir.
 
 ## 🎯 Üretim Hedefi
-- **Estetik:** Çocuk dostu, modern ve şık görünüm.
-- **Sağlamlık:** Günlük masaüstü kullanımına uygun rijit yapı.
-- **Mühendislik Doğruluğu:** Isı tahliyesi ve kablo gerilimi hesaplanmış iç hacim.
+- **Estetik:** Çocuk dostu, modern ve "Premium" teknolojik görünüm.
+- **Sağlamlık:** Günlük masaüstü kullanımına uygun rijit ve dengeli yapı.
+- **Mühendislik Doğruluğu:** Isı tahliyesi (Hava tüneli) ve dahili güç kaynağı entegrasyonu.
 
 ## 📐 Dış Geometri ve Form
 | Parametre | Değer |
@@ -16,32 +16,34 @@ Bu doküman, "Premium Wedge" kasanın 3D tasarım, prototipleme ve üretim stand
 | **Açı / Et Kalınlığı** | ~60° / 3 mm |
 
 ## 📺 Ekran ve Kamera Entegrasyonu
-- **8” Kapasitif Ekran:** 190mm x 115mm cutout. Arka taraftan M3 vida veya bracket ile sabitleme.
-- **Kamera:** Üst orta konumda Ø12mm dairesel delik ve 12x4mm flex kablo slotu.
+- **8” Waveshare HDMI LCD (H):** 190.6mm x 114.3mm panel yuvası. 
+- **Montaj:** Arka taraftan 182.60 x 106.30 mm eksenli 4x M2.5 vida deliği.
+- **Kamera:** Üst orta konumda Ø12mm dairesel lens deliği ve 12x4mm flex kablo geçiş kanalı.
 
 ## 🧠 İç Yerleşim ve Donanım
-- **Ana Kart:** Raspberry Pi 5 + AI HAT (Sol iç taban).
-- **Standoff:** 10 mm yükseklik, M2.5 vida uyumlu.
-- **SSD (Ugreen):** Sağ iç duvar, kablo bükülme payı bırakılmış dikey/yarı açık slot.
+- **Ana Kart:** Raspberry Pi 5 + AI HAT (Sol iç taban). 58x49 mm montaj gridi, 10mm standoff.
+- **Mobil Güç:** Baseus Adaman Slim Powerbank (145x65x15 mm). Arka iç tabana sabitlenmiş yuva/kelepçe sistemi.
+- **SSD (Ugreen):** Sağ iç duvar. USB 3.0 kablo bükülme payı (min. 30mm) korunarak dikey montaj.
+- **Ses:** Yan panellerde 15x15 mm ölçülerinde hoparlör ızgara delikleri.
 
 ## 🌡️ Termal Tasarım (Kritik)
-- **Aktif Tahliye:** Arka panelde 40x40mm egzoz fanı (32mm delik aralığı).
+- **Aktif Tahliye:** Arka panelde 40x40mm egzoz fanı (32mm delik aralığı, Ø38mm hava deliği).
 - **Pasif Giriş:** Sağ panelde 5-6 adet 20x3mm vent slotu.
-- **Akış Hattı:** Sağ (Giriş) → Pi 5/AI HAT → Fan → Arka (Çıkış).
+- **Akış Hattı:** Sağ (Giriş) → Pi 5 + AI HAT → Aktif Soğutucu → Arka Fan → Çıkış.
 
 ## 🔌 Portlar ve Kontroller
-- **Arka Panel:** USB-C (Power: 12x7mm), Opsiyonel 2x USB-A ve Ethernet yuvaları.
-- **Güç Butonu:** Sağ panelde Ø16mm buton deliği.
+- **Güç Butonu:** Sağ yan panelde Ø16.2mm dairesel montaj deliği.
+- **Şarj Erişimi:** Dahili powerbank'in şarj girişi için arka panelde USB-C erişim penceresi.
+- **Arka Panel:** USB-C (Sistem besleme), opsiyonel USB-A ve Ethernet çıkışları için uygun kesikler.
 
 ## 🖨️ 3D Baskı Gereksinimleri
-- **Malzeme:** PETG veya ABS (Isı dayanımı için).
+- **Malzeme:** PETG veya ABS (Isı dayanımı ve rijitlik için).
 - **Katman / Nozzle:** 0.2 mm / 0.4 mm.
-- **Dolgu / Duvar:** %20-30 Infill / 3-4 Perimeter.
+- **Dolgu / Duvar:** %25-30 Infill / 4 Perimeter (Vida yuvası dayanımı için).
 
 ## ⚙️ Toleranslar
 - **Genel:** ±0.5 mm
 - **Vida Delikleri:** +0.2 mm
-- **Slotlar/Geçmeler:** +0.3 mm
-
+- **Geçme ve Slotlar:** +0.3 mm
 ---
-**Not:** Tasarımcıdan STL ve STEP formatlarında teslimat beklenmektedir. İçeride kablo sıkışması olmaması ve AI HAT yüksekliği (min. 50mm üst boşluk) hayati önem taşır.
+**Not:** Tasarımcıdan STL ve düzenlenebilir STEP formatlarında teslimat beklenmektedir. Kasa içi kablo yönetim kanalları eklenmeli ve batarya ağırlık merkezinin cihazın stabilitesini artıracak şekilde konumlandırılması sağlanmalıdır.
