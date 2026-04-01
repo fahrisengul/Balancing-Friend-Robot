@@ -37,6 +37,14 @@ Bu dosya, projenin Faz 1 (Terminal) ve Faz 2 (Etkileşim) aşamalarındaki tüm 
 | **Ø16mm Güç Butonu** | BUTON | 1 | 1.000,00 TL | 🟢 Orta | 1 |
 | **BEKLEYEN TOPLAM** | | | **18.642,52 TL** | |
 
+## Mevcut "Güç Paketi" Sepetiniz (Final List):
+- **[x]** 4S 40A Micron BMS (Pilleri korur)  | 150 TL|
+- **[x]** Mini560 5V 5A Buck (Pi 5'i besler) | 220 TL|
+- **[x]** WEKO 4S LİTYUM BATARYA SARJ ADAPTÖRÜ 16.8 VOLT 2A  (Hızlı şarj eder)
+- **[x]** Termal Pad (Soğutma sağlar) | 133 TL|
+- **[x]** DC Jack (5.5x2.1mm) (Eksikse sepetinize ekleyin) | 110 TL|
+
+
 ---
 
 ## 📝 Finansal ve Teknik Notlar
@@ -54,12 +62,3 @@ Cihaz: Samsung PM981 256GB NVMe SSD
 Bağlantı: Ugreen USB 3.1 Gen2 Type-C M.2 NVMe Kutusu
 Performans: UASP desteği ile USB 3.0 üzerinden yüksek hızlı boot ve veri erişimi.
 Strateji: PCIe yolu Hailo AI modülüne ayrılmış, ana işletim sistemi ve LLM modelleri SSD üzerine kurulmuştur.
-
-
-
-## Mevcut "Güç Paketi" Sepetiniz (Final List):
-- **[x]** 4S 40A Micron BMS (Pilleri korur)  | 150 TL|
-- **[x]** Mini560 5V 5A Buck (Pi 5'i besler) | 220 TL|
-- **[x]** WEKO 4S LİTYUM BATARYA SARJ ADAPTÖRÜ 16.8 VOLT 2A  (Hızlı şarj eder)
-- **[x]** Termal Pad (Soğutma sağlar) | 133 TL|
-- **[x]** DC Jack (5.5x2.1mm) (Eksikse sepetinize ekleyin) | 110 TL|
