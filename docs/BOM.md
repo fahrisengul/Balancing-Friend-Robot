@@ -6,19 +6,18 @@ Bu liste, **AI-Friend-Robot** projesinin 4WD (4 Tekerlekli) ve Edge-AI odaklı g
 | :--- | :---: | :--- | :---: | :--- |
 | **Raspberry Pi 5 (8GB)** | 1 | Ana İşlemci | 1 | Araştırılıyor |
 | **Raspberry Pi AI HAT+ (13T)** | 1 | AI Hızlandırıcı | 1 | **Satın Alındı (Geldi)** |
-| **8" Capacitive Touch LCD** | 1 | Kullanıcı Arayüzü | 1 | Sepette (Salı) |
-| **Raspberry Pi Camera Module 3** | 1 | Görsel Giriş | 1 | Sepette (Salı) |
+| **Waveshare 8" HDMI LCD (H)** | 1 | Kullanıcı Arayüzü | 1 | Sepette (Salı - Bugün) |
+| **Raspberry Pi Camera Module 3** | 1 | Görsel Giriş | 1 | Sepette (Salı - Bugün) |
+| **Baseus Adaman 22.5W Slim** | 1 | Mobil Güç Kaynağı | 1 | Sepette (Salı - Bugün) |
 | **Samsung PM981 256GB SSD** | 1 | Depolama | 1 | **Elimizde Var** |
-| **Ugreen NVMe Enclosure** | 1 | SSD-USB Köprüsü | 1 | Sepette (Salı) |
+| **Ugreen NVMe Enclosure** | 1 | SSD-USB Köprüsü | 1 | Sepette (Salı - Bugün) |
 | **Raspberry Pi Active Cooler** | 1 | İşlemci Soğutma | 1 | **Satın Alındı (Bekleniyor)** |
-| **40x40mm Exhaust Fan** | 1 | Kasa Havalandırma | 1 | Sepette (Salı) |
-| **Ø16mm Power Button** | 1 | Harici Güç Kontrolü | 1 | Sepette (Salı) |
-| **USB Mikrofon Dizisi** | 1 | Ses Girişi | 2 | Sepette (Salı) |
-| **Stereo Hoparlör Seti** | 1 | Ses Çıkışı | 2 | Sepette (Salı) |
-| **JGB37-520 12V Motor** | 4 | Tahrik Sistemi | 3 | Sepette (Salı) |
-| **100mm Kauçuk Tekerlek** | 4 | Hareket | 3 | Sepette (Salı) |
-| **STM32F103C8T6** | 1 | Alt Seviye Kontrol | 4 | Sepette (Salı) |
-| **5V 5A Buck Converter** | 1 | Voltaj Regülasyonu | 4 | Sepette (Salı) |
+| **40x40mm Exhaust Fan** | 1 | Kasa Havalandırma | 1 | Sepette (Salı - Bugün) |
+| **Ø16mm Power Button** | 1 | Harici Güç Kontrolü | 1 | Sepette (Salı - Bugün) |
+| **USB Mikrofon Dizisi** | 1 | Ses Girişi | 2 | Sepette (Salı - Bugün) |
+| **Stereo Hoparlör Seti** | 1 | Ses Çıkışı | 2 | Sepette (Salı - Bugün) |
+| **JGB37-520 12V Motor** | 4 | Tahrik Sistemi | 3 | Sepette (Salı - Bugün) |
+| **100mm Kauçuk Tekerlek** | 4 | Hareket | 3 | Sepette (Salı - Bugün) |
 
 ---
 
@@ -79,3 +78,8 @@ Bu liste, **AI-Friend-Robot** projesinin 4WD (4 Tekerlekli) ve Edge-AI odaklı g
 * **Terminal Konforu:** Kullanıcı deneyimini artırmak için Ø16mm harici güç butonu ve arkada sabit adaptör girişi tasarlanmıştır.
 * **Ses ve Görüntü:** 8" ekran ve stereo hoparlörlerle robotun "Eğitim Koçu" kimliği güçlendirilmiştir.
 * **Güç Stratejisi:** Yüksek akım çeken Pi 5 ve 8" ekranın aynı anda beslenmesi için 5 Amperlik regülatör zorunlu tutulmuştur.
+
+## 📝 Önemli Notlar
+* **Görsel:** 8" 1280x800 IPS panel, HDMI üzerinden Pi 5'e bağlanacak.
+* **Güç:** Baseus Adaman Slim Powerbank, kasanın arka tabanına sabitlenerek mobilite sağlayacak.
+* **Soğutma:** Sağ panel hava girişi ve arka panel egzoz fanı ile hava tüneli oluşturulacak.
