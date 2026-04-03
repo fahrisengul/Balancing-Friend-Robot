@@ -1,0 +1,19 @@
+# Temel Görüntü İşleme ve Kamera
+opencv-python
+numpy
+
+# Yapay Zeka (Hailo ve Genel)
+# Not: Hailo-8 özel sürücüleri rpi-connect üzerinden kurulacak olsa da 
+# Python tarafındaki bağımlılıklar buradadır.
+ultralytics
+
+# Ses ve Konuşma
+gTTS
+SpeechRecognition
+pyaudio
+
+# Arayüz ve Mimikler
+pygame
+
+# Seri Haberleşme (Aşama 5 - Firmware Bağlantısı İçin)
+pyserial
