@@ -37,7 +37,6 @@ Bu dosya, projenin Faz 1 (Terminal) ve Faz 2 (Etkileşim) aşamalarındaki tüm 
 | **Raspberry Pi 5 (8GB)** | Ana İşlemci | 1 | 7.000 TL | 🔴 Stok Bekleniyor | 1 |
 | **Waveshare 7" DSI LCD (C)** | Kullanıcı Arayüzü | 1 | 3.850 TL | 🟠 Sepette | 1 |
 | **RPi Camera Module 3** | Görsel Giriş | 1 | 1.250 TL | 🟠 Sepette | 1 |
-| **Kasa Tasarımı & 3D Baskı** | Gövde | 1 | 1.000 TL | ⚙️ Üretimde | 1 |
 | **Stereo Hoparlör & USB Mic** | Ses Etkileşim | 1 | 1.250 TL | 🟠 Sepette | 2 |
 | **Montaj Seti (Vida+Kablo)** | Bağlantı Elemanları | 1 | 1.150 TL | 🟢 Planlandı | 1|
 | **40mm Fan** |FAN | 1 | 1.000,00 TL | 🟢 Orta | 1 |
