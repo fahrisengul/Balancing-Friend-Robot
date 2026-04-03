@@ -25,7 +25,7 @@ Bu dosya, projenin Faz 1 (Terminal) ve Faz 2 (Etkileşim) aşamalarındaki tüm 
 - **[x]** DC Jack (5.5x2.1mm) (Eksikse sepetinize ekleyin) | 110 TL| ✅ sipariş Verildi |
 - **[x]** Robotistan 10 A SMD Sigorta - 6x2 mm| 150 TL| ✅ sipariş Verildi |
 
-| **TOPLAM** | | | | **7.340,83 TL** | |
+| **TOPLAM**  **7.340,83 TL** | 
 
 ---
 
