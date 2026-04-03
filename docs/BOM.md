@@ -23,8 +23,9 @@ Bu dosya, projenin Faz 1 (Terminal) ve Faz 2 (Etkileşim) aşamalarındaki tüm 
 - **[x]** Termal Pad (Soğutma sağlar) | 133 TL| ✅ sipariş Verildi |
 - **[x]** DC Jack (5.5x2.1mm) (Eksikse sepetinize ekleyin) | 110 TL| ✅ sipariş Verildi |
 - **[x]** Robotistan 10 A SMD Sigorta - 6x2 mm| 150 TL| ✅ sipariş Verildi |
+| **Dark USB Type C - M.2 NVMe Disk Kutusu** | SSD-USB Köprüsü | 1 | 799 TL | 🟠 Sepette | 1 |
 
-| **TOPLAM**  **7.340,83 TL** | 
+## | **TOPLAM**  **7.340,83 TL** | 
 
 ---
 
@@ -35,7 +36,6 @@ Bu dosya, projenin Faz 1 (Terminal) ve Faz 2 (Etkileşim) aşamalarındaki tüm 
 | **Raspberry Pi 5 (8GB)** | Ana İşlemci | 1 | 7.000 TL | 🔴 Stok Bekleniyor | 1 |
 | **Waveshare 7" DSI LCD (C)** | Kullanıcı Arayüzü | 1 | 3.850 TL | 🟠 Sepette | 1 |
 | **RPi Camera Module 3** | Görsel Giriş | 1 | 1.250 TL | 🟠 Sepette | 1 |
-| **Dark USB Type C - M.2 NVMe Disk Kutusu** | SSD-USB Köprüsü | 1 | 799 TL | 🟠 Sepette | 1 |
 | **DIY UPS Seti (BMS+Buck+Jack)** | Güç Yönetimi | 1 | 763 TL | 🟠 Sepette | 1 |
 | **Kasa Tasarımı & 3D Baskı** | Gövde | 1 | 1.000 TL | ⚙️ Üretimde | 1 |
 | **Stereo Hoparlör & USB Mic** | Ses Etkileşim | 1 | 1.250 TL | 🟠 Sepette | 2 |
