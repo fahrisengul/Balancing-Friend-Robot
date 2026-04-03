@@ -40,7 +40,7 @@ Bu dosya, projenin Faz 1 (Terminal) ve Faz 2 (Etkileşim) aşamalarındaki tüm 
 | **Montaj Seti (Vida+Kablo)** | Bağlantı Elemanları | 1 | 1.150 TL | 🟢 Planlandı | 1|
 | **40mm Fan** |FAN | 1 | 1.000,00 TL | 🟢 Orta | 1 |
 | **Ø16mm Güç Butonu** | BUTON | 1 | 1.000,00 TL | 🟢 Orta | 1 |
-| **BEKLEYEN TOPLAM** | | | ** TL** | |
+| **BEKLEYEN TOPLAM** | | | **18.563,25 TL** | |
 
 ---
 
