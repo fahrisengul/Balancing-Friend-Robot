@@ -21,6 +21,8 @@ Bu liste, Raspberry Pi 5 ve kasa geldikten sonra yazılım tarafında yapılacak
 - [ ] Tanem ile sohbet için GPT veya basit bir soru-cevap motorunun bağlanması.
 
 ## 🟥 Aşama 4: Entegrasyon ve Hareket
-- [ ] Vision verilerinin Robotun denge (Firmware) tarafına iletilmesi.
-- [ ] Düşük batarya uyarısının ekrana yansıtılması (BMS verisi takibi).
 - [ ] Robotun "Sıkılma", "Mutluluk" gibi duygusal durumlarının (State Machine) kodlanması.
+- [ ] Düşük batarya uyarısının ekrana yansıtılması (BMS verisi takibi).
+
+## 🟥 Aşama 5: Hareket
+- [ ] Vision verilerinin Robotun denge (Firmware) tarafına iletilmesi.
