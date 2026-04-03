@@ -36,11 +36,16 @@ Bu dosya, projenin Faz 1 (Terminal) ve Faz 2 (Etkileşim) aşamalarındaki tüm 
 | **Raspberry Pi 5 (8GB)** | Ana İşlemci | 1 | 8.500 TL | 🔴 Stok Bekleniyor | 1 |
 | **Waveshare 7" DSI LCD (C)** | Kullanıcı Arayüzü | 1 | 4.413,25 TL | 🟠 Sepette | 1 | **https://www.direnc.net/raspberry-pi-icin-7-inc-kapasitif-dokunmatik-ips-ekran-1024600** |
 | **RPi Camera Module 3** | Görsel Giriş | 1 | 1.631,30 TL | 🟠 Sepette | 1 |  https://www.robotistan.com/raspberry-pi-kamera-modulu-3  |
-| **Stereo Hoparlör & USB Mic** | Ses Etkileşim | 1 | 1.250 TL | 🟠 Sepette | 2 |
+| **Stereo Hoparlör & USB Mic** | Ses Etkileşim | 1 | 1.250 69,94 TL | 🟠 Sepette | 2 |
+
+https://www.komponentci.net/hoparlor-4-ohm-2w-32mm-pmu54589?gad_source=1&gad_campaignid=23225103278&gbraid=0AAAAADaoKUA7oPe7Dh3veEV7WvRkKdmj9&gclid=Cj0KCQjwyr3OBhD0ARIsALlo-OlyFGezU8RflPUVbLGqIMei-DTNBnJ2BKzj0TFy24VlQXS4LFDk3PUaAjt7EALw_wcB
+
+https://www.direnc.net/pam8403-2x3w-ses-amfisi-d-sinifi
+
 | **Montaj Seti (Vida+Kablo)** | Bağlantı Elemanları | 1 | 1.150 TL | 🟢 Planlandı | 1|
 | **40mm Fan** |FAN | 1 | 1.000,00 TL | 🟢 Orta | 1 |
 | **Ø16mm Güç Butonu** | BUTON | 1 | 1.000,00 TL | 🟢 Orta | 1 |
-| **BEKLEYEN TOPLAM** | | | **18.563,25 TL** | |
+| **BEKLEYEN TOPLAM** | | | **17.383,19 TL** | |
 
 ---
 
