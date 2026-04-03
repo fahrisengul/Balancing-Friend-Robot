@@ -51,6 +51,8 @@ https://www.direnc.net/pam8403-2x3w-ses-amfisi-d-sinifi
 | **Montaj Seti (Vida+Kablo)** | Bağlantı Elemanları | 1 | 1.150 TL | 🟢 Planlandı | 1|
 | **40mm Fan** |FAN | 1 | 1.000,00 TL | 🟢 Orta | 1 |
 | **Ø16mm Güç Butonu** | BUTON | 1 | 1.000,00 TL | 🟢 Orta | 1 |
+
+
 | **BEKLEYEN TOPLAM** | | | **17.383,19 TL** | |
 
 ---
