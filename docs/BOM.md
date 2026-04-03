@@ -42,17 +42,19 @@ https://www.direnc.net/raspberry-pi-icin-7-inc-kapasitif-dokunmatik-ips-ekran-10
 
 https://www.robotistan.com/raspberry-pi-kamera-modulu-3
 
-| **Stereo Hoparlör & USB Mic** | Ses Etkileşim | 1 | 1.250 69,94 TL | 🟠 Sepette | 2 |
+| **Stereo Hoparlör & USB Mic** | Ses Etkileşim | 1 |  69,94 TL | 🟠 Sepette | 2 |
 
 https://www.komponentci.net/hoparlor-4-ohm-2w-32mm-pmu54589?gad_source=1&gad_campaignid=23225103278&gbraid=0AAAAADaoKUA7oPe7Dh3veEV7WvRkKdmj9&gclid=Cj0KCQjwyr3OBhD0ARIsALlo-OlyFGezU8RflPUVbLGqIMei-DTNBnJ2BKzj0TFy24VlQXS4LFDk3PUaAjt7EALw_wcB
 
 https://www.direnc.net/pam8403-2x3w-ses-amfisi-d-sinifi
 
-| **Montaj Seti (Vida+Kablo)** | Bağlantı Elemanları | 1 | 1.150 TL | 🟢 Planlandı | 1 |
+| **Montaj Seti (Vida+Kablo)** | Bağlantı Elemanları | 1 | 0 TL | 🟢 Planlandı | 1 |
 
-| **40mm Fan** |FAN | 1 | 1.000,00 TL | 🟢 Orta | 1 |
+| **40mm Fan** |FAN | 1 | 103,55 TL | 🟢 Orta | 1 |
 
-| **Ø16mm Güç Butonu** | BUTON | 1 | 1.000,00 TL | 🟢 Orta | 1 |
+| **Ø16mm Güç Butonu** | BUTON | 1 | 252,29  TL | 🟢 Orta | 1 |
+
+https://www.trendyol.com/genel-markalar/16mm-metal-buton-kirmizi-power-sembol-led-isikli-panel-montaj-duz-kafa-kilitlemeli-dc-6a-12v-ip67-p-869921892
 
 
 | **BEKLEYEN TOPLAM** | **17.383,19 TL** |
