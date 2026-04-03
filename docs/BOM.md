@@ -43,7 +43,7 @@ Bu dosya, projenin Faz 1 (Terminal) ve Faz 2 (Etkileşim) aşamalarındaki tüm 
 | **Montaj Seti (Vida+Kablo)** | Bağlantı Elemanları | 1 | 1.150 TL | 🟢 Planlandı | 1|
 | **40mm Fan** |FAN | 1 | 1.000,00 TL | 🟢 Orta | 1 |
 | **Ø16mm Güç Butonu** | BUTON | 1 | 1.000,00 TL | 🟢 Orta | 1 |
-| **BEKLEYEN TOPLAM** | | | **18.642,52 TL** | |
+| **BEKLEYEN TOPLAM** | | | **19.062 TL** | |
 
 ## Mevcut "Güç Paketi" Sepetiniz (Final List):
 - **[x]** WEKO 4S LİTYUM BATARYA SARJ ADAPTÖRÜ 16.8 VOLT 2A  (Hızlı şarj eder)  | ??? TL|
