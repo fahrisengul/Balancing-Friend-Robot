@@ -41,6 +41,7 @@ https://www.direnc.net/raspberry-pi-icin-7-inc-kapasitif-dokunmatik-ips-ekran-10
 | **RPi Camera Module 3** | Görsel Giriş | 1 | 1.631,30 TL | 🟠 Sepette | 1 |  
 
 https://www.robotistan.com/raspberry-pi-kamera-modulu-3
+
 | **Stereo Hoparlör & USB Mic** | Ses Etkileşim | 1 | 1.250 69,94 TL | 🟠 Sepette | 2 |
 
 https://www.komponentci.net/hoparlor-4-ohm-2w-32mm-pmu54589?gad_source=1&gad_campaignid=23225103278&gbraid=0AAAAADaoKUA7oPe7Dh3veEV7WvRkKdmj9&gclid=Cj0KCQjwyr3OBhD0ARIsALlo-OlyFGezU8RflPUVbLGqIMei-DTNBnJ2BKzj0TFy24VlQXS4LFDk3PUaAjt7EALw_wcB
