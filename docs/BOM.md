@@ -57,7 +57,7 @@ https://www.direnc.net/pam8403-2x3w-ses-amfisi-d-sinifi
 https://www.trendyol.com/genel-markalar/16mm-metal-buton-kirmizi-power-sembol-led-isikli-panel-montaj-duz-kafa-kilitlemeli-dc-6a-12v-ip67-p-869921892
 
 
-| **BEKLEYEN TOPLAM** | **17.383,19 TL** |
+| **BEKLEYEN TOPLAM** | **14.970,33 TL** |
 
 ---
 
