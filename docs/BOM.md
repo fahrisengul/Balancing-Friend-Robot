@@ -18,6 +18,7 @@ Bu dosya, projenin Faz 1 (Terminal) ve Faz 2 (Etkileşim) aşamalarındaki tüm 
 | - | Samsung PM981 256GB SSD | 1 | 0,00 TL | 0,00 TL | ✅ Elimizde Var |
 | - | 18650 Pil (4 Adet) + Yuva | 1 | 0,00 TL | 0,00 TL | ✅ Elimizde Var |
 
+
 - **[x]** 4S 40A Micron BMS (Pilleri korur)  | 150 TL| ✅ sipariş Verildi |
 - **[x]** Mini560 5V 5A Buck (Pi 5'i besler) | 220 TL| ✅ sipariş Verildi |
 - **[x]** Termal Pad (Soğutma sağlar) | 133 TL| ✅ sipariş Verildi |
