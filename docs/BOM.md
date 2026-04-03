@@ -4,7 +4,7 @@ Bu dosya, projenin Faz 1 (Terminal) ve Faz 2 (Etkileşim) aşamalarındaki tüm 
 
 ## 📊 Genel Özet
 * **Toplam Harcanan:** 7.340,83 TL
-* **Kalan Bütçe Tahmini:** 18.263  TL + WEKO 4S LİTYUM BATARYA SARJ ADAPTÖRÜ
+* **Kalan Bütçe Tahmini:** 17.200 TL + WEKO 4S LİTYUM BATARYA SARJ ADAPTÖRÜ
 
 ---
 
@@ -34,14 +34,14 @@ Bu dosya, projenin Faz 1 (Terminal) ve Faz 2 (Etkileşim) aşamalarındaki tüm 
 
 | Malzeme | Görev | Miktar | Birim Fiyat | Durum | Faz |
 | :--- | :--- | :---: | :--- | :--- | :---: |
-| **Raspberry Pi 5 (8GB)** | Ana İşlemci | 1 | 7.000 TL | 🔴 Stok Bekleniyor | 1 |
+| **Raspberry Pi 5 (8GB)** | Ana İşlemci | 1 | 8.500 TL | 🔴 Stok Bekleniyor | 1 |
 | **Waveshare 7" DSI LCD (C)** | Kullanıcı Arayüzü | 1 | 3.850 TL | 🟠 Sepette | 1 |
 | **RPi Camera Module 3** | Görsel Giriş | 1 | 1.250 TL | 🟠 Sepette | 1 |
 | **Stereo Hoparlör & USB Mic** | Ses Etkileşim | 1 | 1.250 TL | 🟠 Sepette | 2 |
 | **Montaj Seti (Vida+Kablo)** | Bağlantı Elemanları | 1 | 1.150 TL | 🟢 Planlandı | 1|
 | **40mm Fan** |FAN | 1 | 1.000,00 TL | 🟢 Orta | 1 |
 | **Ø16mm Güç Butonu** | BUTON | 1 | 1.000,00 TL | 🟢 Orta | 1 |
-| **BEKLEYEN TOPLAM** | | | **18.263 TL** | |
+| **BEKLEYEN TOPLAM** | | | **17.200 TL** | |
 
 ## Mevcut "Güç Paketi" Sepetiniz (Final List):
 - **[x]** WEKO 4S LİTYUM BATARYA SARJ ADAPTÖRÜ 16.8 VOLT 2A  (Hızlı şarj eder)  | ??? TL|
