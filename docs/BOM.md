@@ -23,7 +23,7 @@ Bu dosya, projenin Faz 1 (Terminal) ve Faz 2 (Etkileşim) aşamalarındaki tüm 
 - **[x]** Termal Pad (Soğutma sağlar) | 133 TL| ✅ sipariş Verildi |
 - **[x]** DC Jack (5.5x2.1mm) (Eksikse sepetinize ekleyin) | 110 TL| ✅ sipariş Verildi |
 - **[x]** Robotistan 10 A SMD Sigorta - 6x2 mm| 150 TL| ✅ sipariş Verildi |
-| **Dark USB Type C - M.2 NVMe Disk Kutusu** | SSD-USB Köprüsü | 1 | 799 TL | 🟠 Sepette | 1 |
+- **[x]** Dark USB Type C - M.2 NVMe Disk Kutusu** | SSD-USB Köprüsü | 1 | 799 TL | 🟠 Sepette | 1 |
 
 ## | **TOPLAM**  **7.340,83 TL** | 
 
