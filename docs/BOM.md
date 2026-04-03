@@ -3,9 +3,6 @@
 Bu dosya, projenin Faz 1 (Terminal) ve Faz 2 (Etkileşim) aşamalarındaki tüm ihtiyaçları kapsar.
 
 ## 📊 Genel Özet
-* **Toplam Harcanan:** 7.340,83 TL
-* **Kalan Bütçe Tahmini:** 17.200 TL + WEKO 4S LİTYUM BATARYA SARJ ADAPTÖRÜ
-
 ---
 
 ## 🛠️ 1. Satın Alınan / Elimizde Olan Bileşenler
@@ -25,8 +22,10 @@ Bu dosya, projenin Faz 1 (Terminal) ve Faz 2 (Etkileşim) aşamalarındaki tüm 
 - **[x]** DC Jack (5.5x2.1mm) (Eksikse sepetinize ekleyin) | 110 TL| ✅ sipariş Verildi |
 - **[x]** Robotistan 10 A SMD Sigorta - 6x2 mm| 150 TL| ✅ sipariş Verildi |
 - **[x]** Dark USB Type C - M.2 NVMe Disk Kutusu** | SSD-USB Köprüsü | 1 | 799 TL | 🟠 Sepette | 1 |
+- - **[x]** WEKO 4S LİTYUM BATARYA SARJ ADAPTÖRÜ 16.8 VOLT 2A  (Hızlı şarj eder)  | 328 TL|
 
-## | **TOPLAM**  **7.340,83 TL** | 
+
+## | **TOPLAM**  **7.668,83 TL** | 
 
 ---
 
@@ -41,10 +40,9 @@ Bu dosya, projenin Faz 1 (Terminal) ve Faz 2 (Etkileşim) aşamalarındaki tüm 
 | **Montaj Seti (Vida+Kablo)** | Bağlantı Elemanları | 1 | 1.150 TL | 🟢 Planlandı | 1|
 | **40mm Fan** |FAN | 1 | 1.000,00 TL | 🟢 Orta | 1 |
 | **Ø16mm Güç Butonu** | BUTON | 1 | 1.000,00 TL | 🟢 Orta | 1 |
-| **BEKLEYEN TOPLAM** | | | **17.200 TL** | |
+| **BEKLEYEN TOPLAM** | | | **18.000 TL** | |
 
 ## Mevcut "Güç Paketi" Sepetiniz (Final List):
-- **[x]** WEKO 4S LİTYUM BATARYA SARJ ADAPTÖRÜ 16.8 VOLT 2A  (Hızlı şarj eder)  | ??? TL|
 ---
 
 ## 📝 Finansal ve Teknik Notlar
