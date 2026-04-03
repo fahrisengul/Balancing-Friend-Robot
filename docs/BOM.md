@@ -48,12 +48,12 @@ https://www.komponentci.net/hoparlor-4-ohm-2w-32mm-pmu54589?gad_source=1&gad_cam
 
 https://www.direnc.net/pam8403-2x3w-ses-amfisi-d-sinifi
 
-| **Montaj Seti (Vida+Kablo)** | Bağlantı Elemanları | 1 | 1.150 TL | 🟢 Planlandı | 1|
+| **Montaj Seti (Vida+Kablo)** | Bağlantı Elemanları | 1 | 1.150 TL | 🟢 Planlandı | 1 |
 | **40mm Fan** |FAN | 1 | 1.000,00 TL | 🟢 Orta | 1 |
 | **Ø16mm Güç Butonu** | BUTON | 1 | 1.000,00 TL | 🟢 Orta | 1 |
 
 
-| **BEKLEYEN TOPLAM** | | | **17.383,19 TL** | |
+| **BEKLEYEN TOPLAM** | **17.383,19 TL** |
 
 ---
 
