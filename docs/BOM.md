@@ -17,7 +17,14 @@ Bu dosya, projenin Faz 1 (Terminal) ve Faz 2 (Etkileşim) aşamalarındaki tüm 
 | 01.04.2026 | Özel Kasa Tasarımı & 3D Baskı | 1 | 1.000,00 TL | 1.000,00 TL | ⚙️ Üretimde |
 | - | Samsung PM981 256GB SSD | 1 | 0,00 TL | 0,00 TL | ✅ Elimizde Var |
 | - | 18650 Pil (4 Adet) + Yuva | 1 | 0,00 TL | 0,00 TL | ✅ Elimizde Var |
-| **TOPLAM** | | | | **5.772,38 TL** | |
+
+- **[x]** 4S 40A Micron BMS (Pilleri korur)  | 150 TL| ✅ sipariş Verildi |
+- **[x]** Mini560 5V 5A Buck (Pi 5'i besler) | 220 TL| ✅ sipariş Verildi |
+- **[x]** Termal Pad (Soğutma sağlar) | 133 TL| ✅ sipariş Verildi |
+- **[x]** DC Jack (5.5x2.1mm) (Eksikse sepetinize ekleyin) | 110 TL| ✅ sipariş Verildi |
+- **[x]** Robotistan 10 A SMD Sigorta - 6x2 mm| 150 TL| ✅ sipariş Verildi |
+
+| **TOPLAM** | | | | **7.340,83 TL** | |
 
 ---
 
@@ -38,15 +45,7 @@ Bu dosya, projenin Faz 1 (Terminal) ve Faz 2 (Etkileşim) aşamalarındaki tüm 
 | **BEKLEYEN TOPLAM** | | | **18.642,52 TL** | |
 
 ## Mevcut "Güç Paketi" Sepetiniz (Final List):
-- **[x]** 4S 40A Micron BMS (Pilleri korur)  | 150 TL|
-- **[x]** Mini560 5V 5A Buck (Pi 5'i besler) | 220 TL|
 - **[x]** WEKO 4S LİTYUM BATARYA SARJ ADAPTÖRÜ 16.8 VOLT 2A  (Hızlı şarj eder)  | ??? TL|
-- **[x]** Termal Pad (Soğutma sağlar) | 133 TL|
-- **[x]** DC Jack (5.5x2.1mm) (Eksikse sepetinize ekleyin) | 110 TL|
-- **[x]** Robotistan 10 A SMD Sigorta - 6x2 mm| 150 TL|
-
-
-
 ---
 
 ## 📝 Finansal ve Teknik Notlar
