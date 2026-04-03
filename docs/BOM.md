@@ -3,8 +3,8 @@
 Bu dosya, projenin Faz 1 (Terminal) ve Faz 2 (Etkileşim) aşamalarındaki tüm ihtiyaçları kapsar.
 
 ## 📊 Genel Özet
-* **Toplam Harcanan:** 5.772,38 TL
-* **Kalan Bütçe Tahmini:** 18.642,52 TL
+* **Toplam Harcanan:** 7.340,83 TL
+* **Kalan Bütçe Tahmini:** 19.062 TL + WEKO 4S LİTYUM BATARYA SARJ ADAPTÖRÜ
 * **Son Güncelleme:** 1 Nisan 2026 (Ekstre Günü - Kesinleşmiş Liste)
 
 ---
