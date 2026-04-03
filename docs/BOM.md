@@ -17,6 +17,7 @@ Bu dosya, projenin Faz 1 (Terminal) ve Faz 2 (Etkileşim) aşamalarındaki tüm 
 | - | Samsung PM981 256GB SSD | 1 | 0,00 TL | 0,00 TL | ✅ Elimizde Var |
 | - | 18650 Pil (4 Adet) + Yuva | 1 | 0,00 TL | 0,00 TL | ✅ Elimizde Var |
 
+| **DIY UPS Seti (BMS+Buck+Jack)** | Güç Yönetimi | 1 | 763 TL | 🟠 Sepette | 1 |
 
 - **[x]** 4S 40A Micron BMS (Pilleri korur)  | 150 TL| ✅ sipariş Verildi |
 - **[x]** Mini560 5V 5A Buck (Pi 5'i besler) | 220 TL| ✅ sipariş Verildi |
@@ -36,7 +37,6 @@ Bu dosya, projenin Faz 1 (Terminal) ve Faz 2 (Etkileşim) aşamalarındaki tüm 
 | **Raspberry Pi 5 (8GB)** | Ana İşlemci | 1 | 7.000 TL | 🔴 Stok Bekleniyor | 1 |
 | **Waveshare 7" DSI LCD (C)** | Kullanıcı Arayüzü | 1 | 3.850 TL | 🟠 Sepette | 1 |
 | **RPi Camera Module 3** | Görsel Giriş | 1 | 1.250 TL | 🟠 Sepette | 1 |
-| **DIY UPS Seti (BMS+Buck+Jack)** | Güç Yönetimi | 1 | 763 TL | 🟠 Sepette | 1 |
 | **Kasa Tasarımı & 3D Baskı** | Gövde | 1 | 1.000 TL | ⚙️ Üretimde | 1 |
 | **Stereo Hoparlör & USB Mic** | Ses Etkileşim | 1 | 1.250 TL | 🟠 Sepette | 2 |
 | **Montaj Seti (Vida+Kablo)** | Bağlantı Elemanları | 1 | 1.150 TL | 🟢 Planlandı | 1|
