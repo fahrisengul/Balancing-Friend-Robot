@@ -23,9 +23,9 @@ class PoodleFace:
             self.has_bg = False
             self.COLOR_BG = (10, 12, 18) # Yedek siyah arka plan
 
-        # --- RENKLER ---
-        self.EYE_COLOR = (0, 255, 255) # AI Turkuazı
-        self.GLOW_COLOR = (0, 100, 100)
+        # --- RENKLER (Yeni İstek: Siyah) ---
+        self.EYE_COLOR = (5, 5, 5) # Derin Siyah (Tam 0,0,0 yerine hafif dokulu)
+        self.PUPIL_COLOR = (240, 240, 245) # Canlı beyaz parlama
         
         # --- DURUM VE HAREKET ---
         self.eye_pos = [0, 0]
@@ -38,15 +38,22 @@ class PoodleFace:
 
     def set_state(self, state):
         self.state = state
-        self.target_scale_y = 1.2 if state == "listening" else 0.9 if state == "speaking" else 1.0
+        if state == "listening":
+            self.target_scale_y = 1.25 # Heyecanlı/Dikkatli bakış
+        elif state == "speaking":
+            self.target_scale_y = 0.90 # Odaklanmış bakış
+        else:
+            self.target_scale_y = 1.0
 
     def update_gaze(self, tx, ty):
-        if tx is not None and ty is not None:
-            # Bakış kaymasını, kafadaki turkuaz yuvaların içinde kalacak şekilde kısıtlıyoruz (±10px)
+        if tx and ty:
+            # Gözlerin hareket sınırını, kafadaki mavi yuvanın içinde kalacak şekilde kısıtlıyoruz (±10px)
+            # 640x480 kamera koordinatlarını ±10px aralığına normalize ediyoruz.
             self.target_pos = [(tx / 32) - 10, (ty / 24) - 10]
         else:
             # Boştayken hafif salınım (Canlılık hissi)
-            self.target_pos = [math.sin(pygame.time.get_ticks()*0.002)*10, 0]
+            t = pygame.time.get_ticks()
+            self.target_pos = [math.sin(t*0.001)*4, math.cos(t*0.001)*2]
 
     def draw(self, screen):
         # 1. Arka Planı Çiz
@@ -63,28 +70,31 @@ class PoodleFace:
         # --- GÖZ KIRPMA ---
         now = pygame.time.get_ticks()
         if now - self.last_blink > random.randint(3000, 7000):
-            self.eye_scale_y = 0.1 # Gözü kapat
-            if now - self.last_blink > 3150:
+            self.eye_scale_y = 0.05 # Gözü kapat
+            if now - self.last_blink > 3150: # Göz kapalı kalma süresi
                 self.last_blink = now
 
         # --- GÖZLERİ ÇİZ (Güncellenmiş Konum ve Boyut) ---
-        # Gözleri birbirine yaklaştırarak (ortaya alarak) çiziyoruz
-        # Genişliği ve yüksekliği de orantılı olarak küçülttük.
-        centers = [(self.width // 2 - 120, self.height // 2 - 5), # Sol göz merkezi
-                   (self.width // 2 + 120, self.height // 2 - 5)] # Sağ göz merkezi
+        # poddle_v3'teki mavi hareli dairesel yuvaların merkez koordinatları
+        # Yatayda tam simetrik (1024 / 2 ± 165px), dikeyde tam merkezde (600 / 2)
+        centers = [(self.width // 2 - 165, self.height // 2 - 5), # Sol göz merkezi
+                   (self.width // 2 + 165, self.height // 2 - 5)] # Sağ göz merkezi
 
         for base_x, base_y in centers:
             x = base_x + self.eye_pos[0]
             y = base_y + self.eye_pos[1]
             
-            # Göz Boyutları (poddle_v3'teki mavi harelere sığacak kadar)
-            w, h = 100, 160 * self.eye_scale_y
+            # Göz Boyutları (poddle_v3'teki dairesel yuvaların içine sığacak kadar)
+            w, h = 90, 140 * self.eye_scale_y # Boyutları orantılı olarak küçülttük
             
             # 1. Parlama (Glow)
-            for i in range(2): # Glow katmanını azalttık (hafifletmek için)
-                pygame.draw.ellipse(screen, self.GLOW_COLOR, (x-w//2-i*5, y-h//2-i*5, w+i*10, h+i*10), 2)
+            # Dış parlamayı biraz daha hafiflettik (katman sayısını 2'ye düşürdük)
+            # Glow_color'ı siyah gözler için değiştirmedik, hâlâ AI Turkuazı.
+            for i in range(2): 
+                pygame.draw.ellipse(screen, (0, 100, 100), (x-w//2-i*5, y-h//2-i*5, w+i*10, h+i*10), 2)
             
-            # 2. Ana Göz (Kapsül)
+            # 2. Ana Göz (Derin Siyah)
+            # Gözün kendisi (Kapsül) siyah.
             rect = pygame.Rect(x-w//2, y-h//2, w, h)
             pygame.draw.ellipse(screen, self.EYE_COLOR, rect)
             
@@ -92,7 +102,7 @@ class PoodleFace:
             # Bu nokta bakış yönüne göre biraz daha az kayar (3D derinlik hissi)
             pupil_x = x + self.eye_pos[0] * 0.5
             pupil_y = y - h//4 + self.eye_pos[1] * 0.5
-            pygame.draw.ellipse(screen, (255, 255, 255), (pupil_x-12, pupil_y-10, 25, 20))
+            pygame.draw.ellipse(screen, self.PUPIL_COLOR, (pupil_x-12, pupil_y-10, 25, 20))
 
         # --- SES DALGASI (Speaking modunda) ---
         if self.state == "speaking":
