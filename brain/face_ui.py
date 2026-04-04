@@ -15,16 +15,19 @@ class PoodleFace:
             self.bg_image = pygame.image.load(bg_path).convert()
             self.bg_image = pygame.transform.scale(self.bg_image, (self.width, self.height))
             self.has_bg = True
-            # BU YAZIYI GÖRMELİSİN:
-            print(">>> [V6 - ANIMASYONLU & TAM HIZALI] CALISIYOR <<<")
+            print(">>> [V7 - KALIBRASYON MODU] AKTIF <<<")
+            print("OK TUSLARI ile gozleri kaydirabilirsin!")
         except:
             self.has_bg = False
 
         self.EYE_COLOR = (15, 15, 15) 
         self.PUPIL_COLOR = (255, 255, 255)
         
-        self.eye_pos = [0, 0]
-        self.target_pos = [0, 0]
+        # --- KALİBRASYON DEĞİŞKENLERİ ---
+        # Bu değerleri ok tuşlarıyla değiştireceğiz
+        self.offset_x = 0
+        self.offset_y = -5 # Başlangıçta biraz yukarıda başlasın
+        
         self.eye_scale_y = 1.0 
         self.target_scale_y = 1.0
         self.state = "idle" 
@@ -34,39 +37,42 @@ class PoodleFace:
         self.state = state
         self.target_scale_y = 1.25 if state == "listening" else 0.90 if state == "speaking" else 1.0
 
+    def handle_calibration(self, key):
+        """Ok tuşlarıyla gözleri milimetrik kaydırır"""
+        step = 2
+        if key == pygame.K_UP: self.offset_y -= step
+        if key == pygame.K_DOWN: self.offset_y += step
+        if key == pygame.K_LEFT: self.offset_x -= step
+        if key == pygame.K_RIGHT: self.offset_x += step
+        
+        # Yeni koordinatları terminale bas ki not edebilesin
+        print(f"Guncel Hizalama -> X Kayma: {self.offset_x} | Y Kayma: {self.offset_y}")
+
     def update_gaze(self, tx, ty):
-        if tx is not None and ty is not None:
-            # Bakışın yuvadan taşmaması için daraltılmış hareket
-            self.target_pos = [(tx - self.width//2) / 80, (ty - self.height//2) / 80]
-        else:
-            self.target_pos = [0, 0]
+        # Kalibrasyon yaparken bakış takibini stabilize ediyoruz
+        pass
 
     def draw(self, screen):
         if self.has_bg:
             screen.blit(self.bg_image, (0, 0))
         
-        # Pürüzsüz geçişler
-        self.eye_pos[0] += (self.target_pos[0] - self.eye_pos[0]) * 0.1
-        self.eye_pos[1] += (self.target_pos[1] - self.eye_pos[1]) * 0.1
+        # Animasyonlar
         self.eye_scale_y += (self.target_scale_y - self.eye_scale_y) * 0.1
-
-        # Göz Kırpma (150ms sürer)
         now = pygame.time.get_ticks()
         if now - self.last_blink > random.randint(3000, 8000):
             self.eye_scale_y = 0.05
-            if now - self.last_blink > 3150:
-                self.last_blink = now
+            if now - self.last_blink > 3150: self.last_blink = now
 
-        # --- NOKTA ATIŞI KOORDİNATLAR (348, 303 ve 675, 303 merkezli) ---
-        # Senin ölçülerini kullandım, sadece dikeyde halkaya tam oturtmak için 298 yaptım.
-        centers = [(348, 298), (675, 298)]
+        # --- MERKEZ NOKTALAR + SENİN OK TUŞLARINLA GELEN KAYMA ---
+        # Senin verdiğin 348 ve 675 değerlerine offsetleri ekliyoruz
+        l_center = (348 + self.offset_x, 303 + self.offset_y)
+        r_center = (675 + self.offset_x, 303 + self.offset_y)
+        
         w, h = 94, 190 * self.eye_scale_y
 
-        for cx, cy in centers:
-            x_pos = cx + self.eye_pos[0]
-            y_pos = cy + self.eye_pos[1]
-            # Siyah Göz
-            pygame.draw.ellipse(screen, self.EYE_COLOR, (x_pos - w//2, y_pos - h//2, w, h))
+        for cx, cy in [l_center, r_center]:
+            # Göz
+            pygame.draw.ellipse(screen, self.EYE_COLOR, (cx - w//2, cy - h//2, w, h))
             # Parlama
             if self.eye_scale_y > 0.4:
-                pygame.draw.ellipse(screen, self.PUPIL_COLOR, (x_pos - 10, y_pos - h//3, 20, 15))
+                pygame.draw.ellipse(screen, self.PUPIL_COLOR, (cx - 10, cy - h//3.5, 20, 15))
