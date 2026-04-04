@@ -69,7 +69,7 @@ def main():
             # Mouse ile takip modu (Manuel test için)
             mx, my = pygame.mouse.get_pos()
             face.update_gaze(mx, my)
-
+            
         # 5. Çıktı: Ekranı çiz
         face.draw(screen)
         pygame.display.flip()
