@@ -10,7 +10,7 @@ class PoodleFace:
         
         # --- ARKA PLAN YÜKLEME ---
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        bg_path = os.path.join(current_dir, 'Poddle_v2.png')
+        bg_path = os.path.join(current_dir, 'Poddle_v3.png')
         
         try:
             self.bg_image = pygame.image.load(bg_path).convert()
