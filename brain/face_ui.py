@@ -5,17 +5,19 @@ class PoodleFace:
     def __init__(self, width=1024, height=600):
         self.width = width
         self.height = height
-        # Göz ve Burun Merkezleri
-        self.left_eye_center = [width // 2 - 180, height // 2 - 50]
-        self.right_eye_center = [width // 2 + 180, height // 2 - 50]
-        self.nose_pos = [width // 2, height // 2 + 80]
         
-        # Göz Bebeklerinin Mevcut Konumu (Takip için)
-        self.pupil_offset = [0, 0]
-        
-        # Göz Kırpma Ayarları
-        self.is_blinking = False
-        self.last_blink = pygame.time.get_ticks()
+        # RESMİ YÜKLEME (Bu satırı ekleyin)
+        try:
+            self.poodle_img = pygame.image.load("image_21400b.jpg") 
+            self.poodle_img = pygame.transform.scale(self.poodle_img, (width, height))
+        except:
+            print("Resim bulunamadı, siyah arka planla devam ediliyor.")
+            self.poodle_img = None
+            
+        # Göz koordinatlarını resimdeki gözlerin üzerine tam oturtmak için 
+        # bu değerleri (X, Y) deneme-yanılma ile biraz değiştirebilirsiniz.
+        self.left_eye_center = [380, 320] 
+        self.right_eye_center = [640, 320]
 
     def update_gaze(self, target_x, target_y):
         """Kameradan gelen koordinatlara göre göz bebeklerini hareket ettirir."""
