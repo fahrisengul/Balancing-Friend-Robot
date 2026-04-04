@@ -10,21 +10,22 @@ class PoodleFace:
         
         # --- ARKA PLAN YÜKLEME ---
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        bg_path = os.path.join(current_dir, 'Poddle_v3.png')
+        # Dosya adının 'poddle_v3.png' olduğundan emin ol
+        bg_path = os.path.join(current_dir, 'poddle_v3.png')
         
         try:
             self.bg_image = pygame.image.load(bg_path).convert()
-            # Görseli 1024x600'e tam oturtuyoruz
+            # Görseli tam ekrana ölçekle
             self.bg_image = pygame.transform.scale(self.bg_image, (self.width, self.height))
             self.has_bg = True
         except Exception as e:
             print(f"HATA: {bg_path} yüklenemedi: {e}")
             self.has_bg = False
-            self.COLOR_BG = (15, 15, 25)
+            self.COLOR_BG = (10, 10, 15) # Yedek koyu arka plan
 
-        # --- RENKLER ---
-        self.EYE_COLOR = (0, 255, 255) # AI Turkuaz
-        self.PUPIL_COLOR = (255, 255, 255) # Parlama noktası
+        # --- RENKLER (Yeni İstek: Siyah) ---
+        self.EYE_COLOR = (5, 5, 5) # Derin Siyah (Tam 0,0,0 yerine hafif dokulu)
+        self.PUPIL_COLOR = (240, 240, 245) # Canlı beyaz parlama
         
         # --- DURUM VE HAREKET ---
         self.eye_pos = [0, 0]
@@ -35,25 +36,28 @@ class PoodleFace:
         self.last_blink = pygame.time.get_ticks()
 
     def set_state(self, state):
+        """Robotun modunu (listening, speaking, idle) günceller"""
         self.state = state
-        # Modlara göre gözlerin büyüklüğü
         if state == "listening":
-            self.target_scale_y = 1.2
+            self.target_scale_y = 1.25 # Daha dikkatli bakış
         elif state == "speaking":
-            self.target_scale_y = 0.95
+            self.target_scale_y = 0.90 # Odaklanmış bakış
         else:
             self.target_scale_y = 1.0
 
     def update_gaze(self, tx, ty):
+        """Yüz takip koordinatlarını (tx, ty) alır"""
         if tx is not None and ty is not None:
-            # Göz yuvalarının içinde (±15px) pürüzsüz hareket alanı
-            self.target_pos = [(tx - 320) / 15, (ty - 240) / 18]
+            # Göz yuvalarının içinde (±12px) pürüzsüz hareket alanı
+            # 640x480 kamera koordinatlarını bu aralığa normalize ediyoruz.
+            self.target_pos = [(tx / 64) - 5, (ty / 48) - 5]
         else:
-            # Boştayken hafif canlılık salınımı
+            # Boştayken çok hafif, canlı bir nefes alma efekti
             t = pygame.time.get_ticks()
-            self.target_pos = [math.sin(t*0.001)*6, math.cos(t*0.001)*3]
+            self.target_pos = [math.sin(t*0.0015)*4, math.cos(t*0.0015)*2]
 
     def draw(self, screen):
+        """Her kareyi çizer"""
         # 1. Arka Planı Çiz
         if self.has_bg:
             screen.blit(self.bg_image, (0, 0))
@@ -61,47 +65,47 @@ class PoodleFace:
             screen.fill(self.COLOR_BG)
         
         # --- LERP (Yumuşak Geçiş) ---
-        self.eye_pos[0] += (self.target_pos[0] - self.eye_pos[0]) * 0.1
-        self.eye_pos[1] += (self.target_pos[1] - self.eye_pos[1]) * 0.1
-        self.eye_scale_y += (self.target_scale_y - self.eye_scale_y) * 0.1
+        self.eye_pos[0] += (self.target_pos[0] - self.eye_pos[0]) * 0.12
+        self.eye_pos[1] += (self.target_pos[1] - self.eye_pos[1]) * 0.12
+        self.eye_scale_y += (self.target_scale_y - self.eye_scale_y) * 0.15
 
         # --- GÖZ KIRPMA ---
         now = pygame.time.get_ticks()
-        if now - self.last_blink > random.randint(4000, 10000):
-            self.eye_scale_y = 0.05
-            if now - self.last_blink > 4150:
+        if now - self.last_blink > random.randint(3000, 7000):
+            self.eye_scale_y = 0.05 # Gözü kapat
+            if now - self.last_blink > 3150: # Göz kapalı kalma süresi
                 self.last_blink = now
 
-        # --- GÖZLERİ YUVALARA YERLEŞTİR ---
-        # Poddle_v2.png üzerindeki yuva merkezleri (1024x600 için hassas ayar)
-        # Sol yuva merkezi: 345, Sağ yuva merkezi: 679 (tahmini)
-        centers = [(self.width // 2 - 168, self.height // 2 - 5), 
-                   (self.width // 2 + 168, self.height // 2 - 5)]
+        # --- GÖZLERİ YUVALARA YERLEŞTİR (Hassas Hizalama) ---
+        # poddle_v3.png üzerindeki AI turkuaz yuvaların merkez koordinatları
+        # Yatayda tam simetrik (1024 / 2 ± 165px), dikeyde tam merkezde (600 / 2)
+        left_eye_center = (347, 300)
+        right_eye_center = (677, 300)
 
-        for base_x, base_y in centers:
+        for base_x, base_y in [left_eye_center, right_eye_center]:
             x = base_x + self.eye_pos[0]
             y = base_y + self.eye_pos[1]
             
-            # Göz Boyutları (Yuvadaki koyu alana sığacak şekilde)
-            w, h = 90, 150 * self.eye_scale_y
+            # Göz Boyutları (poddle_v3.png yuvalarının içine sığacak kadar)
+            w, h = 100, 160 * self.eye_scale_y
             
-            # 1. Yumuşak İç Parlama (Glow)
-            glow_surf = pygame.Surface((w*2, h*2), pygame.SRCALPHA)
-            pygame.draw.ellipse(glow_surf, (0, 255, 255, 30), (w//2, h//2, w, h))
-            screen.blit(glow_surf, (x-w, y-h))
+            # 1. Hafif Dış Derinlik (Soft Shadow)
+            shadow_surface = pygame.Surface((w*2, h*2), pygame.SRCALPHA)
+            pygame.draw.ellipse(shadow_surface, (0, 0, 0, 20), (w//2+3, h//2+5, w, h))
+            screen.blit(shadow_surface, (x-w, y-h))
             
-            # 2. Ana Göz (Kapsül)
-            pygame.draw.ellipse(screen, self.EYE_COLOR, (x-w//2, y-h//2, w, h))
+            # 2. Ana Göz (Derin Siyah)
+            rect = pygame.Rect(x-w//2, y-h//2, w, h)
+            pygame.draw.ellipse(screen, self.EYE_COLOR, rect)
             
-            # 3. Canlılık Işığı (Pupil/Highlight)
-            # Bakış yönüne göre ekstra kayarak derinlik (paralaks) sağlar
-            px = x + self.eye_pos[0] * 0.6
-            py = y - h//4 + self.eye_pos[1] * 0.4
-            pygame.draw.ellipse(screen, self.PUPIL_COLOR, (px-12, py-10, 25, 18))
+            # 3. Göz Bebeği / Işıma (Beyaz Merkez)
+            # Bakış derinliği (paralaks) hissi için bu nokta ana gözden biraz daha fazla kayar
+            pupil_x = x + self.eye_pos[0] * 0.6
+            pupil_y = y - h//4 + self.eye_pos[1] * 0.4
+            pygame.draw.ellipse(screen, self.PUPIL_COLOR, (pupil_x-10, pupil_y-8, 20, 16))
 
-        # --- SPEAKING BAR (Alt kısımda estetik ses dalgası) ---
+        # --- SPEAKING MODUNDA SES DALGASI ---
         if self.state == "speaking":
-            wave = abs(math.sin(pygame.time.get_ticks()*0.02)) * 30
-            pygame.draw.rect(screen, self.EYE_COLOR, 
-                             (self.width//2 - 45, self.height - 70, 90, 8 + wave), 
-                             border_radius=10)
+            wave = abs(math.sin(pygame.time.get_ticks()*0.02)) * 35
+            # Alt kısımdaki boşluğa estetik siyah/gri bir dalga
+            pygame.draw.rect(screen, (30, 30, 30), (self.width//2 - 45, self.height - 70, 90, 8 + wave), border_radius=10)
