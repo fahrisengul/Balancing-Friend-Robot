@@ -14,7 +14,7 @@ class PoodleFace:
             self.bg_image = pygame.image.load(bg_path).convert()
             self.bg_image = pygame.transform.scale(self.bg_image, (self.width, self.height))
             self.has_bg = True
-            print(">>> [V17 - STABIL GOZ HIZASI & TILT IPTAL] AKTIF <<<")
+            print(">>> [V18 - HATA DUZELTILDI & STABIL] AKTIF <<<")
         except Exception as e:
             self.has_bg = False
             print(f"Hata: {e}")
@@ -27,13 +27,14 @@ class PoodleFace:
             "eye_height": 140,
             "mouth_center": (515, 355),
             "mouth_width": 56,
-            "mouth_height": 26,
-            "tongue_color": (255, 110, 130)
+            "mouth_height": 26
         }
 
+        # Renk Tanımlamaları (KeyError'u önlemek için sabitlendi)
         self.COLORS = {
             "siyah": (10, 10, 10),
             "beyaz": (255, 255, 255),
+            "pembe_dil": (255, 110, 130),
             "pembe_aura": (255, 182, 193, 100),
             "mavi_aura": (100, 149, 237, 100),
             "turuncu_aura": (255, 140, 0, 100)
@@ -60,7 +61,6 @@ class PoodleFace:
         self.sleep_timer = pygame.time.get_ticks()
         self.is_sleeping = False
         
-        # Tilt (Kafa Eğme) tamamen kaldırıldı, tüm modlarda 0.0
         if state == "speaking":
             self.target_scale_y = 0.9
             self.aura_color = self.COLORS["pembe_aura"]
@@ -99,16 +99,13 @@ class PoodleFace:
         x = cx + self.current_pos[0]
         y = cy + self.current_pos[1]
 
-        # 1. Aura
         if self.aura_color and not self.is_sleeping:
             aura_surf = pygame.Surface((w+20, h+20), pygame.SRCALPHA)
             pygame.draw.ellipse(aura_surf, self.aura_color, (0, 0, w+20, h+20), 3)
             screen.blit(aura_surf, (int(x - (w+20)//2), int(y - (h+20)//2)))
 
-        # 2. Göz
         pygame.draw.ellipse(screen, self.COLORS["siyah"], (int(x - w // 2), int(y - h // 2), w, h))
         
-        # 3. Parlama
         if self.eye_scale_y > 0.4:
             p_w, p_h = 12 * self.pupil_size_mult, 10 * self.pupil_size_mult
             pygame.draw.ellipse(screen, self.COLORS["beyaz"], (int(x - 10), int(y - h//3), int(p_w), int(p_h)))
@@ -130,8 +127,11 @@ class PoodleFace:
                 z_txt = font.render("Zzz...", True, (200, 200, 255))
                 screen.blit(z_txt, (int(mx + 40), int(my - 60 + t_bob)))
             else:
+                # DİL ÇİZİMİ
                 pygame.draw.ellipse(screen, self.COLORS["pembe_dil"], (int(mx - 15), int(my - 5), 30, int(40 + t_bob)))
                 pygame.draw.line(screen, (200, 70, 90), (int(mx), int(my)), (int(mx), int(my + 15 + t_bob)), 2)
+            
+            # ÜST AĞIZ ÇİZGİSİ
             pygame.draw.line(screen, self.COLORS["siyah"], (int(mx - 20), int(my)), (int(mx + 20), int(my)), 4)
 
     def draw(self, screen):
@@ -148,3 +148,5 @@ class PoodleFace:
         self._draw_eye(screen, *self.FACE_RIG["eye_left_center"])
         self._draw_eye(screen, *self.FACE_RIG["eye_right_center"])
         self._draw_mouth(screen)
+
+    def handle_calibration(self, key): pass
