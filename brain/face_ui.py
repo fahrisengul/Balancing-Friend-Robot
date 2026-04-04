@@ -6,23 +6,23 @@ class PoodleFace:
         self.width = width
         self.height = height
         
-        # --- RENK PALETİ (Dostane ve Robotik) ---
-        self.COLOR_BG = (10, 10, 10)       # Derin Siyah (Ekran yokmuş gibi durması için)
-        self.COLOR_FUR = (240, 230, 210)    # Krem/Kirli Beyaz (Poodle tüyleri)
-        self.COLOR_EYE_OUT = (30, 30, 30)  # Göz Çevresi (Koyu Gri)
+        # --- MÜKEMMELLEŞTİRİLMİŞ RENK PALETİ ---
+        self.COLOR_BG = (10, 10, 10)       # Derin Siyah arka plan
+        self.COLOR_FUR = (245, 235, 215)    # Krem/Kirli Beyaz Poodle tüyleri (Biraz daha sıcak)
+        self.COLOR_EYE_OUT = (25, 25, 25)   # Göz Çevresi (Panda etkisini azaltmak için koyu gri)
         self.COLOR_PUPIL = (0, 0, 0)       # Göz Bebeği (Tam Siyah)
-        self.COLOR_NOSE = (20, 20, 20)      # Burun (Çok Koyu Gri)
-        self.COLOR_GLINT = (255, 255, 255)  # Parlama (Işık Yansıması)
+        self.COLOR_NOSE = (20, 20, 20)      # Burun
+        self.COLOR_GLINT = (255, 255, 255)  # Canlı Parlama (Daha büyük ve belirgin)
 
-        # --- GEOMETRİK MERKEZLER ---
+        # --- YENİ GEOMETRİK MERKEZLER (Taşmayı Önlemek İçin) ---
         self.center_x = width // 2
-        self.center_y = height // 2
+        self.center_y = height // 2 - 20 # Kafayı biraz yukarı çektik
         
-        # Gözlerin ve Kulakların Pozisyonları (Ana Merkeze Göre)
-        self.eye_offset_x = 160
-        self.eye_offset_y = -30
-        self.ear_offset_x = 320
-        self.nose_offset_y = 100
+        # Göz ve Kulak Pozisyonları
+        self.eye_offset_x = 150 # Gözleri biraz birbirine yaklaştırdık (Daha dostane)
+        self.eye_offset_y = -40
+        self.ear_offset_x = 310 # Kulakları kafaya yaklaştırdık
+        self.nose_offset_y = 90  # Burnu yukarı çektik (Taşmayı önlemek için)
 
         # Göz Hareket Sınırları
         self.pupil_offset = [0, 0]
@@ -35,72 +35,83 @@ class PoodleFace:
     def update_gaze(self, target_x, target_y):
         """Kameradan gelen koordinatları göz hareketine çevirir."""
         if target_x is None:
-            self.pupil_offset = [0, 0] # Kimse yoksa merkeze bak
+            self.pupil_offset = [0, 0]
             return
 
-        # Kameradaki merkeze uzaklığı hesapla (Normalize et)
-        dx = (target_x - 320) / 10
-        dy = (target_y - 240) / 10
+        # Normalize et (Hareket sınırlandırması daha hassas)
+        dx = (target_x - 320) / 12
+        dy = (target_y - 240) / 12
         
-        # Gözlerin dışarı çıkmaması için hareket sınırı (Mühendislik limiti)
-        self.pupil_offset[0] = max(-35, min(35, dx))
-        self.pupil_offset[1] = max(-20, min(20, dy))
+        self.pupil_offset[0] = max(-30, min(30, dx))
+        self.pupil_offset[1] = max(-15, min(15, dy))
 
-    def _draw_curly_ear(self, screen, x, y):
-        """Poodle'ın kıvırcık kulağını stilize dairelerle çizer."""
-        for i in range(5):
-            angle = i * 20
-            # Kulak şeklini oluşturan tüyler
-            curr_x = x + (i * 10) * (-1 if x < self.center_x else 1)
-            curr_y = y + (i * 15)
-            pygame.draw.circle(screen, self.COLOR_FUR, (curr_x, curr_y), 45 - (i*3))
+    def _draw_fluffy_ear(self, screen, x, y):
+        """Kıvırcık Poodle kulağını tüy hissi veren dairelerle çizer."""
+        # Üç daireyi üst üste bindirerek 'tüy demeti' hissi veriyoruz
+        base_radius = 55
+        for i in range(3):
+            # Her daire bir öncekinden biraz daha aşağıda ve küçük
+            curr_y = y + (i * 25)
+            pygame.draw.circle(screen, self.COLOR_FUR, (x, curr_y), base_radius - (i*5))
+
+    def _draw_main_face(self, screen):
+        """Yüzün ana krem hattını ve tüy detaylarını çizer."""
+        # Ana yüz dairesi (Artık taşmıyor)
+        pygame.draw.circle(screen, self.COLOR_FUR, (self.center_x, self.center_y), 240)
+        
+        # Alın ve çene kısmına minimalist 'tüy kıvrımları' ekleyelim (Opsiyonel)
+        for i in range(3):
+            offset_y = 190 + (i*15)
+            width = 120 - (i*20)
+            pygame.draw.ellipse(screen, self.COLOR_FUR, 
+                               (self.center_x - width//2, self.center_y - offset_y, width, 40))
 
     def draw(self, screen):
         # 1. Arka Planı Temizle
         screen.fill(self.COLOR_BG)
 
-        # 2. Kulakları Çiz (Stilize ve Kıvırcık)
-        self._draw_curly_ear(screen, self.center_x - self.ear_offset_x, self.center_y - 80)
-        self._draw_curly_ear(screen, self.center_x + self.ear_offset_x, self.center_y - 80)
+        # 2. Kulakları Çiz (Stilize ve Kıvırcık tüy demetleri)
+        self._draw_fluffy_ear(screen, self.center_x - self.ear_offset_x, self.center_y - 80)
+        self._draw_fluffy_ear(screen, self.center_x + self.ear_offset_x, self.center_y - 80)
 
-        # 3. Yüzün Ana Hattı (Büyük krem daire)
-        pygame.draw.circle(screen, self.COLOR_FUR, (self.center_x, self.center_y), 260)
+        # 3. Yüzün Ana Krem Hattını Çiz
+        self._draw_main_face(screen)
 
         # 4. Göz Kırpma Zamanlaması
         now = pygame.time.get_ticks()
         if now - self.last_blink > self.next_blink_time:
             self.is_blinking = True
-            if now - self.last_blink > self.next_blink_time + 120: # 120ms kapalı
+            if now - self.last_blink > self.next_blink_time + 100: # 100ms hızlı kırpma
                 self.is_blinking = False
                 self.last_blink = now
                 self.next_blink_time = random.randint(3000, 9000)
 
-        # 5. Gözleri Çiz
+        # 5. Gözleri Çiz (Daha sevimli ve dostane)
         for side in [-1, 1]: # -1 Sol, 1 Sağ
             # Gözün ana pozisyonu
             eye_x = self.center_x + (self.eye_offset_x * side)
             eye_y = self.center_y + self.eye_offset_y
             
-            # Göz Çevresi (Dış halka)
-            pygame.draw.circle(screen, self.COLOR_EYE_OUT, (eye_x, eye_y), 85)
+            # Göz Çevresi (Artık Panda gibi değil, minimalist koyu halka)
+            pygame.draw.circle(screen, self.COLOR_EYE_OUT, (eye_x, eye_y), 75)
 
             if self.is_blinking:
-                # Göz kapalıyken: Yatay bir çizgi (Minimalist kapak)
+                # Göz kapalıyken minimalist yatay kapak
                 pygame.draw.line(screen, self.COLOR_PUPIL, 
-                                 (eye_x - 60, eye_y), (eye_x + 60, eye_y), 10)
+                                 (eye_x - 50, eye_y), (eye_x + 50, eye_y), 8)
             else:
-                # Göz Bebeği (Hareketli Kısım)
+                # Göz Bebeği (Daha büyük ve canlı)
                 pupil_x = eye_x + self.pupil_offset[0]
                 pupil_y = eye_y + self.pupil_offset[1]
-                pygame.draw.circle(screen, self.COLOR_PUPIL, (pupil_x, pupil_y), 50)
+                pygame.draw.circle(screen, self.COLOR_PUPIL, (pupil_x, pupil_y), 45)
                 
-                # Işık parlaması (Canlılık verir)
+                # Mükemmel Parlama (Daha büyük ve belirgin)
                 pygame.draw.circle(screen, self.COLOR_GLINT, 
-                                   (pupil_x - 15, pupil_y - 15), 15)
+                                   (pupil_x - 12, pupil_y - 12), 12)
 
-        # 6. Burun (Stilize Poodle burnu)
+        # 6. Burun (Stilize Poodle burnu - Taşmıyor)
         pygame.draw.ellipse(screen, self.COLOR_NOSE, 
-                           (self.center_x - 50, self.center_y + self.nose_offset_y, 100, 60))
+                           (self.center_x - 45, self.center_y + self.nose_offset_y, 90, 55))
         # Burun parlaması
         pygame.draw.ellipse(screen, (40, 40, 40), 
-                           (self.center_x - 30, self.center_y + self.nose_offset_y + 10, 40, 20))
+                           (self.center_x - 25, self.center_y + self.nose_offset_y + 10, 35, 18))
