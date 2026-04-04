@@ -1,68 +1,105 @@
-import cv2
-import numpy as np
+import pygame
+import math
+import random
 import os
 
 class PoodleFace:
-    def __init__(self, width=1024, height=600, bg_filename='Poddle_v2.jpeg'):
-        # 1. Dosya Yolunu Belirle
+    def __init__(self, width=1024, height=600):
+        self.width = width
+        self.height = height
+        
+        # --- ARKA PLAN GÖRSELİ YÜKLEME ---
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        self.bg_path = os.path.join(current_dir, bg_filename)
+        bg_path = os.path.join(current_dir, 'Poddle_v2.jpeg')
         
-        # 2. Görseli Yükle
-        self.base_image = cv2.imread(self.bg_path)
-        if self.base_image is None:
-            print(f"UYARI: {bg_filename} bulunamadı! Siyah ekran oluşturuluyor.")
-            self.base_image = np.zeros((height, width, 3), dtype=np.uint8)
+        try:
+            # Görseli yükle ve ekran boyutuna ölçekle
+            self.bg_image = pygame.image.load(bg_path)
+            self.bg_image = pygame.transform.scale(self.bg_image, (self.width, self.height))
+            self.has_bg = True
+        except:
+            print("UYARI: Poddle_v2.jpeg bulunamadı, siyah arka plana dönülüyor.")
+            self.has_bg = False
+            self.COLOR_BG = (10, 12, 18)
+
+        # --- MODERN RENK PALETİ ---
+        self.EYE_COLOR = (0, 255, 255) # Orijinal Poodle Mavisi
+        self.GLOW_COLOR = (0, 100, 100, 128) # Yarı şeffaf parlama
+        
+        # --- DURUM VE HAREKET ---
+        self.eye_pos = [0, 0]
+        self.target_pos = [0, 0]
+        self.eye_scale_y = 1.0 
+        self.target_scale_y = 1.0
+        
+        self.state = "idle" 
+        self.last_blink = pygame.time.get_ticks()
+
+    def set_state(self, state):
+        self.state = state
+        if state == "listening":
+            self.target_scale_y = 1.15 
+        elif state == "speaking":
+            self.target_scale_y = 0.95
         else:
-            self.base_image = cv2.resize(self.base_image, (width, height))
-        
-        self.height, self.width = self.base_image.shape[:2]
-        
-        # 3. main.py'nin Beklediği Kritik Değişkenler
-        self.state = "idle"  # Hata veren 'state' değişkenini burada tanımlıyoruz
-        self.target_x = 0.5
-        self.target_y = 0.5
-        
-        # 4. Göz Merkezleri (Poddle_v2 1024x600 için optimize)
-        self.eye_centers = {
-            'left': (int(self.width * 0.322), int(self.height * 0.485)),
-            'right': (int(self.width * 0.678), int(self.height * 0.485))
-        }
+            self.target_scale_y = 1.0
 
     def update_gaze(self, tx, ty):
-        """Bakış koordinatlarını günceller"""
-        if tx is None or ty is None:
-            self.target_x, self.target_y = 0.5, 0.5
+        if tx is not None and ty is not None:
+            # Gözlerin hareket sınırını Poddle_v2 yuvaları içinde tutmak için (±30px)
+            self.target_pos = [(tx - 320) / 10, (ty - 240) / 12]
         else:
-            self.target_x, self.target_y = tx, ty
+            # Boştayken çok hafif nefes alma efekti
+            self.target_pos = [math.sin(pygame.time.get_ticks()*0.001)*5, math.cos(pygame.time.get_ticks()*0.001)*3]
 
-    def set_state(self, new_state):
-        """Robotun durumunu günceller"""
-        self.state = new_state
+    def draw(self, screen):
+        # 1. Arka Planı Çiz
+        if self.has_bg:
+            screen.blit(self.bg_image, (0, 0))
+        else:
+            screen.fill(self.COLOR_BG)
+        
+        # --- LERP (Pürüzsüz Geçiş) ---
+        self.eye_pos[0] += (self.target_pos[0] - self.eye_pos[0]) * 0.1
+        self.eye_pos[1] += (self.target_pos[1] - self.eye_pos[1]) * 0.1
+        self.eye_scale_y += (self.target_scale_y - self.eye_scale_y) * 0.1
 
-    def render(self, face_data=None, camera_frame=None):
-        """Arayüzü her döngüde çizer"""
-        canvas = self.base_image.copy()
+        # --- GÖZ KIRPMA ---
+        now = pygame.time.get_ticks()
+        if now - self.last_blink > random.randint(4000, 9000):
+            self.eye_scale_y = 0.05
+            if now - self.last_blink > 4150:
+                self.last_blink = now
 
-        # Gözlerin hareket miktarını hesapla
-        move_x = int((self.target_x - 0.5) * 45)
-        move_y = int((self.target_y - 0.5) * 25)
+        # --- GÖZLERİ ÇİZ (Poddle_v2 Tasarımına Uygun) ---
+        for side in [-1, 1]:
+            # Görseldeki yuvaların merkezi (1024x600'e göre ayarlandı)
+            base_x = (self.width // 2) + (side * 182) 
+            base_y = (self.height // 2) - 10
+            
+            x = base_x + self.eye_pos[0]
+            y = base_y + self.eye_pos[1]
+            
+            # Göz boyutlarını Poddle_v2'deki halkalara göre daralttık (Daha şık durur)
+            w, h = 100, 160 * self.eye_scale_y
+            
+            # 1. Yumuşak Dış Parlama (Glow)
+            glow_surface = pygame.Surface((w*2, h*2), pygame.SRCALPHA)
+            pygame.draw.ellipse(glow_surface, (0, 255, 255, 40), (w//2, h//2, w, h))
+            screen.blit(glow_surface, (x-w, y-h))
+            
+            # 2. Ana Göz (Hafif Şeffaf Turkuaz)
+            rect = pygame.Rect(x-w//2, y-h//2, w, h)
+            pygame.draw.ellipse(screen, self.EYE_COLOR, rect)
+            
+            # 3. Göz Bebeği / Işıma (Beyaz Nokta)
+            # Bu nokta bakış yönüne göre biraz daha fazla kayar (3D derinlik hissi)
+            pupil_x = x + self.eye_pos[0] * 0.5
+            pupil_y = y - h//4 + self.eye_pos[1] * 0.5
+            pygame.draw.ellipse(screen, (255, 255, 255), (pupil_x-15, pupil_y-10, 30, 20))
 
-        for side in ['left', 'right']:
-            center = self.eye_centers[side]
-            # Hareketli beyaz göz bebeği
-            cv2.circle(canvas, (center[0] + move_x, center[1] + move_y), 
-                       16, (255, 255, 255), -1) 
-            # Dış ışıma halkası
-            cv2.circle(canvas, (center[0] + move_x, center[1] + move_y), 
-                       19, (255, 210, 160), 2)
-
-        # Robot Vision (Sağ alt köşe)
-        if camera_frame is not None:
-            pip_w, pip_h = 240, 180
-            small_frame = cv2.resize(camera_frame, (pip_w, pip_h))
-            y_off, x_off = self.height - pip_h - 25, self.width - pip_w - 25
-            canvas[y_off:y_off+pip_h, x_off:x_off+pip_w] = small_frame
-            cv2.rectangle(canvas, (x_off, y_off), (x_off+pip_w, y_off+pip_h), (200, 200, 200), 1)
-
-        return canvas
+        # --- SPEAKING MODUNDA SES DALGASI ---
+        if self.state == "speaking":
+            wave = abs(math.sin(pygame.time.get_ticks()*0.02)) * 30
+            # Alt kısımdaki boşluğa estetik bir bar
+            pygame.draw.rect(screen, self.EYE_COLOR, (self.width//2 - 40, self.height - 80, 80, 6 + wave), border_radius=10)
