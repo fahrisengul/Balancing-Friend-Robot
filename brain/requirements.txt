@@ -1,19 +1,32 @@
-# Temel Görüntü İşleme ve Kamera
+# --- Temel Görüntü İşleme ve Mimari ---
 opencv-python
 numpy
 
-# Yapay Zeka (Hailo ve Genel)
-# Not: Hailo-8 özel sürücüleri rpi-connect üzerinden kurulacak olsa da 
-# Python tarafındaki bağımlılıklar buradadır.
+# --- Yapay Zeka ve Nesne Takibi ---
+# Hailo-8 Century ile koordinasyon ve YOLO modelleri için
 ultralytics
 
-# Ses ve Konuşma
+# --- Ses ve Konuşma (STT & TTS) ---
+# gTTS: Robotun Türkçe seslendirmesi için
+# SpeechRecognition: Tanem'in sesini yazıya dökmek için
+# PyAudio: Mikrofon erişimi (macOS'ta 'brew install portaudio' gerekebilir)
 gTTS
 SpeechRecognition
 pyaudio
 
-# Arayüz ve Mimikler
+# --- Ses Çalma Alternatifi (Önemli) ---
+# gTTS ile üretilen sesleri pygame üzerinden veya direkt çalmak için 
+# daha hafif bir alternatif
+playsound==1.2.2
+
+# --- Arayüz ve Mimikler ---
+# V18 sürümü ve tüm görsel motor için
 pygame
 
-# Seri Haberleşme (Aşama 5 - Firmware Bağlantısı İçin)
+# --- Yardımcı Servisler ---
+# İnternet tabanlı API'lar ve güncellemeler için
+requests
+
+# --- Seri Haberleşme ---
+# Arduino/ESP32 gibi kartlarla kafa hareketi/servo kontrolü için
 pyserial
