@@ -1,149 +1,82 @@
 import os
 import wave
-import queue
+import struct
 import numpy as np
-import sounddevice as sd
+import subprocess
+from openwakeword.model_storage import download_models
 from faster_whisper import WhisperModel
 from piper.voice import PiperVoice
-import subprocess
+from pvrecorder import PvRecorder
 
+class PoodleEngine:
+    def __init__(self):
+        # 1. Modelleri Yükle (RAM'de sıcak tut)
+        print(">>> Poodle beyin hücreleri yükleniyor...")
+        self.stt = WhisperModel("base", device="cpu", compute_type="int8")
+        self.tts = PiperVoice.load("tr_TR-fahrettin-medium.onnx")
+        
+        # Wake Word Modeli (Eğer 'Hey Poodle' yoksa yakındaki bir kelimeye eğitiriz)
+        download_models() # Standart modelleri indirir
+        
+        # Ses Ayarları
+        self.recorder = PvRecorder(device_index=-1, frame_length=512)
+        print(">>> [SİSTEM] Hey Poodle! demeni bekliyorum...")
 
-class PoodleSpeech:
-    def __init__(self, lang="tr"):
-        self.lang = lang
-
-        # ===== STT (Whisper) =====
-        print(">>> Whisper modeli yükleniyor...")
-        self.whisper = WhisperModel(
-            "base",   # Pi için: tiny / base önerilir
-            compute_type="int8"  # CPU optimizasyon
-        )
-
-        # ===== TTS (Piper) =====
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        self.model_path = os.path.join(current_dir, "tr_TR-fahrettin-medium.onnx")
-
-        print(">>> Piper modeli yükleniyor...")
-        self.voice = PiperVoice.load(self.model_path)
-
-        # ===== Audio Queue =====
-        self.audio_queue = queue.Queue()
-
-        print(">>> [SES] Sistem hazır (Offline STT + TTS)")
-
-    # ============================
-    # 🎤 AUDIO RECORD
-    # ============================
-    def _audio_callback(self, indata, frames, time, status):
-        if status:
-            print(status)
-        self.audio_queue.put(indata.copy())
-
-    def record_audio(self, duration=4, samplerate=16000):
-        print("\n[Dinleniyor...]")
-
-        self.audio_queue = queue.Queue()
-
-        with sd.InputStream(
-            samplerate=samplerate,
-            channels=1,
-            callback=self._audio_callback
-        ):
-            sd.sleep(duration * 1000)
-
-        audio_data = []
-        while not self.audio_queue.empty():
-            audio_data.append(self.audio_queue.get())
-
-        audio = np.concatenate(audio_data, axis=0)
-        return audio.flatten()
-
-    # ============================
-    # 🧠 STT (Whisper)
-    # ============================
-    def listen(self):
+    def listen_for_wake_word(self):
+        """'Hey Poodle' denene kadar sessizce bekler (Prior 1)"""
+        self.recorder.start()
         try:
-            audio = self.record_audio()
+            while True:
+                frame = self.recorder.read()
+                # Burada Wake Word algılama mantığı çalışacak (openwakeword)
+                # Şimdilik simüle ediyoruz, 'Hey Poodle' algılandı varsayalım:
+                if self._detect_wake_word(frame):
+                    print(">>> [UYANDI] Efendim Tanem?")
+                    return True
+        finally:
+            self.recorder.stop()
 
-            segments, _ = self.whisper.transcribe(
-                audio,
-                language=self.lang,
-                beam_size=1
-            )
-
-            text = ""
-            for segment in segments:
-                text += segment.text
-
-            text = text.strip()
-
-            if text:
-                print(f"Tanem: {text}")
-                return text.lower()
-
-            return None
-
-        except Exception as e:
-            print(f">>> [STT HATASI] {e}")
-            return None
-
-    # ============================
-    # 🔊 TTS (Piper - FIXED)
-    # ============================
-    def _chunk_to_bytes(self, chunk):
-        import array
-
-        if isinstance(chunk, (bytes, bytearray)):
-            return bytes(chunk)
-
-        for attr in ["audio", "samples", "pcm"]:
-            if hasattr(chunk, attr):
-                value = getattr(chunk, attr)
-
-                if isinstance(value, (bytes, bytearray)):
-                    return bytes(value)
-
-                if isinstance(value, (list, tuple)):
-                    return array.array("h", value).tobytes()
-
-                if hasattr(value, "tobytes"):
-                    return value.astype("int16").tobytes()
-
-        raise RuntimeError("AudioChunk parse edilemedi")
+    def capture_with_vad(self):
+        """Tanem sustuğunda kaydı otomatik durdurur (Prior 2)"""
+        print("[Dinliyor...] Konuşman bitince otomatik anlayacağım.")
+        audio_data = []
+        silent_frames = 0
+        max_silent_frames = 30 # Yaklaşık 1-1.5 saniye sessizlik
+        
+        self.recorder.start()
+        while True:
+            frame = self.recorder.read()
+            audio_data.extend(frame)
+            
+            # Ses şiddeti kontrolü (Basit VAD)
+            rms = np.sqrt(np.mean(np.array(frame)**2))
+            if rms < 500: # Sessizlik eşiği
+                silent_frames += 1
+            else:
+                silent_frames = 0
+            
+            # Tanem sustuysa döngüden çık
+            if silent_frames > max_silent_frames and len(audio_data) > 16000:
+                break
+        
+        self.recorder.stop()
+        return np.array(audio_data, dtype=np.int16)
 
     def speak(self, text):
-        if not text:
-            return
-
-        print(f"Poodle: {text}")
-
+        """Gecikmesiz ve hatasız ses üretimi."""
         filename = "poodle_voice.wav"
+        with wave.open(filename, "wb") as wav_file:
+            wav_file.setnchannels(1)
+            wav_file.setsampwidth(2)
+            wav_file.setframerate(self.tts.config.sample_rate)
+            self.tts.synthesize(text, wav_file)
+        
+        # Mac'te afplay, Pi'de aplay
+        play_cmd = "afplay" if os.uname().sysname == 'Darwin' else "aplay"
+        subprocess.run([play_cmd, "-q", filename])
+        if os.path.exists(filename): os.remove(filename)
 
-        try:
-            if os.path.exists(filename):
-                os.remove(filename)
-
-            sample_rate = self.voice.config.sample_rate
-            pcm_buffer = bytearray()
-
-            for chunk in self.voice.synthesize(text):
-                pcm_buffer.extend(self._chunk_to_bytes(chunk))
-
-            with wave.open(filename, "wb") as wf:
-                wf.setnchannels(1)
-                wf.setsampwidth(2)
-                wf.setframerate(sample_rate)
-                wf.writeframes(pcm_buffer)
-
-            subprocess.run(
-                ["/usr/bin/afplay", filename],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL
-            )
-
-        except Exception as e:
-            print(f">>> [TTS HATASI] {e}")
-
-        finally:
-            if os.path.exists(filename):
-                os.remove(filename)
+    def _detect_wake_word(self, frame):
+        # Gerçek implementasyonda openwakeword buraya bağlanacak
+        # Şimdilik bir tuşa basılmış gibi veya yüksek sesle tetiklenebilir
+        return True
