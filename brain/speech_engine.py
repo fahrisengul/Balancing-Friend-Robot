@@ -47,6 +47,10 @@ class PoodleSpeech:
         self._tts_cooldown_sec = 2.0
         self._audio_lock = threading.Lock()
 
+        self._last_spoken_text = ""
+        self._last_spoken_until = 0.0
+        self._post_speak_ignore_sec = 4.5
+
         self.input_device = self._select_input_device(input_device)
 
         self.stop_aliases = [
@@ -243,15 +247,65 @@ class PoodleSpeech:
             if self._normalize_text(alias) in n:
                 return True
 
-        # "hey" tek başına yeterli olsun
         if n == "hey":
             return True
 
-        # yakın varyasyonlar
         tokens = n.split()
         for token in tokens:
             if self._similarity(token, "hey") >= 0.8:
                 return True
+
+        return False
+
+    def _is_too_short_or_weak_text(self, text: str) -> bool:
+        n = self._normalize_text(text)
+        if not n:
+            return True
+
+        tokens = [t for t in n.split() if t.strip()]
+        if len(tokens) == 0:
+            return True
+
+        weak_tokens = {
+            "aba", "baba", "he", "hey", "ya", "ee", "hmm", "tamam", "peki"
+        }
+
+        if len(tokens) == 1 and tokens[0] in weak_tokens:
+            return True
+
+        return False
+
+    def _looks_like_echo_of_tts(self, text: str) -> bool:
+        """
+        Robotun kendi son konuşmasının mikrofondan geri dönmesini ayıklar.
+        """
+        if not text or not self._last_spoken_text:
+            return False
+
+        now = time.time()
+
+        if now > self._last_spoken_until:
+            return False
+
+        heard = self._normalize_text(text)
+        spoken = self._normalize_text(self._last_spoken_text)
+
+        if not heard or not spoken:
+            return False
+
+        if heard in spoken and len(heard) >= 5:
+            return True
+
+        sim = self._similarity(heard, spoken)
+        if sim >= 0.55:
+            return True
+
+        heard_tokens = set(heard.split())
+        spoken_tokens = set(spoken.split())
+        overlap = heard_tokens.intersection(spoken_tokens)
+
+        if len(overlap) >= 2:
+            return True
 
         return False
 
@@ -316,10 +370,20 @@ class PoodleSpeech:
         text = self._transcribe(audio, beam_size=2)
         print(f">>> [STT DEBUG] transcript: {text}")
 
-        if text and text.strip():
-            return text.lower().strip()
+        if not text or not text.strip():
+            return None
 
-        return None
+        text = text.lower().strip()
+
+        if self._is_too_short_or_weak_text(text):
+            print(">>> [FILTER] Çok kısa / zayıf transkript, yok sayıldı.")
+            return None
+
+        if self._looks_like_echo_of_tts(text):
+            print(">>> [FILTER] TTS yankısı gibi görünüyor, yok sayıldı.")
+            return None
+
+        return text
 
     # =========================================================
     # AUTO LISTENER
@@ -333,7 +397,13 @@ class PoodleSpeech:
                     time.sleep(0.15)
                     continue
 
-                if time.time() - self._last_tts_time < self._tts_cooldown_sec:
+                now = time.time()
+
+                if now - self._last_tts_time < self._tts_cooldown_sec:
+                    time.sleep(0.15)
+                    continue
+
+                if now < self._last_spoken_until:
                     time.sleep(0.15)
                     continue
 
@@ -449,6 +519,7 @@ class PoodleSpeech:
             return
 
         print(f"Poodle: {text}")
+        self._last_spoken_text = text
         temp_path = None
 
         try:
@@ -475,7 +546,9 @@ class PoodleSpeech:
                 wav_file.writeframes(bytes(pcm_buffer))
 
             self._play_wav(temp_path)
+
             self._last_tts_time = time.time()
+            self._last_spoken_until = self._last_tts_time + self._post_speak_ignore_sec
 
         except Exception as e:
             print(f">>> [TTS HATASI] {type(e).__name__}: {e}")
