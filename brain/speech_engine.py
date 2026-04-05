@@ -1,6 +1,6 @@
 import os
-import wave
 import subprocess
+import tempfile
 import speech_recognition as sr
 from piper.voice import PiperVoice
 
@@ -23,7 +23,7 @@ class PoodleSpeech:
 
             self.voice = PiperVoice.load(self.model_path)
 
-            import pyaudio
+            import pyaudio  # dependency kontrolü
             self.microphone = sr.Microphone()
 
             print(">>> [SES] Poodle kulağını açtı, ses motoru sıcak ve hazır!")
@@ -31,67 +31,51 @@ class PoodleSpeech:
         except Exception as e:
             print(f">>> [HATA] Başlatma hatası: {e}")
 
-  def speak(self, text):
-    if not text:
-        print(">>> [DEBUG] speak() boş text aldı.")
-        return
+    def speak(self, text):
+        if not text:
+            return
 
-    if not self.voice:
-        print(">>> [SES HATASI] Piper voice yüklenemedi.")
-        return
+        if not self.voice:
+            print(">>> [SES HATASI] Piper voice yüklenemedi.")
+            return
 
-    print(f"Poodle: {text}")
+        print(f"Poodle: {text}")
+        temp_path = None
 
-    filename = os.path.abspath("poodle_voice.wav")
-    print(f">>> [DEBUG] WAV PATH: {filename}")
+        try:
+            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp_file:
+                temp_path = tmp_file.name
 
-    try:
-        # Eski dosya varsa temizle
-        if os.path.exists(filename):
-            os.remove(filename)
+            # Piper'ın WAV çıktısını doğrudan binary dosyaya yazdır
+            with open(temp_path, "wb") as raw_file:
+                self.voice.synthesize(text, raw_file)
 
-        print(">>> [DEBUG] wave.open başlıyor...")
-        with wave.open(filename, "wb") as wav_file:
-            print(">>> [DEBUG] synthesize_wav çağrılıyor...")
-            result = self.voice.synthesize_wav(text, wav_file)
-            print(f">>> [DEBUG] synthesize_wav tamamlandı. result={result}")
+            if not os.path.exists(temp_path):
+                raise RuntimeError("TTS çıktı dosyası oluşturulamadı.")
 
-        print(">>> [DEBUG] wave dosyası kapandı.")
+            result = subprocess.run(
+                ["/usr/bin/afplay", temp_path],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.PIPE,
+                text=True
+            )
 
-        if not os.path.exists(filename):
-            raise RuntimeError("WAV dosyası hiç oluşmadı.")
+            if result.returncode != 0:
+                raise RuntimeError(result.stderr.strip() or "afplay başarısız oldu.")
 
-        size = os.path.getsize(filename)
-        print(f">>> [DEBUG] WAV SIZE: {size} byte")
+        except Exception as e:
+            print(f">>> [SES HATASI] {e}")
 
-        if size == 0:
-            raise RuntimeError("WAV dosyası oluştu ama boş kaldı.")
-
-        result = subprocess.run(
-            ["/usr/bin/afplay", filename],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.PIPE,
-            text=True
-        )
-
-        print(f">>> [DEBUG] afplay returncode={result.returncode}")
-
-        if result.returncode != 0:
-            raise RuntimeError(result.stderr.strip() or "afplay başarısız oldu.")
-
-    except Exception as e:
-        print(f">>> [SES HATASI] {type(e).__name__}: {e}")
+        finally:
+            if temp_path and os.path.exists(temp_path):
+                try:
+                    os.remove(temp_path)
+                except Exception:
+                    pass
 
     def listen(self):
         if not self.microphone:
             return None
-
-        finally:
-            # if temp_path and os.path.exists(temp_path):
-            #    try:
-            #        os.remove(temp_path)
-                except Exception:
-                    pass
 
         with self.microphone as source:
             print("\n[Dinleniyor...] Poodle seni duymaya hazır...")
