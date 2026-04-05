@@ -23,23 +23,31 @@ class PoodleSpeech:
             self.microphone = None
             print(f">>> [UYARI] Mikrofon donanımı eksik: {e}")
 
-    def speak(self, text):
-        """Piper ile milisaniyeler içinde ses üretir."""
+   def speak(self, text):
+        """Piper Python modülü ile hızlı ses üretimi."""
         if not text: return
         print(f"Poodle: {text}")
         
         try:
             filename = "poodle_voice.wav"
-            # Mac için Piper komut yapısı
-            command = f'echo "{text}" | {self.piper_path} --model {self.model_path} --output_file {filename}'
+            # Artık './piper' demiyoruz, 'piper' komutunu direkt çağırıyoruz
+            # Eğer sistemde 'piper' komutu bulunmazsa 'python3 -m piper' dene
+            command = f'echo "{text}" | piper --model {self.model_path} --output_file {filename}'
             subprocess.run(command, shell=True, check=True)
             
-            # Sesi çal (Mac için afplay)
             if os.path.exists(filename):
                 subprocess.run(["afplay", filename])
                 os.remove(filename)
         except Exception as e:
-            print(f">>> [HATA] Piper Ses Üretimi Başarısız: {e}")
+            # Üstteki olmazsa bunu dene (Python içinden çağırma)
+            try:
+                command = f'echo "{text}" | python3 -m piper --model {self.model_path} --output_file {filename}'
+                subprocess.run(command, shell=True, check=True)
+                subprocess.run(["afplay", filename])
+                if os.path.exists(filename): os.remove(filename)
+            except Exception as e2:
+                print(f">>> [HATA] Piper hala nazlanıyor: {e2}")
+                
 
     def listen(self):
         """Tanem'in sesini duyan kulaklar."""
