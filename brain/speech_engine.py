@@ -7,68 +7,52 @@ class PoodleSpeech:
     def __init__(self, lang="tr-TR"):
         self.recognizer = sr.Recognizer()
         self.lang = lang
+        # Elimizdeki mevcut model:
         self.model_path = "tr_TR-dfki-medium.onnx"
-        
-        self.recognizer.energy_threshold = 400
-        self.recognizer.dynamic_energy_threshold = True
-        self.recognizer.pause_threshold = 0.8
         
         try:
             import pyaudio
             self.microphone = sr.Microphone()
-            print(">>> [SES] Mikrofon ve Piper (Python) Hazır.")
+            print(">>> [SES] Mikrofon ve DFKI Ses Motoru Optimize Edildi.")
         except Exception as e:
-            self.microphone = None
-            print(f">>> [UYARI] Mikrofon hatası: {e}")
+            print(f">>> [HATA] Mikrofon sorunu: {e}")
 
     def speak(self, text):
         if not text: return
+        # Terminalde temiz görünmesi için kısa keselim
         print(f"Poodle: {text}")
         
+        filename = "poodle_voice.wav"
+        
         try:
-            import subprocess
-            from piper.voice import PiperVoice
+            # 1. METNİ TEMİZLE (Karakter hatalarını önler)
+            clean_text = text.replace('"', '').replace("'", "").replace("\n", " ")
             
-            filename = "poodle_voice.wav"
+            # 2. EN HIZLI ÜRETİM (Terminal Pipeline)
+            # 'python' komutu senin Anaconda (base) ortamını kullanır
+            command = f'echo "{clean_text}" | python -m piper --model {self.model_path} --output_file {filename}'
             
-            # Piper Ses Modelini Yükle
-            voice = PiperVoice.load(self.model_path)
+            # Sesi üret (Arka planda sessizce ve hızlıca)
+            subprocess.run(command, shell=True, check=True, capture_output=True)
             
-            # --- WAVE KÜTÜPHANESİNİ DEVRE DIŞI BIRAKAN YÖNTEM ---
-            # Sesi bir liste (iterator) olarak üretiyoruz
-            with open(filename, "wb") as wav_file:
-                # synthesize_ids_to_audio yerine doğrudan synthesize kullanıyoruz
-                # ama wave_file nesnesini değil, ham binary yazma yöntemini seçiyoruz
-                for audio_bytes in voice.synthesize_stream(text):
-                    wav_file.write(audio_bytes)
-            
-            # SESİ ÇAL
+            # 3. ANLIK ÇALMA
             if os.path.exists(filename):
-                # afplay bazen 'raw' dosyaları sevmez, o yüzden en garantisi subprocess
+                # 'afplay' Mac'in en hızlı ses çalarıdır
                 subprocess.run(["afplay", filename])
                 os.remove(filename)
                 
         except Exception as e:
-            # EĞER YUKARIDAKİ DE HATA VERİRSE (SON ÇARE - TERMINAL YÖNTEMİ AMA ABSOLUTE PATH İLE)
-            try:
-                python_path = "/Users/fahrisengul/anaconda3/bin/python"
-                clean_text = text.replace('"', '').replace("'", "")
-                cmd = f'echo "{clean_text}" | {python_path} -m piper --model {self.model_path} --output_file {filename}'
-                subprocess.run(cmd, shell=True, check=True)
-                subprocess.run(["afplay", filename])
-                if os.path.exists(filename): os.remove(filename)
-            except Exception as e2:
-                print(f">>> [SES KRİZİ] Piper sentez hatası: {e2}")
+            print(f">>> [SES HATASI] Üretim sırasında bir sorun oluştu: {e}")
 
     def listen(self):
-        if self.microphone is None:
-            return None
-            
+        """Hızlı dinleme modülü."""
+        if not self.microphone: return None
         with self.microphone as source:
             print("\n[Dinleniyor...] Poodle seni duymaya hazır...")
             try:
-                self.recognizer.adjust_for_ambient_noise(source, duration=0.5)
-                audio = self.recognizer.listen(source, timeout=5, phrase_time_limit=10)
+                # Kalibrasyonu 0.3 saniyeye düşürerek tepki hızını artırdık
+                self.recognizer.adjust_for_ambient_noise(source, duration=0.3)
+                audio = self.recognizer.listen(source, timeout=5, phrase_time_limit=8)
                 text = self.recognizer.recognize_google(audio, language=self.lang)
                 print(f"Tanem: {text}")
                 return text.lower()
