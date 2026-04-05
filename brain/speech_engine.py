@@ -28,16 +28,18 @@ class PoodleSpeech:
         
         filename = "poodle_voice.wav"
         try:
-            # 1. Sesi RAM'deki modelle milisaniyeler içinde üret
-            with wave.open(filename, "wb") as wav_file:
-                # Piper'ın iç ayarlarını otomatik kullanıyoruz
+            # --- WAVE MODÜLÜNÜ DEVREDEN ÇIKARAN EN TEMİZ YÖNTEM ---
+            # Piper kütüphanesi dosyayı kendisi açıp header'ları (kanalları) otomatik yazar
+            with open(filename, "wb") as wav_file:
+                # self.voice.synthesize metodu wave_file nesnesini kendi yönetir
                 self.voice.synthesize(text, wav_file)
             
-            # 2. Üretilen dosyayı anında çal
+            # Üretilen dosyayı anında çal
             if os.path.exists(filename):
-                # '-q 1' parametresi afplay'in en hızlı başlama modudur
+                # '-q 1' en hızlı başlama modudur
                 subprocess.run(["afplay", "-q", "1", filename])
                 os.remove(filename)
+                
         except Exception as e:
             print(f">>> [SES HATASI] {e}")
 
