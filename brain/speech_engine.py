@@ -26,7 +26,6 @@ class PoodleSpeech:
         print(f"Poodle: {text}")
         
         try:
-            import wave
             import subprocess
             from piper.voice import PiperVoice
             
@@ -35,19 +34,31 @@ class PoodleSpeech:
             # Piper Ses Modelini Yükle
             voice = PiperVoice.load(self.model_path)
             
-            # --- EN BASİT VE OTOMATİK DOSYA YAZMA YÖNTEMİ ---
-            # wave.open yerine direkt open(filename, 'wb') kullanıyoruz
-            # Piper kütüphanesi wave header'larını kendi ekler
+            # --- WAVE KÜTÜPHANESİNİ DEVRE DIŞI BIRAKAN YÖNTEM ---
+            # Sesi bir liste (iterator) olarak üretiyoruz
             with open(filename, "wb") as wav_file:
-                voice.synthesize(text, wav_file)
+                # synthesize_ids_to_audio yerine doğrudan synthesize kullanıyoruz
+                # ama wave_file nesnesini değil, ham binary yazma yöntemini seçiyoruz
+                for audio_bytes in voice.synthesize_stream(text):
+                    wav_file.write(audio_bytes)
             
-            # SESİ ÇAL (afplay yerleşik Mac aracıdır)
+            # SESİ ÇAL
             if os.path.exists(filename):
+                # afplay bazen 'raw' dosyaları sevmez, o yüzden en garantisi subprocess
                 subprocess.run(["afplay", filename])
                 os.remove(filename)
                 
         except Exception as e:
-            print(f">>> [SES KRİZİ] Piper sentez hatası: {e}")
+            # EĞER YUKARIDAKİ DE HATA VERİRSE (SON ÇARE - TERMINAL YÖNTEMİ AMA ABSOLUTE PATH İLE)
+            try:
+                python_path = "/Users/fahrisengul/anaconda3/bin/python"
+                clean_text = text.replace('"', '').replace("'", "")
+                cmd = f'echo "{clean_text}" | {python_path} -m piper --model {self.model_path} --output_file {filename}'
+                subprocess.run(cmd, shell=True, check=True)
+                subprocess.run(["afplay", filename])
+                if os.path.exists(filename): os.remove(filename)
+            except Exception as e2:
+                print(f">>> [SES KRİZİ] Piper sentez hatası: {e2}")
 
     def listen(self):
         if self.microphone is None:
