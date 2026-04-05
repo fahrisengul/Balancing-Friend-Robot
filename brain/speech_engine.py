@@ -22,16 +22,17 @@ class PoodleSpeech:
             print(f">>> [UYARI] Mikrofon hatası: {e}")
 
     def speak(self, text):
-        if not text:
-            return
+        if not text: return
         print(f"Poodle: {text}")
         
         try:
             filename = "poodle_voice.wav"
-            # M serisi Mac'te Python modülü üzerinden Piper çağrısı
-            command = f'echo "{text}" | python3 -m piper --model {self.model_path} --output_file {filename}'
+            # Metni temizleyip (çift tırnaklardan arındırıp) Piper'a gönderiyoruz
+            clean_text = text.replace('"', '')
+            command = f'echo "{clean_text}" | python3 -m piper --model {self.model_path} --output_file {filename}'
             
-            subprocess.run(command, shell=True, check=True, capture_output=True)
+            # subprocess.run kısmını capture_output olmadan sadeleştirerek deneyelim
+            subprocess.run(command, shell=True, check=True)
             
             if os.path.exists(filename):
                 subprocess.run(["afplay", filename])
