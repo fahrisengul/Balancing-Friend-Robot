@@ -7,9 +7,8 @@ class PoodleSpeech:
     def __init__(self, lang="tr-TR"):
         self.recognizer = sr.Recognizer()
         self.lang = lang
-        self.model_path = "tr_TR-dfki-medium.onnx" 
+        self.model_path = "tr_TR-dfki-medium.onnx"
         
-        # Mikrofon Hassasiyet Ayarları
         self.recognizer.energy_threshold = 400
         self.recognizer.dynamic_energy_threshold = True
         self.recognizer.pause_threshold = 0.8
@@ -23,19 +22,17 @@ class PoodleSpeech:
             print(f">>> [UYARI] Mikrofon hatası: {e}")
 
     def speak(self, text):
-        """M serisi Mac uyumlu Piper ses üretimi."""
-        if not text: return
+        if not text:
+            return
         print(f"Poodle: {text}")
         
         try:
             filename = "poodle_voice.wav"
-            # Python modülü üzerinden Piper'ı çağırıyoruz (Mimari hatasını aşmak için)
+            # M serisi Mac'te Python modülü üzerinden Piper çağrısı
             command = f'echo "{text}" | python3 -m piper --model {self.model_path} --output_file {filename}'
             
-            # Ses dosyasını oluştur
             subprocess.run(command, shell=True, check=True, capture_output=True)
             
-            # Sesi çal ve temizle
             if os.path.exists(filename):
                 subprocess.run(["afplay", filename])
                 os.remove(filename)
@@ -43,7 +40,6 @@ class PoodleSpeech:
             print(f">>> [HATA] Piper Ses Üretimi Başarısız: {e}")
 
     def listen(self):
-        """Tanem'in sesini duyan kulaklar."""
         if self.microphone is None:
             return None
             
