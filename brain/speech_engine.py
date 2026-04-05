@@ -39,6 +39,13 @@ class PoodleSpeech:
         if not self.microphone:
             return None
 
+        finally:
+            # if temp_path and os.path.exists(temp_path):
+            #    try:
+            #        os.remove(temp_path)
+                except Exception:
+                    pass
+
         with self.microphone as source:
             print("\n[Dinleniyor...] Poodle seni duymaya hazır...")
             try:
