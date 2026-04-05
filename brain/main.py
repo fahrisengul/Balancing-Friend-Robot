@@ -24,28 +24,52 @@ def main():
     last_interaction_time = time.time()
     idle_look_timer = 0
 
-    def run_speak(text):
-        nonlocal is_busy, last_interaction_time
+    speech.start_wake_listener()
+
+    def set_robot_busy(value: bool):
+        nonlocal is_busy
+        is_busy = value
+        speech.set_busy(value)
+
+    def run_response(user_text):
+        nonlocal last_interaction_time
+
+        if not user_text:
+            set_robot_busy(True)
+            try:
+                face.set_state("error")
+                speech.speak("Seni tam duyamadım Tanem, tekrar söyler misin?")
+            finally:
+                face.set_state("idle")
+                last_interaction_time = time.time()
+                set_robot_busy(False)
+            return
+
+        set_robot_busy(True)
         try:
-            is_busy = True
+            face.set_state("thinking")
+            poodle_response = brain.ask_poodle(user_text)
+
             face.set_state("speaking")
-            speech.speak(text)
+            speech.speak(poodle_response)
+
+        except Exception as e:
+            print(f">>> [MAIN HATASI] {type(e).__name__}: {e}")
+            face.set_state("error")
+            speech.speak("Bir sorun yaşadım Tanem.")
+
         finally:
             face.set_state("idle")
             last_interaction_time = time.time()
-            is_busy = False
+            set_robot_busy(False)
 
-    def voice_interaction_direct():
-        """
-        Manuel tetikleme:
-        L tuşuna basınca wake word beklemeden direkt komut dinler.
-        """
-        nonlocal last_interaction_time, is_busy
+    def manual_voice_interaction():
+        nonlocal last_interaction_time
 
         if is_busy:
             return
 
-        is_busy = True
+        set_robot_busy(True)
 
         try:
             face.set_state("listening")
@@ -62,57 +86,46 @@ def main():
                 speech.speak("Seni tam duyamadım Tanem, tekrar söyler misin?")
 
         except Exception as e:
-            print(f">>> [MAIN HATASI] {e}")
+            print(f">>> [MAIN HATASI] {type(e).__name__}: {e}")
             face.set_state("error")
             speech.speak("Bir sorun yaşadım Tanem.")
 
         finally:
             face.set_state("idle")
             last_interaction_time = time.time()
-            is_busy = False
+            set_robot_busy(False)
 
-    def voice_interaction_wakeword():
-        """
-        İstersen bunu ileride sürekli dinleme modu için kullanabilirsin.
-        Wake word bekler, sonra komutu alır.
-        """
-        nonlocal last_interaction_time, is_busy
-
+    def quick_greeting():
         if is_busy:
             return
 
-        is_busy = True
-
+        set_robot_busy(True)
         try:
-            face.set_state("listening")
-            user_text = speech.listen()
-
-            if user_text:
-                face.set_state("thinking")
-                poodle_response = brain.ask_poodle(user_text)
-
-                face.set_state("speaking")
-                speech.speak(poodle_response)
-            else:
-                face.set_state("error")
-                speech.speak("Seni tam duyamadım Tanem, tekrar söyler misin?")
-
-        except Exception as e:
-            print(f">>> [MAIN HATASI] {e}")
-            face.set_state("error")
-            speech.speak("Bir sorun yaşadım Tanem.")
-
+            face.set_state("speaking")
+            greeting = brain.ask_poodle("Merhaba")
+            speech.speak(greeting)
         finally:
             face.set_state("idle")
             last_interaction_time = time.time()
-            is_busy = False
+            set_robot_busy(False)
 
     print("\n--- Poodle Robot Zeka Katmanıyla Aktif ---")
-    print("L: Direkt Dinleme | W: Wake Word Modu | SPACE: Selamla | Q: Çıkış")
+    print("Wake word arka planda aktif.")
+    print("L: Direkt Dinleme | SPACE: Selamla | Q: Çıkış")
 
     while running:
         now = time.time()
         mouse_pos = pygame.mouse.get_pos()
+
+        # Arka plandan gelen wake word komutu varsa işle
+        if not is_busy:
+            pending_command = speech.get_pending_command()
+            if pending_command is not None:
+                threading.Thread(
+                    target=run_response,
+                    args=(pending_command,),
+                    daemon=True
+                ).start()
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -120,14 +133,10 @@ def main():
 
             elif event.type == pygame.KEYDOWN and not is_busy:
                 if event.key == pygame.K_l:
-                    threading.Thread(target=voice_interaction_direct, daemon=True).start()
-
-                elif event.key == pygame.K_w:
-                    threading.Thread(target=voice_interaction_wakeword, daemon=True).start()
+                    threading.Thread(target=manual_voice_interaction, daemon=True).start()
 
                 elif event.key == pygame.K_SPACE:
-                    greeting = brain.ask_poodle("Merhaba")
-                    threading.Thread(target=run_speak, args=(greeting,), daemon=True).start()
+                    threading.Thread(target=quick_greeting, daemon=True).start()
 
                 elif event.key == pygame.K_q:
                     running = False
@@ -146,6 +155,7 @@ def main():
         pygame.display.flip()
         clock.tick(60)
 
+    speech.stop_wake_listener()
     pygame.quit()
 
 
