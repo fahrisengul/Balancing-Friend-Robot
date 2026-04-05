@@ -71,16 +71,11 @@ def main():
             return
 
         set_robot_busy(True)
+        speech.pause_wake_listener(6.0)
 
         try:
             face.set_state("listening")
-            user_text = speech.listen_command_vad(
-                start_timeout_sec=3.5,
-                max_record_sec=8.0,
-                silence_to_stop_ms=1100,
-                min_speech_ms=120,
-                prebuffer_ms=800,
-            )
+            user_text = speech.listen_once()
 
             if user_text:
                 face.set_state("listening")
