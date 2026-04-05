@@ -10,3 +10,11 @@
 | **Güç Yönetimi** | **Python Scripts** | Batarya Takibi & Pil Uyarısı | **4S BMS + Mini560 Regülatör** |
 | **Veri Depolama** | **SQLite / JSON** | Kullanıcı Hafızası & Loglar | **Samsung PM981 NVMe SSD** |
 | **Soğutma** | **RPI Fan Control** | Termal Yönetim & Hız Ayarı | **Raspberry Pi Active Cooler** |
+
+
+Yazılım Altyapısı (Requirements)
+- Projenin taşınabilir ve stabil olması için oluşturduğumuz katmanlar:
+- OpenCV & Numpy: Görüntü analizi ve matematiksel hesaplamalar için.
+- PyAudio: Mikrofon erişimi için (Conda/Mac tarafındaki zorlukları aştık).
+- Playsound: Ses dosyalarını bağımsız bir kanaldan çalmak için.
+- Pyserial: (Gelecek adım) Robotun kafasını fiziksel olarak hareket ettirecek servolarla haberleşmek için.
