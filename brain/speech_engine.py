@@ -10,14 +10,21 @@ class PoodleSpeech:
         self.lang = lang
         self.microphone = None
         
-        # PyAudio kontrolünü en başta yapıyoruz ki sr.Microphone() patlatmasın
+        # --- HASSAS KULAK AYARLARI ---
+        self.recognizer.energy_threshold = 300    # Ses tetikleme seviyesi
+        self.recognizer.dynamic_energy_threshold = True # Ortama göre kendini ayarlar
+        self.recognizer.pause_threshold = 0.8     # Konuşma bittiğini anlamak için bekleme
+        
         try:
             import pyaudio
             self.microphone = sr.Microphone()
-            print(">>> [SES] Mikrofon başarıyla bağlandı.")
+            with self.microphone as source:
+                print(">>> [SES] Ortam gürültüsü kalibre ediliyor (1sn)...")
+                # Odayı 1 saniye dinleyip gürültüyü profiller
+                self.recognizer.adjust_for_ambient_noise(source, duration=1.0)
+            print(">>> [SES] Mikrofon başarıyla bağlandı ve kalibre edildi.")
         except (ImportError, AttributeError, Exception) as e:
-            print(f">>> [UYARI] PyAudio veya Mikrofon sorunu: {e}")
-            print(">>> Sesli komutlar devre dışı ama Poodle görseli çalışacak.")
+            print(f">>> [UYARI] Mikrofon sorunu: {e}")
 
     def speak(self, text):
         if not text: return
@@ -27,6 +34,8 @@ class PoodleSpeech:
             filename = "temp_voice.mp3"
             tts.save(filename)
             playsound(filename)
+            # Dosya kilitlenmesini önlemek için kısa bir bekleme
+            time.sleep(0.1)
             if os.path.exists(filename):
                 os.remove(filename)
         except Exception as e:
@@ -34,16 +43,23 @@ class PoodleSpeech:
 
     def listen(self):
         if self.microphone is None:
-            print(">>> Mikrofon başlatılamadığı için dinleme yapılamıyor.")
+            print(">>> Mikrofon yok, dinleme yapılamıyor.")
             return None
             
         with self.microphone as source:
-            print("\n[Dinleniyor...] Tanem, seni dinliyorum...")
-            self.recognizer.adjust_for_ambient_noise(source, duration=0.5)
+            print("\n[Dinleniyor...] Poodle seni duymaya hazır...")
             try:
-                audio = self.recognizer.listen(source, timeout=5, phrase_time_limit=5)
+                # Dinleme sürelerini biraz esnettik
+                audio = self.recognizer.listen(source, timeout=5, phrase_time_limit=10)
                 text = self.recognizer.recognize_google(audio, language=self.lang)
                 print(f"Tanem: {text}")
                 return text.lower()
-            except Exception:
+            except sr.UnknownValueError:
+                print(">>> Poodle: Ne dediğini anlayamadım.")
+                return None
+            except sr.WaitTimeoutError:
+                print(">>> Poodle: Bir şey duymadım.")
+                return None
+            except Exception as e:
+                print(f"Dinleme hatası: {e}")
                 return None
