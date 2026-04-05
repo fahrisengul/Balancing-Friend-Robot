@@ -2,31 +2,26 @@
 opencv-python
 numpy
 
-# --- Yapay Zeka ve Nesne Takibi ---
-# Hailo-8 Century ile koordinasyon ve YOLO modelleri için
+# --- Yapay Zeka, Nesne Takibi ve Hafıza ---
 ultralytics
+chromadb        # Uzun süreli hafıza (Vektör DB)
+py_trees       # Davranış Ağacı (Behavior Tree)
 
-# --- Ses ve Konuşma (STT & TTS) ---
-# gTTS: Robotun Türkçe seslendirmesi için
-# SpeechRecognition: Tanem'in sesini yazıya dökmek için
-# PyAudio: Mikrofon erişimi (macOS'ta 'brew install portaudio' gerekebilir)
+# --- Ses ve Konuşma (Offline Hazırlık) ---
 gTTS
 SpeechRecognition
 pyaudio
-
-# --- Ses Çalma Alternatifi (Önemli) ---
-# gTTS ile üretilen sesleri pygame üzerinden veya direkt çalmak için 
-# daha hafif bir alternatif
 playsound==1.2.2
+# openai-whisper  # Pi 5'e geçince aktif edilecek (Offline STT)
+
+# --- Büyük Dil Modeli (LLM) ---
+# ollama          # Pi 5 üzerinde yerel çalışacak
 
 # --- Arayüz ve Mimikler ---
-# V18 sürümü ve tüm görsel motor için
 pygame
 
 # --- Yardımcı Servisler ---
-# İnternet tabanlı API'lar ve güncellemeler için
 requests
 
-# --- Seri Haberleşme ---
-# Arduino/ESP32 gibi kartlarla kafa hareketi/servo kontrolü için
+# --- Seri Haberleşme (Body Control) ---
 pyserial
