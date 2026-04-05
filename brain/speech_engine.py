@@ -25,42 +25,40 @@ class PoodleSpeech:
         if not text: return
         print(f"Poodle: {text}")
         
+        filename = "poodle_voice.wav"
+        
+        # --- YÖNTEM 1: DOĞRUDAN KÜTÜPHANE (EN HIZLI) ---
         try:
             import wave
-            import numpy as np
-            # Piper kütüphanesini doğrudan içe aktaralım
             from piper.voice import PiperVoice
             
-            filename = "poodle_voice.wav"
-            
-            # Sesi oluştur (Terminal kullanmadan, doğrudan Python içinden)
             voice = PiperVoice.load(self.model_path)
             with wave.open(filename, "wb") as wav_file:
                 voice.synthesize(text, wav_file)
             
-            # Sesi çal
             if os.path.exists(filename):
                 subprocess.run(["afplay", filename])
                 os.remove(filename)
-                
+                return # Başarılıysa fonksiyondan çık
         except Exception as e:
-            # Eğer yukarıdaki kütüphane yöntemi hata verirse, 
-            # terminal yöntemini en güvenli tırnaklama ile son kez deneyelim:
-            try:
-                import subprocess
-                filename = "poodle_voice.wav"
-                # Metni Piper'ın hata yapmayacağı şekilde temizleyelim
-                clean_text = text.replace('"', '').replace("'", "")
-                # Komutu liste olarak göndererek (shell=False) karakter sorunlarını aşalım
-                ps = subprocess.Popen(('echo', clean_text), stdout=subprocess.PIPE)
-                output = subprocess.check_output(('python3', '-m', 'piper', '--model', self.model_path, '--output_file', filename), stdin=ps.stdout)
-                ps.wait()
-                
-                if os.path.exists(filename):
-                    subprocess.run(["afplay", filename])
-                    os.remove(filename)
-            except Exception as e2:
-                print(f">>> [SES KRİZİ] Piper hala nazlanıyor: {e2}")
+            print(f">>> [BİLGİ] Kütüphane yöntemi denendi, terminale geçiliyor...")
+
+        # --- YÖNTEM 2: TERMINAL / ANACONDA (GARANTİ) ---
+        try:
+            clean_text = text.replace('"', '').replace("'", "")
+            # Burada 'python3' yerine sadece 'python' yazarak senin (base) ortamını hedefliyoruz
+            ps = subprocess.Popen(('echo', clean_text), stdout=subprocess.PIPE)
+            subprocess.check_output(
+                ('python', '-m', 'piper', '--model', self.model_path, '--output_file', filename), 
+                stdin=ps.stdout
+            )
+            ps.wait()
+            
+            if os.path.exists(filename):
+                subprocess.run(["afplay", filename])
+                os.remove(filename)
+        except Exception as e2:
+            print(f">>> [SES KRİZİ] Piper tüm yolları reddetti: {e2}")
 
     def listen(self):
         if self.microphone is None:
