@@ -2,22 +2,21 @@ import chromadb
 import uuid
 
 class PoodleMemory:
-    def __init__(self, db_path="./chroma_db"):
-        self.client = chromadb.PersistentClient(path=db_path)
-        self.collection = self.client.get_or_create_collection(name="poodle_memory")
+    def __init__(self, path="./poodle_memory"):
+        self.chroma_client = chromadb.PersistentClient(path=path)
+        self.collection = self.chroma_client.get_or_create_collection(name="tanem_history")
 
-    def save_interaction(self, user_text, robot_response):
-        """Konuşmayı hafızaya kaydeder."""
-        text_to_save = f"Tanem: {user_text} | Poodle: {robot_response}"
-        self.collection.add(
-            documents=[text_to_save],
-            ids=[str(uuid.uuid4())]
-        )
+    def query_past(self, user_input):
+        """Geçmişi hatırlar."""
+        results = self.collection.query(query_texts=[user_input], n_results=3)
+        if results['documents'] and results['documents'][0]:
+            return f"\n(Hatırladığın bilgi: {results['documents'][0][0]})"
+        return ""
 
-    def get_context(self, query, n_results=3):
-        """En alakalı son 3 anıyı getirir."""
-        results = self.collection.query(
-            query_texts=[query],
-            n_results=n_results
-        )
-        return " ".join(results['documents'][0]) if results['documents'] else ""
+    def save_to_memory(self, user_input):
+        """Önemli bilgileri kaydeder."""
+        if len(user_input) > 5:
+            self.collection.add(
+                documents=[user_input],
+                ids=[str(uuid.uuid4())]
+            )
