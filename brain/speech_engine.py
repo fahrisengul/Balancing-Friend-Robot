@@ -35,17 +35,13 @@ class PoodleSpeech:
             # Piper Ses Modelini Yükle
             voice = PiperVoice.load(self.model_path)
             
-            # SESİ SENTEZLE VE WAV DOSYASINA YAZ (Parametreler eklendi)
-            with wave.open(filename, "wb") as wav_file:
-                # Piper'ın örnekleme hızını ve kanal sayısını (1=Mono) belirtiyoruz
-                wav_file.setnchannels(1)
-                wav_file.setsampwidth(2) # 16-bit ses
-                wav_file.setframerate(voice.config.sample_rate)
-                
-                # Sesi üret ve dosyaya yaz
+            # --- EN BASİT VE OTOMATİK DOSYA YAZMA YÖNTEMİ ---
+            # wave.open yerine direkt open(filename, 'wb') kullanıyoruz
+            # Piper kütüphanesi wave header'larını kendi ekler
+            with open(filename, "wb") as wav_file:
                 voice.synthesize(text, wav_file)
             
-            # SESİ ÇAL
+            # SESİ ÇAL (afplay yerleşik Mac aracıdır)
             if os.path.exists(filename):
                 subprocess.run(["afplay", filename])
                 os.remove(filename)
