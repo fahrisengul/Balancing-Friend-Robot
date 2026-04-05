@@ -26,19 +26,41 @@ class PoodleSpeech:
         print(f"Poodle: {text}")
         
         try:
+            import wave
+            import numpy as np
+            # Piper kütüphanesini doğrudan içe aktaralım
+            from piper.voice import PiperVoice
+            
             filename = "poodle_voice.wav"
-            # Metni temizleyip (çift tırnaklardan arındırıp) Piper'a gönderiyoruz
-            clean_text = text.replace('"', '')
-            command = f'echo "{clean_text}" | python3 -m piper --model {self.model_path} --output_file {filename}'
             
-            # subprocess.run kısmını capture_output olmadan sadeleştirerek deneyelim
-            subprocess.run(command, shell=True, check=True)
+            # Sesi oluştur (Terminal kullanmadan, doğrudan Python içinden)
+            voice = PiperVoice.load(self.model_path)
+            with wave.open(filename, "wb") as wav_file:
+                voice.synthesize(text, wav_file)
             
+            # Sesi çal
             if os.path.exists(filename):
                 subprocess.run(["afplay", filename])
                 os.remove(filename)
+                
         except Exception as e:
-            print(f">>> [HATA] Piper Ses Üretimi Başarısız: {e}")
+            # Eğer yukarıdaki kütüphane yöntemi hata verirse, 
+            # terminal yöntemini en güvenli tırnaklama ile son kez deneyelim:
+            try:
+                import subprocess
+                filename = "poodle_voice.wav"
+                # Metni Piper'ın hata yapmayacağı şekilde temizleyelim
+                clean_text = text.replace('"', '').replace("'", "")
+                # Komutu liste olarak göndererek (shell=False) karakter sorunlarını aşalım
+                ps = subprocess.Popen(('echo', clean_text), stdout=subprocess.PIPE)
+                output = subprocess.check_output(('python3', '-m', 'piper', '--model', self.model_path, '--output_file', filename), stdin=ps.stdout)
+                ps.wait()
+                
+                if os.path.exists(filename):
+                    subprocess.run(["afplay", filename])
+                    os.remove(filename)
+            except Exception as e2:
+                print(f">>> [SES KRİZİ] Piper hala nazlanıyor: {e2}")
 
     def listen(self):
         if self.microphone is None:
