@@ -7,46 +7,46 @@ class PoodleSpeech:
     def __init__(self, lang="tr-TR"):
         self.recognizer = sr.Recognizer()
         self.lang = lang
-        # İndirdiğin ONNX modelinin adının tam doğru olduğundan emin ol:
         self.model_path = "tr_TR-dfki-medium.onnx" 
         
-        # Mikrofon Ayarları
+        # Mikrofon Hassasiyet Ayarları
         self.recognizer.energy_threshold = 400
         self.recognizer.dynamic_energy_threshold = True
+        self.recognizer.pause_threshold = 0.8
         
         try:
             import pyaudio
             self.microphone = sr.Microphone()
-            print(">>> [SES] Mikrofon ve Piper (Python Modülü) Aktif.")
-        except:
+            print(">>> [SES] Mikrofon ve Piper (Python) Hazır.")
+        except Exception as e:
             self.microphone = None
-            print(">>> [HATA] Mikrofon bulunamadı.")
+            print(f">>> [UYARI] Mikrofon hatası: {e}")
 
     def speak(self, text):
-        """M Serisi Mac uyumlu Piper ses üretimi."""
+        """M serisi Mac uyumlu Piper ses üretimi."""
         if not text: return
         print(f"Poodle: {text}")
         
         try:
             filename = "poodle_voice.wav"
-            
-            # NOT: './piper' yerine 'python3 -m piper' kullanarak mimari hatasını aşıyoruz
+            # Python modülü üzerinden Piper'ı çağırıyoruz (Mimari hatasını aşmak için)
             command = f'echo "{text}" | python3 -m piper --model {self.model_path} --output_file {filename}'
             
-            # Sesi üret (Arka planda sessizce çalışır)
+            # Ses dosyasını oluştur
             subprocess.run(command, shell=True, check=True, capture_output=True)
             
-            # Sesi çal ve dosyayı temizle
+            # Sesi çal ve temizle
             if os.path.exists(filename):
                 subprocess.run(["afplay", filename])
                 os.remove(filename)
-                
         except Exception as e:
             print(f">>> [HATA] Piper Ses Üretimi Başarısız: {e}")
 
     def listen(self):
-        """Tanem'i dinleyen kulaklar."""
-        if self.microphone is None: return None
+        """Tanem'in sesini duyan kulaklar."""
+        if self.microphone is None:
+            return None
+            
         with self.microphone as source:
             print("\n[Dinleniyor...] Poodle seni duymaya hazır...")
             try:
