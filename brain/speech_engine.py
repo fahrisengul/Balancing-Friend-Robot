@@ -32,39 +32,8 @@ class PoodleSpeech:
             print(f">>> [HATA] Başlatma hatası: {e}")
 
     def speak(self, text):
-        if not text or not self.voice:
-            return
-
-        print(f"Poodle: {text}")
-        filename = "poodle_voice.wav"
-
-        try:
-            with wave.open(filename, "wb") as wav_file:
-                # KRITIK: synthesize DEGIL, synthesize_wav kullan
-                self.voice.synthesize_wav(text, wav_file)
-
-            if not os.path.exists(filename) or os.path.getsize(filename) == 0:
-                raise RuntimeError("WAV dosyası oluşmadı veya boş.")
-
-            result = subprocess.run(
-                ["/usr/bin/afplay", filename],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.PIPE,
-                text=True
-            )
-
-            if result.returncode != 0:
-                raise RuntimeError(result.stderr.strip() or "afplay başarısız oldu.")
-
-        except Exception as e:
-            print(f">>> [SES HATASI] {e}")
-
-        finally:
-            if os.path.exists(filename):
-                try:
-                    os.remove(filename)
-                except Exception:
-                    pass
+        filename = os.path.abspath("poodle_voice.wav")
+        print(">>> [DEBUG] WAV PATH:", filename)
 
     def listen(self):
         if not self.microphone:
