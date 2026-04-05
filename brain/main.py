@@ -47,7 +47,7 @@ def main():
 
         set_robot_busy(True)
         try:
-            face.set_state("thinking")
+            face.set_state("listening")
             poodle_response = brain.ask_poodle(user_text)
 
             face.set_state("speaking")
@@ -73,10 +73,16 @@ def main():
 
         try:
             face.set_state("listening")
-            user_text = speech.listen_command_vad()
+            user_text = speech.listen_command_vad(
+                start_timeout_sec=3.0,
+                max_record_sec=8.0,
+                silence_to_stop_ms=1000,
+                min_speech_ms=180,
+                prebuffer_ms=700,
+            )
 
             if user_text:
-                face.set_state("thinking")
+                face.set_state("listening")
                 poodle_response = brain.ask_poodle(user_text)
 
                 face.set_state("speaking")
@@ -96,6 +102,8 @@ def main():
             set_robot_busy(False)
 
     def quick_greeting():
+        nonlocal last_interaction_time
+
         if is_busy:
             return
 
@@ -117,13 +125,18 @@ def main():
         now = time.time()
         mouse_pos = pygame.mouse.get_pos()
 
-        # Arka plandan gelen wake word komutu varsa işle
         if not is_busy:
-            pending_command = speech.get_pending_command()
-            if pending_command is not None:
+            pending = speech.get_pending_command()
+            if pending["type"] == "command":
                 threading.Thread(
                     target=run_response,
-                    args=(pending_command,),
+                    args=(pending["text"],),
+                    daemon=True
+                ).start()
+            elif pending["type"] == "empty":
+                threading.Thread(
+                    target=run_response,
+                    args=(None,),
                     daemon=True
                 ).start()
 
@@ -134,10 +147,8 @@ def main():
             elif event.type == pygame.KEYDOWN and not is_busy:
                 if event.key == pygame.K_l:
                     threading.Thread(target=manual_voice_interaction, daemon=True).start()
-
                 elif event.key == pygame.K_SPACE:
                     threading.Thread(target=quick_greeting, daemon=True).start()
-
                 elif event.key == pygame.K_q:
                     running = False
 
