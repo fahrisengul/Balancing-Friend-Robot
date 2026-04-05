@@ -25,7 +25,7 @@ class PoodleBrain:
     def ask_poodle(self, user_input):
         """Llama-3 ve Hafıza ile cevap üretir."""
         # 1. Geçmişi Hatırla (Vektör Sorgusu)
-        results = self.collection.query(query_texts=[user_input], n_results=1)
+        results = self.collection.query(query_texts=[user_input], n_results=3)
         past_context = ""
         if results['documents'] and results['documents'][0]:
             past_context = f"\n(Hatırladığın bilgi: {results['documents'][0][0]})"
