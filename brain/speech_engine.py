@@ -8,7 +8,7 @@ class PoodleSpeech:
         self.recognizer = sr.Recognizer()
         self.lang = lang
         # Elimizdeki mevcut model:
-        self.model_path = "tr_TR-dfki-medium.onnx"
+        self.model_path = "tr_TR-fahrettin-medium.onnx"
         
         try:
             import pyaudio
