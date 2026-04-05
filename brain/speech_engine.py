@@ -28,15 +28,19 @@ class PoodleSpeech:
         
         filename = "poodle_voice.wav"
         try:
-            # --- WAVE MODÜLÜNÜ DEVREDEN ÇIKARAN EN TEMİZ YÖNTEM ---
-            # Piper kütüphanesi dosyayı kendisi açıp header'ları (kanalları) otomatik yazar
-            with open(filename, "wb") as wav_file:
-                # self.voice.synthesize metodu wave_file nesnesini kendi yönetir
+            import wave
+            # 1. DOSYAYI AÇIYORUZ VE TÜM TEKNİK DETAYLARI ELLE ZORLUYORUZ
+            with wave.open(filename, "wb") as wav_file:
+                # Piper modelleri (Fahrettin/DFKI) genelde 1 kanal (Mono) ve 16-bit'tir
+                wav_file.setnchannels(1)
+                wav_file.setsampwidth(2) # 16-bit
+                wav_file.setframerate(self.voice.config.sample_rate)
+                
+                # 2. SESİ ŞİMDİ SENTEZLE (Artık wave hata veremez, her şeyi söyledik)
                 self.voice.synthesize(text, wav_file)
             
-            # Üretilen dosyayı anında çal
+            # 3. SESİ ÇAL
             if os.path.exists(filename):
-                # '-q 1' en hızlı başlama modudur
                 subprocess.run(["afplay", "-q", "1", filename])
                 os.remove(filename)
                 
