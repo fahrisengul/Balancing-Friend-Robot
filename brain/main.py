@@ -4,12 +4,13 @@ import random
 import time
 from face_ui import PoodleFace
 from speech_engine import PoodleSpeech
-from brain import PoodleBrain  # Yeni Beyin Modülü
+from brain import PoodleBrain  # Yeni zeka modülümüz
 
-# Beyni global veya main içinde tanımlayabiliriz
+# --- GLOBAL TANIMLAR ---
 brain = PoodleBrain()
 
 def main():
+    # --- PYGAME & SISTEM AYARLARI ---
     pygame.init()
     screen = pygame.display.set_mode((1024, 600))
     pygame.display.set_caption("Poodle Robot - Llama-3 Brain")
@@ -18,12 +19,13 @@ def main():
     face = PoodleFace(1024, 600)
     speech = PoodleSpeech()
     
+    # --- DURUM DEĞİŞKENLERİ (Nonlocal bunlara erişecek) ---
     running = True
     is_busy = False 
     last_interaction_time = time.time()
     idle_look_timer = 0
 
-    # --- SESLİ ETKİLEŞİM FONKSİYONU (main içinde olmalı ki nonlocal çalışsın) ---
+    # --- SESLİ ETKİLEŞİM FONKSİYONU (main içinde olmalı!) ---
     def voice_interaction():
         nonlocal last_interaction_time, is_busy
         is_busy = True
@@ -33,7 +35,7 @@ def main():
         
         if user_text:
             face.set_state("speaking")
-            # --- LLM + HAFIZA DEVREDE ---
+            # --- ARTIK ZEKA DEVREDE ---
             poodle_response = brain.ask_poodle(user_text)
             speech.speak(poodle_response)
         else:
@@ -45,7 +47,9 @@ def main():
         is_busy = False
 
     print("\n--- Poodle Robot Zeka Katmanıyla Aktif ---")
+    print("L: Dinleme Modu | SPACE: Selamla | Q: Çıkış")
 
+    # --- ANA DÖNGÜ ---
     while running:
         now = time.time()
         mouse_pos = pygame.mouse.get_pos()
@@ -55,22 +59,26 @@ def main():
                 running = False
             elif event.type == pygame.KEYDOWN and not is_busy:
                 if event.key == pygame.K_l:
+                    # Thread başlatırken argüman göndermemize gerek yok
                     threading.Thread(target=voice_interaction, daemon=True).start()
                 elif event.key == pygame.K_SPACE:
+                    # Boşluk tuşuyla hızlı bir selamlaşma
                     face.set_state("speaking")
-                    # Kısa bir selamlama için de LLM kullanabiliriz:
                     threading.Thread(target=lambda: speech.speak(brain.ask_poodle("Merhaba")), daemon=True).start()
                 elif event.key == pygame.K_q:
                     running = False
 
         # --- OTONOM DAVRANIŞLAR ---
         if not is_busy:
+            # Sıkılma/Boşta kalma durumu
             if now - last_interaction_time > 10:
                 if now > idle_look_timer:
-                    rx, ry = random.randint(200, 800), random.randint(150, 450)
+                    rx = random.randint(200, 800)
+                    ry = random.randint(150, 450)
                     face.update_gaze(rx, ry)
                     idle_look_timer = now + random.uniform(3, 6)
             else:
+                # Aktif takip modu
                 face.update_gaze(mouse_pos[0], mouse_pos[1])
 
         face.draw(screen)
