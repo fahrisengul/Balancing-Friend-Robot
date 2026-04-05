@@ -43,24 +43,18 @@ class PoodleSpeech:
         self._wake_running = False
         self._busy = False
         self._last_tts_time = 0.0
-        self._tts_cooldown_sec = 1.4
+        self._tts_cooldown_sec = 1.6
 
-        # Wake word varyasyonları
         self.wake_aliases = [
             "poodle",
-            "pudıl",
-            "pudle",
-            "poodle robot",
             "hey poodle",
             "merhaba poodle",
+            "poodle robot",
+            "pudle",
+            "pudil",
             "puddle",
-            "padıl",
-            "padali",
-            "padalı",
-            "podıl",
+            "podil",
             "podle",
-            "pudıl robot",
-            "hey puddle",
         ]
 
         print(">>> Whisper modeli yükleniyor...")
@@ -122,6 +116,27 @@ class PoodleSpeech:
         return audio
 
     # =========================================================
+    # AUDIO PREP
+    # =========================================================
+    def _normalize_audio(self, audio_float32: np.ndarray) -> np.ndarray:
+        if len(audio_float32) == 0:
+            return audio_float32
+
+        audio = audio_float32.astype(np.float32).copy()
+
+        # DC offset temizliği
+        audio = audio - np.mean(audio)
+
+        peak = np.max(np.abs(audio)) if len(audio) else 0.0
+        if peak > 0:
+            target_peak = 0.92
+            gain = min(target_peak / peak, 8.0)
+            audio = audio * gain
+
+        audio = np.clip(audio, -1.0, 1.0)
+        return audio.astype(np.float32)
+
+    # =========================================================
     # NORMALIZATION / WAKE MATCH
     # =========================================================
     def _normalize_text(self, text: str) -> str:
@@ -152,34 +167,42 @@ class PoodleSpeech:
         if not normalized:
             return False
 
-        # direkt substring
+        # Önce tam alias
         for alias in self.wake_aliases:
             alias_n = self._normalize_text(alias)
             if alias_n in normalized:
                 return True
 
-        # token bazlı fuzzy
         tokens = normalized.split()
-        candidates = set(tokens)
+        if not tokens:
+            return False
 
+        # Tek token ve iki token adayları
+        candidates = set(tokens)
         if len(tokens) >= 2:
             for i in range(len(tokens) - 1):
                 candidates.add(tokens[i] + " " + tokens[i + 1])
 
-        core_targets = [
-            "poodle",
-            "pudil",
-            "pudle",
-            "puddle",
-            "podil",
-            "padali",
-            "padali",
-        ]
+        # Asıl hedefler
+        core_targets = ["poodle", "pudle", "pudil", "puddle", "podil", "podle"]
 
         for cand in candidates:
+            cand_clean = cand.strip()
+
+            # Çok kısa kelimeleri ele
+            if len(cand_clean) < 5:
+                continue
+
             for target in core_targets:
-                if self._similarity(cand, target) >= 0.72:
+                # Daha sıkı eşik
+                if self._similarity(cand_clean, target) >= 0.84:
                     return True
+
+                # "hey xxx" / "merhaba xxx" gibi kullanım
+                if cand_clean.startswith("hey ") or cand_clean.startswith("merhaba "):
+                    tail = cand_clean.split(" ", 1)[1]
+                    if len(tail) >= 5 and self._similarity(tail, target) >= 0.80:
+                        return True
 
         return False
 
@@ -215,8 +238,10 @@ class PoodleSpeech:
         if len(audio_float32) == 0:
             return ""
 
+        prepared = self._normalize_audio(audio_float32)
+
         segments, _ = self.whisper.transcribe(
-            audio_float32,
+            prepared,
             language=self.lang,
             beam_size=beam_size,
             vad_filter=False,
@@ -231,16 +256,18 @@ class PoodleSpeech:
 
     def listen_command_vad(
         self,
+        start_timeout_sec=3.0,
         max_record_sec=8.0,
-        silence_to_stop_ms=900,
-        min_speech_ms=250,
-        prebuffer_ms=600,
+        silence_to_stop_ms=1000,
+        min_speech_ms=180,
+        prebuffer_ms=700,
     ):
         print("\n[Dinleniyor...] Komutunu bekliyorum...")
 
         prebuffer_blocks = max(1, prebuffer_ms // self.block_duration_ms)
         silence_blocks_needed = max(1, silence_to_stop_ms // self.block_duration_ms)
-        max_blocks = max(1, int(max_record_sec * 1000 / self.block_duration_ms))
+        start_timeout_blocks = max(1, int(start_timeout_sec * 1000 / self.block_duration_ms))
+        max_blocks_after_start = max(1, int(max_record_sec * 1000 / self.block_duration_ms))
 
         self.audio_queue = queue.Queue()
         prebuffer = deque(maxlen=prebuffer_blocks)
@@ -248,7 +275,8 @@ class PoodleSpeech:
         collected_blocks = []
         speech_started = False
         silence_counter = 0
-        blocks_processed = 0
+        start_wait_blocks = 0
+        blocks_after_start = 0
 
         with sd.InputStream(
             samplerate=self.input_samplerate,
@@ -257,25 +285,30 @@ class PoodleSpeech:
             blocksize=self.block_size,
             callback=self._audio_callback,
         ):
-            while blocks_processed < max_blocks:
+            while True:
                 block = self.audio_queue.get()
                 block = block.flatten().astype(np.float32)
-                blocks_processed += 1
 
                 if not speech_started:
                     prebuffer.append(block)
+                    start_wait_blocks += 1
 
-                block_has_speech = self._has_speech(block, min_speech_ms=min_speech_ms)
-
-                if not speech_started:
+                    block_has_speech = self._has_speech(block, min_speech_ms=min_speech_ms)
                     if block_has_speech:
                         speech_started = True
                         collected_blocks.extend(list(prebuffer))
                         collected_blocks.append(block)
                         silence_counter = 0
+                        blocks_after_start = 1
+                    elif start_wait_blocks >= start_timeout_blocks:
+                        return None
+
                     continue
 
                 collected_blocks.append(block)
+                blocks_after_start += 1
+
+                block_has_speech = self._has_speech(block, min_speech_ms=min_speech_ms)
 
                 if block_has_speech:
                     silence_counter = 0
@@ -285,10 +318,14 @@ class PoodleSpeech:
                 if silence_counter >= silence_blocks_needed:
                     break
 
+                if blocks_after_start >= max_blocks_after_start:
+                    break
+
         if not collected_blocks:
             return None
 
         audio = np.concatenate(collected_blocks).astype(np.float32)
+        audio = self._normalize_audio(audio)
 
         if not self._has_speech(audio, min_speech_ms=min_speech_ms):
             return None
@@ -303,20 +340,20 @@ class PoodleSpeech:
     # =========================================================
     # ARKA PLAN WAKE LISTENER
     # =========================================================
-    def _wake_loop(self, listen_window_sec=1.8, post_wake_command_sec=8.0):
+    def _wake_loop(self, listen_window_sec=1.6, post_wake_command_sec=8.0):
         print("\n[UYKU MODU] Wake word sürekli arka planda dinleniyor...")
 
         while self._wake_running:
             try:
-                # konuşurken veya hemen sonrasında tetikleme olmasın
                 if self._busy or (time.time() - self._last_tts_time < self._tts_cooldown_sec):
                     time.sleep(0.15)
                     continue
 
                 audio = self._record_fixed(listen_window_sec)
-
                 if len(audio) == 0:
                     continue
+
+                audio = self._normalize_audio(audio)
 
                 if not self._has_speech(audio, min_speech_ms=120):
                     continue
@@ -331,12 +368,18 @@ class PoodleSpeech:
                     print(">>> [WAKE WORD] Algılandı.")
 
                     self._busy = True
-                    command = self.listen_command_vad(max_record_sec=post_wake_command_sec)
+                    command = self.listen_command_vad(
+                        start_timeout_sec=3.2,
+                        max_record_sec=post_wake_command_sec,
+                        silence_to_stop_ms=1000,
+                        min_speech_ms=180,
+                        prebuffer_ms=700,
+                    )
 
                     if command:
-                        self.command_queue.put(command)
+                        self.command_queue.put({"type": "command", "text": command})
                     else:
-                        self.command_queue.put(None)
+                        self.command_queue.put({"type": "empty", "text": None})
 
                     self._busy = False
 
@@ -360,7 +403,7 @@ class PoodleSpeech:
         try:
             return self.command_queue.get_nowait()
         except queue.Empty:
-            return None
+            return {"type": "none", "text": None}
 
     # =========================================================
     # TTS
@@ -432,7 +475,6 @@ class PoodleSpeech:
             return
 
         print(f"Poodle: {text}")
-
         temp_path = None
 
         try:
