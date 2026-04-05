@@ -27,27 +27,31 @@ class PoodleSpeech:
         
         try:
             import wave
-            import sys
-            # Piper kütüphanesini doğrudan şu anki Python ortamından çağırıyoruz
+            import subprocess
             from piper.voice import PiperVoice
             
             filename = "poodle_voice.wav"
             
-            # Modeli şu anki Python süreci içinde yükle
+            # Piper Ses Modelini Yükle
             voice = PiperVoice.load(self.model_path)
             
-            # Sesi sentezle ve WAV dosyasına yaz
+            # SESİ SENTEZLE VE WAV DOSYASINA YAZ (Parametreler eklendi)
             with wave.open(filename, "wb") as wav_file:
+                # Piper'ın örnekleme hızını ve kanal sayısını (1=Mono) belirtiyoruz
+                wav_file.setnchannels(1)
+                wav_file.setsampwidth(2) # 16-bit ses
+                wav_file.setframerate(voice.config.sample_rate)
+                
+                # Sesi üret ve dosyaya yaz
                 voice.synthesize(text, wav_file)
             
-            # Sesi çal (afplay Mac'in yerleşik ses çalarıdır, sorun çıkarmaz)
+            # SESİ ÇAL
             if os.path.exists(filename):
                 subprocess.run(["afplay", filename])
                 os.remove(filename)
                 
         except Exception as e:
-            print(f">>> [SES KRİZİ] Piper kütüphanesi yüklenemedi veya hata verdi: {e}")
-            print(f">>> Mevcut Python Yolu: {sys.executable}")
+            print(f">>> [SES KRİZİ] Piper sentez hatası: {e}")
 
     def listen(self):
         if self.microphone is None:
