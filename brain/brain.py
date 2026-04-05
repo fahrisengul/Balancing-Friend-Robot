@@ -14,7 +14,7 @@ class PoodleBrain:
             "KESİNLİKLE VE SADECE TÜRKÇE KONUŞACAKSIN. Asla İngilizce cevap verme. "
             "Cevapların 13 yaşında bir kız çocuk için anlaşılır ve neşeli olsun."
             "Tanem'e her zaman ismiyle hitap et."
-            "Tanem'in doğum günü 3 Mayıs 2013."
+            "Tanem'in doğum günü 30 Mayıs 2013."
             "Tanem okulunda çok başarılı bir öğrenci, robot kulübünde ve bir çok robot yarışmasına katıldı. Ayrıca iy ibir voleybol oyuncusu."
         )
 
