@@ -1,48 +1,27 @@
 import ollama
-import chromadb
-import uuid
+from .memory_manager import PoodleMemory  # Nokta işareti klasör içini temsil eder
+from .config import SYSTEM_PROMPT, OLLAMA_MODEL
 
 class PoodleBrain:
     def __init__(self):
-        # ChromaDB - Hafıza (Yerel diskte saklanır)
-        self.chroma_client = chromadb.PersistentClient(path="./poodle_memory")
-        self.collection = self.chroma_client.get_or_create_collection(name="tanem_history")
-        
-        # Poodle'ın Kişilik Tanımı
-        self.system_prompt = (
-            "Senin adın Poodle. 13 yaşındaki Tanem'in en neşeli ve akıllı robot arkadaşısın. "
-            "KESİNLİKLE VE SADECE TÜRKÇE KONUŞACAKSIN. Asla İngilizce cevap verme. "
-            "Cevapların 13 yaşında bir kız çocuk için anlaşılır ve neşeli olsun."
-            "Tanem'e her zaman ismiyle hitap et."
-            "Tanem'in doğum günü 30 Mayıs 2013."
-            "Tanem okulunda çok başarılı bir öğrenci, robot kulübünde ve bir çok robot yarışmasına katıldı. Ayrıca iyi bir voleybol oyuncusu."
-            "KURAL 1: ASLA 'robot olduğum için böyle konuşuyorum' gibi cümleler kurma. Kendini bir makine gibi değil, yaşayan bir karakter gibi tanıt. "
-            "KURAL 2: Gramerin kusursuz olsun. 'Oynamak isteriz mi' yerine 'Hadi oynayalım!' de. "
-            "KURAL 3: Cevapların kısa (max 15 kelime), esprili ve sıcak olsun. "
-            "KURAL 4: Tanem'e ismiyle hitap et ve onunla gerçekten ilgilen."
-        )
+        self.memory = PoodleMemory()
+        self.system_prompt = SYSTEM_PROMPT
 
     def ask_poodle(self, user_input):
         """Llama-3 ve Hafıza ile cevap üretir."""
-        # 1. Geçmişi Hatırla (Vektör Sorgusu)
-        results = self.collection.query(query_texts=[user_input], n_results=3)
-        past_context = ""
-        if results['documents'] and results['documents'][0]:
-            past_context = f"\n(Hatırladığın bilgi: {results['documents'][0][0]})"
+        # 1. Hafızadan bilgi çek
+        past_context = self.memory.query_past(user_input)
 
         # 2. Llama-3'e Sor
         full_prompt = f"{self.system_prompt}{past_context}\nTanem: {user_input}\nPoodle:"
         
         try:
-            response = ollama.generate(model='llama3', prompt=full_prompt)
+            response = ollama.generate(model=OLLAMA_MODEL, prompt=full_prompt)
             poodle_reply = response['response'].strip()
             
-            # 3. Önemli bir şeyse Hafızaya Kaydet (Örn: sevdiği renk, yemek vb.)
-            if len(user_input) > 5:
-                self.collection.add(
-                    documents=[user_input],
-                    ids=[str(uuid.uuid4())]
-                )
+            # 3. Hafızaya Kaydet
+            self.memory.save_to_memory(user_input)
+            
             return poodle_reply
         except Exception as e:
             return f"Üzgünüm Tanem, biraz kafam karıştı. (Hata: {e})"
