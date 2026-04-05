@@ -3,8 +3,13 @@ import wave
 import array
 import queue
 import tempfile
+import threading
 import platform
 import subprocess
+import time
+import re
+import unicodedata
+from difflib import SequenceMatcher
 from collections import deque
 
 import numpy as np
@@ -20,7 +25,6 @@ class PoodleSpeech:
     def __init__(
         self,
         lang="tr",
-        wake_words=None,
         input_samplerate=16000,
         whisper_model_size="base",
         whisper_compute_type="int8",
@@ -32,19 +36,33 @@ class PoodleSpeech:
         self.block_duration_ms = block_duration_ms
         self.block_size = int(self.input_samplerate * self.block_duration_ms / 1000)
 
-        self.wake_words = wake_words or [
+        self.audio_queue = queue.Queue()
+        self.command_queue = queue.Queue()
+
+        self._wake_thread = None
+        self._wake_running = False
+        self._busy = False
+        self._last_tts_time = 0.0
+        self._tts_cooldown_sec = 1.4
+
+        # Wake word varyasyonları
+        self.wake_aliases = [
             "poodle",
             "pudıl",
-            "podıl",
             "pudle",
             "poodle robot",
             "hey poodle",
             "merhaba poodle",
+            "puddle",
+            "padıl",
+            "padali",
+            "padalı",
+            "podıl",
+            "podle",
+            "pudıl robot",
+            "hey puddle",
         ]
 
-        self.audio_queue = queue.Queue()
-
-        # ===== STT =====
         print(">>> Whisper modeli yükleniyor...")
         self.whisper = WhisperModel(
             whisper_model_size,
@@ -53,11 +71,9 @@ class PoodleSpeech:
             cpu_threads=whisper_cpu_threads,
         )
 
-        # ===== VAD =====
         print(">>> Silero VAD yükleniyor...")
         self.vad_model = load_silero_vad()
 
-        # ===== TTS =====
         current_dir = os.path.dirname(os.path.abspath(__file__))
         self.model_path = os.path.join(current_dir, "tr_TR-fahrettin-medium.onnx")
 
@@ -68,6 +84,12 @@ class PoodleSpeech:
         self.voice = PiperVoice.load(self.model_path)
 
         print(">>> [SES] Offline STT + Wake Word + VAD + Piper TTS hazır.")
+
+    # =========================================================
+    # DIŞ DURUM KONTROLÜ
+    # =========================================================
+    def set_busy(self, value: bool):
+        self._busy = value
 
     # =========================================================
     # AUDIO INPUT
@@ -100,12 +122,70 @@ class PoodleSpeech:
         return audio
 
     # =========================================================
-    # VAD HELPERS
+    # NORMALIZATION / WAKE MATCH
     # =========================================================
-    def _float32_to_int16(self, audio_float32):
-        audio_clipped = np.clip(audio_float32, -1.0, 1.0)
-        return (audio_clipped * 32767).astype(np.int16)
+    def _normalize_text(self, text: str) -> str:
+        text = text.lower().strip()
+        text = unicodedata.normalize("NFKD", text)
+        text = "".join(ch for ch in text if not unicodedata.combining(ch))
+        text = re.sub(r"[^a-z0-9çğıöşü\s]", " ", text)
+        text = re.sub(r"\s+", " ", text).strip()
 
+        replacements = {
+            "ı": "i",
+            "ğ": "g",
+            "ş": "s",
+            "ç": "c",
+            "ö": "o",
+            "ü": "u",
+        }
+        for old, new in replacements.items():
+            text = text.replace(old, new)
+
+        return text
+
+    def _similarity(self, a: str, b: str) -> float:
+        return SequenceMatcher(None, a, b).ratio()
+
+    def _contains_wake_word(self, text: str) -> bool:
+        normalized = self._normalize_text(text)
+        if not normalized:
+            return False
+
+        # direkt substring
+        for alias in self.wake_aliases:
+            alias_n = self._normalize_text(alias)
+            if alias_n in normalized:
+                return True
+
+        # token bazlı fuzzy
+        tokens = normalized.split()
+        candidates = set(tokens)
+
+        if len(tokens) >= 2:
+            for i in range(len(tokens) - 1):
+                candidates.add(tokens[i] + " " + tokens[i + 1])
+
+        core_targets = [
+            "poodle",
+            "pudil",
+            "pudle",
+            "puddle",
+            "podil",
+            "padali",
+            "padali",
+        ]
+
+        for cand in candidates:
+            for target in core_targets:
+                if self._similarity(cand, target) >= 0.72:
+                    return True
+
+        return False
+
+    # =========================================================
+    # VAD
+    # =========================================================
     def _detect_speech_regions(self, audio_float32):
         if len(audio_float32) == 0:
             return []
@@ -147,34 +227,7 @@ class PoodleSpeech:
             if segment.text:
                 text_parts.append(segment.text.strip())
 
-        text = " ".join(t for t in text_parts if t).strip()
-        return text
-
-    def _contains_wake_word(self, text):
-        normalized = text.lower().strip()
-        return any(w in normalized for w in self.wake_words)
-
-    def wait_for_wake_word(self, listen_window_sec=2.0):
-        print("\n[UYKU MODU] Wake word bekleniyor...")
-
-        while True:
-            audio = self._record_fixed(listen_window_sec)
-
-            if len(audio) == 0:
-                continue
-
-            if not self._has_speech(audio, min_speech_ms=120):
-                continue
-
-            text = self._transcribe(audio, beam_size=1)
-            if not text:
-                continue
-
-            print(f">>> [WAKE CHECK] {text}")
-
-            if self._contains_wake_word(text):
-                print(">>> [WAKE WORD] Algılandı.")
-                return True
+        return " ".join(t for t in text_parts if t).strip()
 
     def listen_command_vad(
         self,
@@ -183,10 +236,6 @@ class PoodleSpeech:
         min_speech_ms=250,
         prebuffer_ms=600,
     ):
-        """
-        Wake word sonrasında komutu toplar.
-        Konuşma başlayana kadar bekler, başladıktan sonra sessizlik görünce bitirir.
-        """
         print("\n[Dinleniyor...] Komutunu bekliyorum...")
 
         prebuffer_blocks = max(1, prebuffer_ms // self.block_duration_ms)
@@ -251,14 +300,67 @@ class PoodleSpeech:
 
         return None
 
-    def listen(self):
-        """
-        Dışarıdan tek çağrıyla:
-        1) Wake word bekler
-        2) Sonra komutu VAD ile alır
-        """
-        self.wait_for_wake_word()
-        return self.listen_command_vad()
+    # =========================================================
+    # ARKA PLAN WAKE LISTENER
+    # =========================================================
+    def _wake_loop(self, listen_window_sec=1.8, post_wake_command_sec=8.0):
+        print("\n[UYKU MODU] Wake word sürekli arka planda dinleniyor...")
+
+        while self._wake_running:
+            try:
+                # konuşurken veya hemen sonrasında tetikleme olmasın
+                if self._busy or (time.time() - self._last_tts_time < self._tts_cooldown_sec):
+                    time.sleep(0.15)
+                    continue
+
+                audio = self._record_fixed(listen_window_sec)
+
+                if len(audio) == 0:
+                    continue
+
+                if not self._has_speech(audio, min_speech_ms=120):
+                    continue
+
+                text = self._transcribe(audio, beam_size=1)
+                if not text:
+                    continue
+
+                print(f">>> [WAKE CHECK] {text}")
+
+                if self._contains_wake_word(text):
+                    print(">>> [WAKE WORD] Algılandı.")
+
+                    self._busy = True
+                    command = self.listen_command_vad(max_record_sec=post_wake_command_sec)
+
+                    if command:
+                        self.command_queue.put(command)
+                    else:
+                        self.command_queue.put(None)
+
+                    self._busy = False
+
+            except Exception as e:
+                self._busy = False
+                print(f">>> [WAKE LOOP HATASI] {type(e).__name__}: {e}")
+                time.sleep(0.4)
+
+    def start_wake_listener(self):
+        if self._wake_thread and self._wake_thread.is_alive():
+            return
+
+        self._wake_running = True
+        self._wake_thread = threading.Thread(target=self._wake_loop, daemon=True)
+        self._wake_thread.start()
+
+    def stop_wake_listener(self):
+        self._wake_running = False
+
+    def get_pending_command(self):
+        try:
+            return self.command_queue.get_nowait()
+        except queue.Empty:
+            return None
 
     # =========================================================
     # TTS
@@ -311,7 +413,6 @@ class PoodleSpeech:
         if system_name == "Darwin":
             cmd = ["/usr/bin/afplay", wav_path]
         elif system_name == "Linux":
-            # Raspberry Pi için tipik yol
             cmd = ["aplay", wav_path]
         else:
             raise RuntimeError(f"Desteklenmeyen işletim sistemi: {system_name}")
@@ -335,6 +436,8 @@ class PoodleSpeech:
         temp_path = None
 
         try:
+            self._busy = True
+
             sample_rate = self.voice.config.sample_rate
             pcm_buffer = bytearray()
 
@@ -356,11 +459,13 @@ class PoodleSpeech:
                 wav_file.writeframes(bytes(pcm_buffer))
 
             self._play_wav(temp_path)
+            self._last_tts_time = time.time()
 
         except Exception as e:
             print(f">>> [TTS HATASI] {type(e).__name__}: {e}")
 
         finally:
+            self._busy = False
             if temp_path and os.path.exists(temp_path):
                 try:
                     os.remove(temp_path)
