@@ -41,6 +41,10 @@ def main():
         if not user_text:
             return
 
+        bad_inputs = {"hey", "aba", "tamam", "peki", "hmm"}
+        if user_text.strip().lower() in bad_inputs:
+            return
+
         set_robot_busy(True)
 
         try:
@@ -68,20 +72,20 @@ def main():
         mouse_pos = pygame.mouse.get_pos()
 
         if not is_busy:
-            event = speech.get_pending_event()
+            evt = speech.get_pending_event()
 
-            if event["type"] == "command":
+            if evt["type"] == "command":
                 threading.Thread(
                     target=run_response,
-                    args=(event["text"],),
+                    args=(evt["text"],),
                     daemon=True
                 ).start()
 
-            elif event["type"] == "sleep":
+            elif evt["type"] == "sleep":
                 face.set_state("idle")
                 last_interaction_time = time.time()
 
-            elif event["type"] == "resumed":
+            elif evt["type"] == "resumed":
                 face.set_state("listening")
                 last_interaction_time = time.time()
 
