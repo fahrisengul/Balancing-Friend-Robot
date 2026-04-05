@@ -17,32 +17,28 @@ class PoodleSpeech:
         except Exception as e:
             print(f">>> [HATA] Mikrofon sorunu: {e}")
 
+    # speech_engine.py - speak fonksiyonu hız ayarı
     def speak(self, text):
         if not text: return
-        # Terminalde temiz görünmesi için kısa keselim
         print(f"Poodle: {text}")
         
         filename = "poodle_voice.wav"
-        
         try:
-            # 1. METNİ TEMİZLE (Karakter hatalarını önler)
-            clean_text = text.replace('"', '').replace("'", "").replace("\n", " ")
-            
-            # 2. EN HIZLI ÜRETİM (Terminal Pipeline)
-            # 'python' komutu senin Anaconda (base) ortamını kullanır
+            clean_text = text.replace('"', '').replace("'", "")
+            # GECİKMEYİ AZALTMAK İÇİN: 
+            # Modeli her seferinde değil, bir kez yükleyip RAM'de tutmak en iyisidir 
+            # ama şu anki yapı için komutu en yalın haliyle gönderiyoruz:
             command = f'echo "{clean_text}" | python -m piper --model {self.model_path} --output_file {filename}'
             
-            # Sesi üret (Arka planda sessizce ve hızlıca)
-            subprocess.run(command, shell=True, check=True, capture_output=True)
+            # subprocess.call, run'dan daha hızlı tetiklenir bazen
+            subprocess.call(command, shell=True)
             
-            # 3. ANLIK ÇALMA
             if os.path.exists(filename):
-                # 'afplay' Mac'in en hızlı ses çalarıdır
-                subprocess.run(["afplay", filename])
+                # afplay -v (volume) ve -q 1 ile en hızlı tetikleme
+                subprocess.run(["afplay", "-q", "1", filename])
                 os.remove(filename)
-                
         except Exception as e:
-            print(f">>> [SES HATASI] Üretim sırasında bir sorun oluştu: {e}")
+            print(f">>> [HATA] {e}")
 
     def listen(self):
         """Hızlı dinleme modülü."""
