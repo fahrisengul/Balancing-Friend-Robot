@@ -24,7 +24,7 @@ class PoodleSpeech:
         
         filename = "poodle_voice.wav"
         try:
-            clean_text = text.replace('"', '').replace("'", "")
+            clean_text = ''.join(e for e in text if e.isalnum() or e.isspace() or e in ".,?!")
             # GECİKMEYİ AZALTMAK İÇİN: 
             # Modeli her seferinde değil, bir kez yükleyip RAM'de tutmak en iyisidir 
             # ama şu anki yapı için komutu en yalın haliyle gönderiyoruz:
