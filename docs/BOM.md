@@ -61,6 +61,25 @@ https://www.trendyol.com/genel-markalar/16mm-metal-buton-kirmizi-power-sembol-le
 
 ---
 
+### 1. Ana Kontrol Ünitesi
+* **İşlemci:** Raspberry Pi 5 (8GB RAM tavsiye edilir)
+* **AI Hızlandırıcı:** Hailo-8 AI Kit (13 TOPS) veya AI HAT+
+* **Depolama:** 64GB NVMe SSD (M.2 HAT üzerinden)
+
+### 2. Görüntü ve Etkileşim
+* **Ekran:** 7 inç DSI Dokunmatik Ekran
+* **Kamera:** Raspberry Pi Camera Module 3 (Geniş Açılı)
+* **Arayüz:** Pygame tabanlı Dinamik Yüz UI (PoodleFace)
+
+### 3. Ses Sistemi
+* **Mikrofon:** I2S MEMS Mikrofon Dizisi veya USB Gürültü Engelleyici Mikrofon
+* **Hoparlör:** 2x3W Stereo Hoparlör & PAM8403 Amplifikatör
+
+### 4. Güç ve Termal
+* **Batarya:** 4S 18650 Li-ion Paket (16.8V)
+* **Regülatör:** 5V 5A Buck Converter (Pi 5 için)
+* **Soğutma:** Pi 5 Active Cooler + 40mm Şasi Tahliye Fanı
+
 ## 📝 Finansal ve Teknik Notlar
 * **Kamera:** "Görsel Giriş" için Camera Module 3 bütçeye dahil edilmiştir.
 * **Besleme:** Powerbank yerine 5V 5A Buck Converter + 4S Pil sistemiyle AI performansı %100 korunacaktır.
