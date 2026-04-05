@@ -1,4 +1,5 @@
 import os
+import wave
 import subprocess
 import tempfile
 import speech_recognition as sr
@@ -23,13 +24,48 @@ class PoodleSpeech:
 
             self.voice = PiperVoice.load(self.model_path)
 
-            import pyaudio  # dependency kontrolü
+            import pyaudio  # dependency check
             self.microphone = sr.Microphone()
 
             print(">>> [SES] Poodle kulağını açtı, ses motoru sıcak ve hazır!")
 
         except Exception as e:
             print(f">>> [HATA] Başlatma hatası: {e}")
+
+    def _synthesize_to_wav(self, text, wav_path):
+        """
+        Piper'dan raw PCM alır, düzgün WAV dosyası üretir.
+        """
+        pcm_bytes = b""
+
+        # Piper sürümüne göre farklı method isimleri olabilir.
+        # Önce stream/raw seçeneklerini deniyoruz.
+        if hasattr(self.voice, "synthesize_stream_raw"):
+            chunks = []
+            for chunk in self.voice.synthesize_stream_raw(text):
+                chunks.append(chunk)
+            pcm_bytes = b"".join(chunks)
+
+        elif hasattr(self.voice, "synthesize_raw"):
+            pcm_bytes = self.voice.synthesize_raw(text)
+
+        else:
+            raise RuntimeError(
+                "Bu Piper sürümünde synthesize_stream_raw / synthesize_raw bulunamadı. "
+                "Kurulu piper API farklı olabilir."
+            )
+
+        if not pcm_bytes:
+            raise RuntimeError("Piper boş ses verisi üretti.")
+
+        sample_rate = self.voice.config.sample_rate
+
+        # Geçerli WAV dosyasını kendimiz oluşturuyoruz
+        with wave.open(wav_path, "wb") as wf:
+            wf.setnchannels(1)      # mono
+            wf.setsampwidth(2)      # 16-bit = 2 byte
+            wf.setframerate(sample_rate)
+            wf.writeframes(pcm_bytes)
 
     def speak(self, text):
         if not text:
@@ -46,12 +82,13 @@ class PoodleSpeech:
             with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp_file:
                 temp_path = tmp_file.name
 
-            # Piper'ın WAV çıktısını doğrudan binary dosyaya yazdır
-            with open(temp_path, "wb") as raw_file:
-                self.voice.synthesize(text, raw_file)
+            self._synthesize_to_wav(text, temp_path)
 
             if not os.path.exists(temp_path):
-                raise RuntimeError("TTS çıktı dosyası oluşturulamadı.")
+                raise RuntimeError("WAV dosyası oluşturulamadı.")
+
+            # Debug amaçlı istersen aç:
+            # print(f">>> [DEBUG] WAV boyutu: {os.path.getsize(temp_path)} byte")
 
             result = subprocess.run(
                 ["/usr/bin/afplay", temp_path],
