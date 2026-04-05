@@ -25,40 +25,29 @@ class PoodleSpeech:
         if not text: return
         print(f"Poodle: {text}")
         
-        filename = "poodle_voice.wav"
-        
-        # --- YÖNTEM 1: DOĞRUDAN KÜTÜPHANE (EN HIZLI) ---
         try:
             import wave
+            import sys
+            # Piper kütüphanesini doğrudan şu anki Python ortamından çağırıyoruz
             from piper.voice import PiperVoice
             
+            filename = "poodle_voice.wav"
+            
+            # Modeli şu anki Python süreci içinde yükle
             voice = PiperVoice.load(self.model_path)
+            
+            # Sesi sentezle ve WAV dosyasına yaz
             with wave.open(filename, "wb") as wav_file:
                 voice.synthesize(text, wav_file)
             
+            # Sesi çal (afplay Mac'in yerleşik ses çalarıdır, sorun çıkarmaz)
             if os.path.exists(filename):
                 subprocess.run(["afplay", filename])
                 os.remove(filename)
-                return # Başarılıysa fonksiyondan çık
+                
         except Exception as e:
-            print(f">>> [BİLGİ] Kütüphane yöntemi denendi, terminale geçiliyor...")
-
-        # --- YÖNTEM 2: TERMINAL / ANACONDA (GARANTİ) ---
-        try:
-            clean_text = text.replace('"', '').replace("'", "")
-            # Burada 'python3' yerine sadece 'python' yazarak senin (base) ortamını hedefliyoruz
-            ps = subprocess.Popen(('echo', clean_text), stdout=subprocess.PIPE)
-            subprocess.check_output(
-                ('python', '-m', 'piper', '--model', self.model_path, '--output_file', filename), 
-                stdin=ps.stdout
-            )
-            ps.wait()
-            
-            if os.path.exists(filename):
-                subprocess.run(["afplay", filename])
-                os.remove(filename)
-        except Exception as e2:
-            print(f">>> [SES KRİZİ] Piper tüm yolları reddetti: {e2}")
+            print(f">>> [SES KRİZİ] Piper kütüphanesi yüklenemedi veya hata verdi: {e}")
+            print(f">>> Mevcut Python Yolu: {sys.executable}")
 
     def listen(self):
         if self.microphone is None:
