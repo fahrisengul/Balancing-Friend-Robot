@@ -69,7 +69,8 @@ def main():
         set_robot_busy(True)
         try:
             face.set_state("listening")
-            poodle_response = brain.ask_poodle(user_text)
+            result = brain.handle_user_input(user_text)
+            poodle_response = result.reply_text
 
             face.set_state("speaking")
             speech.speak(poodle_response)
