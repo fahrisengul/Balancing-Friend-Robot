@@ -1,40 +1,53 @@
 import os
 import wave
+import array
 import tempfile
 import threading
 import platform
 import subprocess
 import time
+import queue
 from datetime import datetime
-from pvrecorder import PvRecorder 
+from collections import deque
+
+from pvrecorder import PvRecorder
 import numpy as np
 import torch
 from faster_whisper import WhisperModel
 from piper.voice import PiperVoice
 from silero_vad import load_silero_vad, get_speech_timestamps
 
+
 def get_now():
     return datetime.now().strftime("%H:%M:%S.%f")[:-3]
+
 
 def log_time(message):
     print(f"[{get_now()}] {message}")
 
+
 class PoodleSpeech:
     def __init__(self, lang="tr", input_device_index=-1):
         self.lang = lang
-        self.frame_length = 512 
-        self.event_queue = [] 
+        self.sample_rate = 16000
+        self.frame_length = 512
+
+        self.event_queue = queue.Queue()
 
         self._listener_running = False
         self._busy = False
         self._muted = False
+        self._last_tts_time = 0.0
+        self._tts_cooldown_sec = 2.2
+
         self.recorder = None
-        
+        self.audio_lock = threading.Lock()
+
         log_time(">>> Modeller yükleniyor (Whisper/VAD/Piper)...")
         self.stt_model = WhisperModel("base", device="cpu", compute_type="int8")
         self.vad_model = load_silero_vad()
         self.voice = PiperVoice.load("tr_TR-fahrettin-medium.onnx")
-        
+
         self.device_index = input_device_index
         log_time(">>> [SES] Tüm sistemler hazır.")
 
@@ -44,141 +57,280 @@ class PoodleSpeech:
         for i, name in enumerate(devices):
             print(f"    #{i}: {name}")
 
-    def is_muted(self): return self._muted
-    def set_busy(self, val): self._busy = val
+    def is_muted(self):
+        return self._muted
+
+    def set_busy(self, val):
+        self._busy = val
 
     def start_auto_listener(self):
-        if self._listener_running: return
+        if self._listener_running:
+            return
         self._listener_running = True
         threading.Thread(target=self._listener_loop, daemon=True).start()
         log_time("[DINLEME MODU] Arka plan dinlemesi aktif.")
-       
+
     def stop_auto_listener(self):
         self._listener_running = False
         if self.recorder:
             try:
                 self.recorder.stop()
-            except:
+            except Exception:
                 pass
-
-    def stop_auto_listener(self):
-        self._listener_running = False
-        if self.recorder:
-            self.recorder.stop()
+            try:
+                self.recorder.delete()
+            except Exception:
+                pass
+            self.recorder = None
 
     def get_pending_event(self):
-        if len(self.event_queue) > 0:
-            return self.event_queue.pop(0)
-        return {"type": "none"}
+        try:
+            return self.event_queue.get_nowait()
+        except queue.Empty:
+            return {"type": "none"}
 
-    # speech_engine.py içindeki _listener_loop metodunu şu şekilde güncelleyelim. 06/04/2026 18:40
+    def _has_speech(self, audio_float32, threshold=0.35):
+        if len(audio_float32) == 0:
+            return False
+
+        audio_tensor = torch.from_numpy(audio_float32)
+        speech_ts = get_speech_timestamps(
+            audio_tensor,
+            self.vad_model,
+            sampling_rate=self.sample_rate,
+            threshold=threshold,
+        )
+        return len(speech_ts) > 0
+
     def _listener_loop(self):
-        # Kaydediciyi başlatırken hata payını azaltmak için frame_length sabit kalsın
-        recorder = PvRecorder(device_index=self.device_index, frame_length=self.frame_length)
-        recorder.start()
-        
+        """
+        Daha stabil dinleme:
+        - kısa frame'leri ring buffer'a at
+        - buffer üzerinden VAD kontrol et
+        - konuşma başladıysa ses topla
+        - sessizlik uzayınca STT başlat
+        """
+        pre_roll_frames = 12          # ~384 ms
+        silence_limit_frames = 28     # ~900 ms
+        analysis_window_frames = 10   # ~320 ms
+
+        self.recorder = PvRecorder(
+            device_index=self.device_index,
+            frame_length=self.frame_length
+        )
+        self.recorder.start()
+
+        ring_buffer = deque(maxlen=pre_roll_frames)
+        analysis_buffer = deque(maxlen=analysis_window_frames)
+
         collected_audio = []
         silent_frames = 0
         recording = False
 
         try:
             while self._listener_running:
-                frame = recorder.read()
-                
+                frame = self.recorder.read()
+
                 if self._busy:
+                    ring_buffer.clear()
+                    analysis_buffer.clear()
                     collected_audio = []
                     recording = False
+                    silent_frames = 0
                     continue
 
-                # Sesi normalize edip VAD'a gönderiyoruz
-                audio_float32 = np.array(frame, dtype=np.float32) / 32768.0
-                audio_tensor = torch.from_numpy(audio_float32)
-                
-                # threshold=0.3 ekleyerek algılamayı daha hassas yaptık (varsayılan 0.5'tir)
-                speech_ts = get_speech_timestamps(
-                    audio_tensor, 
-                    self.vad_model, 
-                    sampling_rate=16000,
-                    threshold=0.3 
-                )
+                if time.time() - self._last_tts_time < self._tts_cooldown_sec:
+                    continue
 
-                if len(speech_ts) > 0:
+                frame_np = np.array(frame, dtype=np.int16)
+                frame_f32 = frame_np.astype(np.float32) / 32768.0
+
+                ring_buffer.append(frame_np)
+                analysis_buffer.append(frame_f32)
+
+                if len(analysis_buffer) < analysis_window_frames:
+                    continue
+
+                window = np.concatenate(list(analysis_buffer)).astype(np.float32)
+                speech_detected = self._has_speech(window, threshold=0.30)
+
+                if speech_detected:
                     if not recording:
-                        log_time(">>> [AUDIO] Ses algılandı (VAD Tetiklendi)...")
+                        log_time(">>> [AUDIO] Ses algılandı (VAD tetiklendi)...")
                         recording = True
-                    collected_audio.extend(frame)
+                        collected_audio = []
+
+                        # konuşma başlamadan hemen önceki pre-roll'u da ekle
+                        for old_frame in ring_buffer:
+                            collected_audio.extend(old_frame.tolist())
+
+                    collected_audio.extend(frame_np.tolist())
                     silent_frames = 0
+
                 elif recording:
-                    collected_audio.extend(frame)
+                    collected_audio.extend(frame_np.tolist())
                     silent_frames += 1
-                    
-                    # Konuşma bittikten sonra bekleme süresini 40 frame (~1.3sn) yapalım
-                    if silent_frames > 40: 
+
+                    if silent_frames >= silence_limit_frames:
                         log_time(">>> [VAD] Konuşma bitti, STT başlıyor...")
-                        # Arka planda işleyerek ana döngüyü kilitlemiyoruz
                         audio_data = np.array(collected_audio, dtype=np.int16)
-                        threading.Thread(target=self._process_speech, args=(audio_data,), daemon=True).start()
-                        
+                        threading.Thread(
+                            target=self._process_speech,
+                            args=(audio_data,),
+                            daemon=True
+                        ).start()
+
                         collected_audio = []
                         recording = False
                         silent_frames = 0
+                        ring_buffer.clear()
+                        analysis_buffer.clear()
+
         except Exception as e:
-            log_time(f">>> [RECORDER ERROR] {e}")
+            log_time(f">>> [RECORDER ERROR] {type(e).__name__}: {e}")
+
         finally:
-            recorder.stop()
-            recorder.delete()
+            try:
+                if self.recorder:
+                    self.recorder.stop()
+                    self.recorder.delete()
+            except Exception:
+                pass
+            self.recorder = None
 
     def _process_speech(self, audio_int16):
-        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
-            tmp_path = tmp.name
-        
-        with wave.open(tmp_path, "wb") as wf:
-            wf.setnchannels(1)
-            wf.setsampwidth(2)
-            wf.setframerate(16000)
-            wf.writeframes(audio_int16.tobytes())
-
-        segments, _ = self.stt_model.transcribe(tmp_path, language=self.lang)
-        text = " ".join([s.text for s in segments]).strip()
-        
-        try: os.remove(tmp_path)
-        except: pass
-
-        if not text or len(text) < 2: return
-        log_time(f">>> [STT] '{text}'")
-
-        if any(w in text.lower() for w in ["sus", "sessiz ol", "dur"]):
-            self._muted = True
-            log_time(">>> [MODE] Sessiz mod.")
-            self.event_queue.append({"type": "sleep"})
+        if len(audio_int16) == 0:
             return
 
-        if self._muted and ("hey" in text.lower()):
+        # çok kısa kayıtları ele
+        if len(audio_int16) < self.sample_rate * 0.5:
+            return
+
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+            tmp_path = tmp.name
+
+        try:
+            with wave.open(tmp_path, "wb") as wf:
+                wf.setnchannels(1)
+                wf.setsampwidth(2)
+                wf.setframerate(self.sample_rate)
+                wf.writeframes(audio_int16.tobytes())
+
+            segments, _ = self.stt_model.transcribe(
+                tmp_path,
+                language=self.lang,
+                beam_size=2,
+                vad_filter=False,
+                condition_on_previous_text=False,
+                initial_prompt="Türkçe konuşma. Günlük konuşma. Robot asistan.",
+            )
+            text = " ".join([s.text.strip() for s in segments if s.text]).strip()
+
+        finally:
+            try:
+                os.remove(tmp_path)
+            except Exception:
+                pass
+
+        if not text or len(text) < 2:
+            return
+
+        log_time(f">>> [STT] '{text}'")
+
+        lower = text.lower()
+
+        if any(w in lower for w in ["sus", "sessiz ol", "dur"]):
+            self._muted = True
+            log_time(">>> [MODE] Sessiz mod.")
+            self.event_queue.put({"type": "sleep"})
+            return
+
+        if self._muted and ("hey" in lower):
             self._muted = False
             log_time(">>> [MODE] Aktif mod.")
-            self.event_queue.append({"type": "resumed"})
+            self.event_queue.put({"type": "resumed"})
             return
 
         if not self._muted:
-            self.event_queue.append({"type": "command", "text": text})
+            self.event_queue.put({"type": "command", "text": text})
+
+    def _chunk_to_bytes(self, chunk):
+        if isinstance(chunk, (bytes, bytearray)):
+            return bytes(chunk)
+
+        candidate_attrs = [
+            "audio_int16_bytes",
+            "audio_bytes",
+            "pcm_bytes",
+            "buffer",
+            "audio",
+            "samples",
+        ]
+
+        for attr in candidate_attrs:
+            if hasattr(chunk, attr):
+                value = getattr(chunk, attr)
+                if value is None:
+                    continue
+
+                if isinstance(value, (bytes, bytearray)):
+                    return bytes(value)
+
+                if isinstance(value, (list, tuple, array.array)):
+                    arr = array.array("h", value)
+                    return arr.tobytes()
+
+                if hasattr(value, "dtype") and hasattr(value, "tobytes"):
+                    return value.astype("int16").tobytes()
+
+        try:
+            seq = list(chunk)
+            if seq and isinstance(seq[0], int):
+                arr = array.array("h", seq)
+                return arr.tobytes()
+        except Exception:
+            pass
+
+        raise RuntimeError(f"AudioChunk çözümlenemedi: {type(chunk)}")
 
     def speak(self, text):
-        if not text: return
+        if not text:
+            return
+
         log_time(f"Poodle: {text}")
         self._busy = True
+
+        temp_path = None
         try:
+            sample_rate = self.voice.config.sample_rate
+            pcm_buffer = bytearray()
+
+            for chunk in self.voice.synthesize(text):
+                chunk_bytes = self._chunk_to_bytes(chunk)
+                if chunk_bytes:
+                    pcm_buffer.extend(chunk_bytes)
+
+            if len(pcm_buffer) == 0:
+                raise RuntimeError("Piper ses verisi üretmedi.")
+
             with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
                 temp_path = tmp.name
+
             with wave.open(temp_path, "wb") as wav_file:
                 wav_file.setnchannels(1)
                 wav_file.setsampwidth(2)
-                wav_file.setframerate(self.voice.config.sample_rate)
-                self.voice.synthesize(text, wav_file)
-            
-            cmd = "afplay" if platform.system() == "Darwin" else "aplay"
-            subprocess.run([cmd, temp_path])
-            
-            try: os.remove(temp_path)
-            except: pass
+                wav_file.setframerate(sample_rate)
+                wav_file.writeframes(bytes(pcm_buffer))
+
+            cmd = "/usr/bin/afplay" if platform.system() == "Darwin" else "aplay"
+            subprocess.run([cmd, temp_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+            self._last_tts_time = time.time()
+
         finally:
+            if temp_path:
+                try:
+                    os.remove(temp_path)
+                except Exception:
+                    pass
             self._busy = False
