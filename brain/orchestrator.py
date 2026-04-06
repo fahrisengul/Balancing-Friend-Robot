@@ -24,13 +24,13 @@ class RobotOrchestrator:
         # Face state mapping
         self.face_state_map = {
             "idle": "idle",
-            "attentive": "listening",
+            "attentive": "attentive",
             "listening": "listening",
-            "thinking": "listening",   # ayrı thinking state yoksa listening göster
+            "thinking": "thinking",
             "speaking": "speaking",
-            "muted": "idle",
-            "sleeping": "idle",
-            "curious": "listening",
+            "muted": "muted",
+            "sleeping": "muted",
+            "curious": "attentive",
             "error": "error",
         }
 
