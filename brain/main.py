@@ -73,6 +73,19 @@ def main():
                     face.set_state("idle")
                 elif evt["type"] == "resumed":
                     face.set_state("listening")
+                elif evt["type"] == "clarify":
+                    def run_clarify():
+                        nonlocal last_interaction_time
+                        set_robot_busy(True)
+                        try:
+                            face.set_state("error")
+                            speech.speak(evt["text"])
+                        finally:
+                            face.set_state("idle")
+                            last_interaction_time = time.time()
+                            set_robot_busy(False)
+
+                    threading.Thread(target=run_clarify, daemon=True).start()
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
