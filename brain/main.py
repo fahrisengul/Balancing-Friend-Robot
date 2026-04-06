@@ -8,6 +8,7 @@ from face_ui import PoodleFace
 from speech_engine import PoodleSpeech
 from brain import PoodleBrain
 
+
 def main():
     pygame.init()
     screen = pygame.display.set_mode((1024, 600))
@@ -16,8 +17,8 @@ def main():
 
     face = PoodleFace(1024, 600)
     brain = PoodleBrain()
-    
-    # Varsayılan mikrofon için -1, listeden seçmek istersen ilgili indexi yaz
+
+    # Varsayılan mikrofon için -1, doğrudan cihaz için 0 veya 1 deneyebilirsin
     speech = PoodleSpeech(input_device_index=-1)
     speech.debug_list_input_devices()
 
@@ -35,11 +36,12 @@ def main():
 
     def run_response(user_text):
         nonlocal last_interaction_time
-        if not user_text: return
+        if not user_text:
+            return
 
-        # Kısa ve anlamsız girişleri ele
         bad_inputs = {"hey", "poodle", "tamam", "peki", "evet"}
-        if user_text.strip().lower() in bad_inputs: return
+        if user_text.strip().lower() in bad_inputs:
+            return
 
         set_robot_busy(True)
         try:
@@ -56,42 +58,44 @@ def main():
             last_interaction_time = time.time()
             set_robot_busy(False)
 
-    print("\n--- Poodle Robot Aktif ---")
+    print("\n--- Poodle Robot Zeka Katmanıyla Aktif ---")
+    print("Doğal dinleme aktif. Pencereyi kapatarak çıkabilirsin.")
 
-    while running:
-        now = time.time()
-        
-        # Olayları ve Event Kuyruğunu İşle
-        if not is_busy:
-            evt = speech.get_pending_event()
-            if evt["type"] == "command":
-                threading.Thread(target=run_response, args=(evt["text"],), daemon=True).start()
-            elif evt["type"] == "sleep":
-                face.set_state("idle")
-            elif evt["type"] == "resumed":
-                face.set_state("listening")
+    try:
+        while running:
+            now = time.time()
 
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
+            if not is_busy:
+                evt = speech.get_pending_event()
+                if evt["type"] == "command":
+                    threading.Thread(target=run_response, args=(evt["text"],), daemon=True).start()
+                elif evt["type"] == "sleep":
+                    face.set_state("idle")
+                elif evt["type"] == "resumed":
+                    face.set_state("listening")
 
-        # Görsel Güncelleme (Göz Hareketleri)
-        if not is_busy:
-            if now - last_interaction_time > 10:
-                if now > idle_look_timer:
-                    face.update_gaze(random.randint(200, 800), random.randint(150, 450))
-                    idle_look_timer = now + random.uniform(3, 6)
-            else:
-                mx, my = pygame.mouse.get_pos()
-                face.update_gaze(mx, my)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
 
-        face.draw(screen)
-        pygame.display.flip()
-        clock.tick(30) # CPU'yu yormamak için 30 FPS yeterli
+            if not is_busy:
+                if now - last_interaction_time > 10:
+                    if now > idle_look_timer:
+                        face.update_gaze(random.randint(200, 800), random.randint(150, 450))
+                        idle_look_timer = now + random.uniform(3, 6)
+                else:
+                    mx, my = pygame.mouse.get_pos()
+                    face.update_gaze(mx, my)
 
-    speech.stop_auto_listener()
-    pygame.quit()
-    sys.exit()
+            face.draw(screen)
+            pygame.display.flip()
+            clock.tick(30)
+
+    finally:
+        speech.stop_auto_listener()
+        pygame.quit()
+        sys.exit()
+
 
 if __name__ == "__main__":
     main()
