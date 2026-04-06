@@ -18,7 +18,7 @@ from piper.voice import PiperVoice
 from silero_vad import load_silero_vad, get_speech_timestamps
 
 def get_now():
-    """HH:MM:SS.ms formatında zaman döner."""
+    """Hassas zaman damgası: SS:DD:SN.ms"""
     return datetime.now().strftime("%H:%M:%S.%f")[:-3]
 
 def log_time(message):
@@ -28,7 +28,8 @@ class PoodleSpeech:
     def __init__(self, lang="tr", input_device=None):
         self.lang = lang
         self.input_samplerate = 16000
-        self.block_size = 3200  # 200ms bloklar
+        # Blok süresini 150ms'ye çekerek daha seri hale getirdik
+        self.block_size = int(self.input_samplerate * 0.15) 
         
         self.audio_queue = queue.Queue()
         self.event_queue = queue.Queue()
@@ -38,6 +39,7 @@ class PoodleSpeech:
         self._muted = False
         
         log_time(">>> Modeller yükleniyor (Whisper/VAD/Piper)...")
+        # Pi 5 hazırlığı için compute_type='int8' kalsın
         self.stt_model = WhisperModel("base", device="cpu", compute_type="int8")
         self.vad_model = load_silero_vad()
         self.voice = PiperVoice.load("tr_TR-fahrettin-medium.onnx")
@@ -57,7 +59,9 @@ class PoodleSpeech:
 
     def start_auto_listener(self):
         self._listener_running = True
-        threading.Thread(target=self._listener_loop, daemon=True).start()
+        # Thread ismini belirleyerek hata takibini kolaylaştırdık
+        self.t = threading.Thread(target=self._listener_loop, name="PoodleListener", daemon=True)
+        self.t.start()
         log_time("[DINLEME MODU] Arka plan dinlemesi aktif.")
 
     def stop_auto_listener(self):
@@ -66,37 +70,36 @@ class PoodleSpeech:
     def get_pending_event(self):
         try:
             return self.event_queue.get_nowait()
-        except:
+        except queue.Empty:
             return {"type": "none"}
 
     def _listener_loop(self):
-        # M serisi Mac'ler için en stabil buffer ayarı
-        def audio_callback(indata, frames, time_info, status):
-            if status:
-                print(status)
-            self.audio_queue.put(indata.copy())
-
+        # M serisi Mac'lerde bellek hatasını önlemek için callback dışı veri aktarımı
         try:
             with sd.InputStream(samplerate=self.input_samplerate, channels=1, 
-                                device=self.input_device, callback=audio_callback):
+                                device=self.input_device, blocksize=self.block_size,
+                                dtype='float32') as stream:
+                
                 collected_audio = []
                 silent_blocks = 0
                 recording = False
 
                 while self._listener_running:
-                    block = self.audio_queue.get()
+                    # Callback yerine doğrudan okuma (Direct Read) bellek hatasını bitirir
+                    block, overflow = stream.read(self.block_size)
+                    
                     if self._busy:
                         collected_audio = []
                         recording = False
                         continue
 
-                    # VAD işlemesi (Float32 tensör ile)
-                    audio_tensor = torch.from_numpy(block.flatten().astype(np.float32))
+                    # VAD İşlemesi
+                    audio_tensor = torch.from_numpy(block.flatten())
                     speech_ts = get_speech_timestamps(audio_tensor, self.vad_model, sampling_rate=16000)
 
                     if len(speech_ts) > 0:
                         if not recording:
-                            log_time(">>> [AUDIO] Ses başladı...")
+                            log_time(">>> [AUDIO] Ses yakalanmaya başladı...")
                             recording = True
                         collected_audio.append(block.flatten())
                         silent_blocks = 0
@@ -104,52 +107,64 @@ class PoodleSpeech:
                         collected_audio.append(block.flatten())
                         silent_blocks += 1
                         
-                        # 1 saniye sessizlik (5 blok x 200ms)
-                        if silent_blocks > 5:
-                            log_time(">>> [VAD] Konuşma bitti, işleniyor...")
+                        # 0.9 saniye sessizlik (6 blok x 150ms)
+                        if silent_blocks > 6:
+                            log_time(">>> [VAD] Konuşma bitti, beyne gönderiliyor...")
                             full_audio = np.concatenate(collected_audio)
                             self._process_speech(full_audio)
                             collected_audio = []
                             recording = False
                             silent_blocks = 0
         except Exception as e:
-            log_time(f">>> [MIC HATASI] {e}")
+            log_time(f">>> [CRITICAL MIC ERROR] {e}")
 
     def _process_speech(self, audio_data):
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
             tmp_path = tmp.name
         
-        with wave.open(tmp_path, "wb") as wf:
-            wf.setnchannels(1)
-            wf.setsampwidth(2)
-            wf.setframerate(16000)
-            wf.writeframes((audio_data * 32767).astype(np.int16).tobytes())
+        try:
+            with wave.open(tmp_path, "wb") as wf:
+                wf.setnchannels(1)
+                wf.setsampwidth(2)
+                wf.setframerate(16000)
+                # Normalizasyon yaparak Whisper başarısını artırıyoruz
+                wf.writeframes((audio_data * 32767).astype(np.int16).tobytes())
 
-        segments, _ = self.stt_model.transcribe(tmp_path, language=self.lang)
-        text = " ".join([s.text for s in segments]).strip()
-        os.remove(tmp_path)
+            # Whisper Zamanı
+            start_stt = time.time()
+            segments, _ = self.stt_model.transcribe(tmp_path, language=self.lang)
+            text = " ".join([s.text for s in segments]).strip()
+            stt_duration = time.time() - start_stt
+            
+            log_time(f">>> [STT] '{text}' (İşlem süresi: {stt_duration:.2f}s)")
+            
+            if os.path.exists(tmp_path): os.remove(tmp_path)
 
-        if not text: return
-        log_time(f">>> [STT] Metin: {text}")
+            if not text: return
 
-        if any(w in text.lower() for w in ["sus", "sessiz ol", "dur"]):
-            self._muted = True
-            log_time(">>> [MODE] Sessiz mod.")
-            self.event_queue.put({"type": "sleep"})
-            return
+            # Komut Kontrolleri
+            lower_text = text.lower()
+            if any(w in lower_text for w in ["sus", "sessiz ol", "dur"]):
+                self._muted = True
+                log_time(">>> [MODE] Robot susturuldu.")
+                self.event_queue.put({"type": "sleep"})
+                return
 
-        if self._muted and ("hey" in text.lower()):
-            self._muted = False
-            log_time(">>> [MODE] Aktif mod.")
-            self.event_queue.put({"type": "resumed"})
-            return
+            if self._muted and ("hey" in lower_text):
+                self._muted = False
+                log_time(">>> [MODE] Robot uyandı.")
+                self.event_queue.put({"type": "resumed"})
+                return
 
-        if not self._muted:
-            self.event_queue.put({"type": "command", "text": text})
+            if not self._muted:
+                self.event_queue.put({"type": "command", "text": text})
+                
+        except Exception as e:
+            log_time(f">>> [PROCESS ERROR] {e}")
 
     def speak(self, text):
         if not text: return
-        log_time(f"Poodle: {text}")
+        log_time(f"Poodle Cevap Veriyor: {text}")
         self._busy = True
         
         try:
