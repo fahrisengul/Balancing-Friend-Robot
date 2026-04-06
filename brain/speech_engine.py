@@ -52,6 +52,14 @@ class PoodleSpeech:
         self._listener_running = True
         threading.Thread(target=self._listener_loop, daemon=True).start()
         log_time("[DINLEME MODU] Arka plan dinlemesi aktif.")
+       
+    def stop_auto_listener(self):
+        self._listener_running = False
+        if self.recorder:
+            try:
+                self.recorder.stop()
+            except:
+                pass
 
     def stop_auto_listener(self):
         self._listener_running = False
