@@ -48,7 +48,7 @@ class PoodleSpeech:
         self.stt_worker_thread = None
 
         log_time(">>> Modeller yükleniyor (Whisper/VAD/Piper)...")
-        self.stt_model = WhisperModel("base", device="cpu", compute_type="int8")
+        self.stt_model = WhisperModel("small", device="cpu", compute_type="int8")
         self.vad_model = load_silero_vad()
         self.voice = PiperVoice.load("tr_TR-fahrettin-medium.onnx")
 
