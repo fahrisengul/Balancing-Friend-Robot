@@ -1,6 +1,5 @@
 import os
 import wave
-import array
 import tempfile
 import threading
 import platform
@@ -9,6 +8,7 @@ import time
 import queue
 from datetime import datetime
 from collections import deque
+import array
 
 from pvrecorder import PvRecorder
 import numpy as np
@@ -33,15 +33,19 @@ class PoodleSpeech:
         self.frame_length = 512
 
         self.event_queue = queue.Queue()
+        self.stt_queue = queue.Queue()
 
         self._listener_running = False
         self._busy = False
         self._muted = False
         self._last_tts_time = 0.0
         self._tts_cooldown_sec = 2.2
+        self._shutting_down = False
 
         self.recorder = None
         self.audio_lock = threading.Lock()
+        self.listener_thread = None
+        self.stt_worker_thread = None
 
         log_time(">>> Modeller yükleniyor (Whisper/VAD/Piper)...")
         self.stt_model = WhisperModel("base", device="cpu", compute_type="int8")
@@ -66,17 +70,41 @@ class PoodleSpeech:
     def start_auto_listener(self):
         if self._listener_running:
             return
+
         self._listener_running = True
-        threading.Thread(target=self._listener_loop, daemon=True).start()
+        self._shutting_down = False
+
+        self.stt_worker_thread = threading.Thread(target=self._stt_worker_loop, daemon=False)
+        self.stt_worker_thread.start()
+
+        self.listener_thread = threading.Thread(target=self._listener_loop, daemon=False)
+        self.listener_thread.start()
+
         log_time("[DINLEME MODU] Arka plan dinlemesi aktif.")
 
     def stop_auto_listener(self):
         self._listener_running = False
+        self._shutting_down = True
+
+        # worker'ı uyandır
+        try:
+            self.stt_queue.put_nowait(None)
+        except Exception:
+            pass
+
         if self.recorder:
             try:
                 self.recorder.stop()
             except Exception:
                 pass
+
+        if self.listener_thread and self.listener_thread.is_alive():
+            self.listener_thread.join(timeout=2.0)
+
+        if self.stt_worker_thread and self.stt_worker_thread.is_alive():
+            self.stt_worker_thread.join(timeout=4.0)
+
+        if self.recorder:
             try:
                 self.recorder.delete()
             except Exception:
@@ -103,33 +131,32 @@ class PoodleSpeech:
         return len(speech_ts) > 0
 
     def _listener_loop(self):
-        """
-        Daha stabil dinleme:
-        - kısa frame'leri ring buffer'a at
-        - buffer üzerinden VAD kontrol et
-        - konuşma başladıysa ses topla
-        - sessizlik uzayınca STT başlat
-        """
-        pre_roll_frames = 12          # ~384 ms
-        silence_limit_frames = 28     # ~900 ms
-        analysis_window_frames = 10   # ~320 ms
-
-        self.recorder = PvRecorder(
-            device_index=self.device_index,
-            frame_length=self.frame_length
-        )
-        self.recorder.start()
-
-        ring_buffer = deque(maxlen=pre_roll_frames)
-        analysis_buffer = deque(maxlen=analysis_window_frames)
-
-        collected_audio = []
-        silent_frames = 0
-        recording = False
+        pre_roll_frames = 12
+        silence_limit_frames = 28
+        analysis_window_frames = 10
 
         try:
-            while self._listener_running:
-                frame = self.recorder.read()
+            self.recorder = PvRecorder(
+                device_index=self.device_index,
+                frame_length=self.frame_length
+            )
+            self.recorder.start()
+
+            ring_buffer = deque(maxlen=pre_roll_frames)
+            analysis_buffer = deque(maxlen=analysis_window_frames)
+
+            collected_audio = []
+            silent_frames = 0
+            recording = False
+
+            while self._listener_running and not self._shutting_down:
+                try:
+                    frame = self.recorder.read()
+                except Exception as e:
+                    if self._shutting_down:
+                        break
+                    log_time(f">>> [RECORDER READ ERROR] {type(e).__name__}: {e}")
+                    break
 
                 if self._busy:
                     ring_buffer.clear()
@@ -160,7 +187,6 @@ class PoodleSpeech:
                         recording = True
                         collected_audio = []
 
-                        # konuşma başlamadan hemen önceki pre-roll'u da ekle
                         for old_frame in ring_buffer:
                             collected_audio.extend(old_frame.tolist())
 
@@ -172,13 +198,14 @@ class PoodleSpeech:
                     silent_frames += 1
 
                     if silent_frames >= silence_limit_frames:
-                        log_time(">>> [VAD] Konuşma bitti, STT başlıyor...")
+                        log_time(">>> [VAD] Konuşma bitti, STT kuyruğa alınıyor...")
                         audio_data = np.array(collected_audio, dtype=np.int16)
-                        threading.Thread(
-                            target=self._process_speech,
-                            args=(audio_data,),
-                            daemon=True
-                        ).start()
+
+                        if len(audio_data) >= int(self.sample_rate * 0.5):
+                            try:
+                                self.stt_queue.put_nowait(audio_data)
+                            except Exception:
+                                pass
 
                         collected_audio = []
                         recording = False
@@ -187,22 +214,36 @@ class PoodleSpeech:
                         analysis_buffer.clear()
 
         except Exception as e:
-            log_time(f">>> [RECORDER ERROR] {type(e).__name__}: {e}")
+            if not self._shutting_down:
+                log_time(f">>> [RECORDER ERROR] {type(e).__name__}: {e}")
 
         finally:
             try:
                 if self.recorder:
                     self.recorder.stop()
-                    self.recorder.delete()
             except Exception:
                 pass
-            self.recorder = None
+
+    def _stt_worker_loop(self):
+        while not self._shutting_down:
+            try:
+                item = self.stt_queue.get(timeout=0.5)
+            except queue.Empty:
+                continue
+
+            if item is None:
+                break
+
+            try:
+                self._process_speech(item)
+            except Exception as e:
+                if not self._shutting_down:
+                    log_time(f">>> [STT WORKER ERROR] {type(e).__name__}: {e}")
 
     def _process_speech(self, audio_int16):
         if len(audio_int16) == 0:
             return
 
-        # çok kısa kayıtları ele
         if len(audio_int16) < self.sample_rate * 0.5:
             return
 
