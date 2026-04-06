@@ -254,22 +254,22 @@ class PoodleSpeech:
         t = re.sub(r"\s+", " ", t).strip()
         return t
 
-      def _text_quality(self, text: str) -> str:
+    def _text_quality(self, text: str) -> str:
         """
         Dönen değerler:
         - good
         - weak
         - bad
         """
-    
+
         n = self._normalize_text(text)
         if not n:
             return "bad"
-    
+
         tokens = n.split()
         if len(tokens) == 0:
             return "bad"
-    
+
         # Çok doğal ve kısa konuşmalar doğrudan geçsin
         whitelist_phrases = {
             "selam",
@@ -286,35 +286,35 @@ class PoodleSpeech:
             "dogum gunum ne zaman",
             "kac yasina girecegim",
         }
-    
+
         if n in whitelist_phrases:
             return "good"
-    
+
         weak_words = {
             "sultan", "aba", "baba", "tamam", "peki", "hmm", "hey"
         }
-    
+
         suspicious_tokens = {
-            "mursun", "nasirsan", "nasir", "dom", "nonuc", "ikibu", "koday", "sakni", "sakni", "ejem", "tum"
+            "mursun", "nasirsan", "nasir", "dom", "nonuc", "ikibu", "koday", "sakni", "ejem", "tum"
         }
-    
+
         # Tek kelimelik kısa ama doğal ifadeler
         if len(tokens) == 1:
             if tokens[0] in {"selam", "merhaba", "nasilsin"}:
                 return "good"
-    
+
             if tokens[0] in weak_words:
                 return "bad"
-    
+
             if tokens[0] in suspicious_tokens:
                 return "bad"
-    
+
             if len(tokens[0]) <= 2:
                 return "bad"
-    
+
             # Tek kelime ama doğal olmayan şeyler genelde weak
             return "weak"
-    
+
         # Kısa doğal soru kalıpları
         question_patterns = [
             "adin ne",
@@ -328,20 +328,20 @@ class PoodleSpeech:
         ]
         if any(p in n for p in question_patterns):
             return "good"
-    
+
         # Açık bozuk fonetik örnekler
         if any(tok in suspicious_tokens for tok in tokens):
             return "bad"
-    
+
         # Çok kısa ama soru sinyali olan cümleler geçsin
         question_words = {"ne", "neden", "nasil", "hangi", "kim", "mi", "mı", "mu", "mü", "kac"}
         has_question_signal = any(q in n for q in question_words)
-    
+
         if len(tokens) <= 3:
             if has_question_signal:
                 return "good"
             return "weak"
-    
+
         return "good"
 
     def _process_speech(self, audio_int16):
