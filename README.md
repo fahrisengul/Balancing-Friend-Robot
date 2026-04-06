@@ -1,74 +1,153 @@
-# 🤖 AI-Friend-Robot (Premium Wedge V4)
+# Balancing Friend Robot
 
-**AI-Friend-Robot**, Raspberry Pi 5 ve Hailo-8 (13T) AI hızlandırıcı tabanlı, 7 inç dokunmatik arayüze sahip, eğitim ve etkileşim odaklı bir **Edge-AI Terminalidir.** Bu proje; Tanem için bir eğitim koçu, İngilizce pratik arkadaşı ve yüksek performanslı bir yapay zeka platformu olarak tasarlanmıştır.
+Balancing Friend Robot, Tanem için geliştirilen; doğal konuşabilen, görebilen, öğrenebilen ve ileride hareket kabiliyeti kazanacak bir edge-AI robot arkadaştır.
 
-Poodle, sadece dengede duran bir robot değil; **Raspberry Pi 5** ve **Hailo-8** altyapısıyla güçlendirilmiş, görebilen, duyabilen ve öğrenebilen otonom bir "Eğitim Arkadaşı"dır.
+Bu proje bugün iki farklı çalışma modunda ele alınmaktadır:
 
----
+1. **Mac Development Environment**
+   - Pygame tabanlı yüz arayüzü
+   - Offline / local speech pipeline
+   - Local LLM entegrasyonu
+   - Hızlı prototipleme ve davranış geliştirme
 
-## 🌟 Öne Çıkan Donanım Özellikleri
-* **Yüksek Performanslı AI:** Raspberry Pi AI HAT+ (13T TOPS) ile gerçek zamanlı nesne tanıma ve ses işleme.
-* **Premium Arayüz:** 7" Waveshare DSI IPS Dokunmatik Ekran (1024x600).
-* **Kesintisiz Güç (DIY UPS):** 4S Li-ion (14.8V) batarya grubu ve 5V 5A regülatör ile mobil kullanım.
-* **Gelişmiş Etkileşim:** Camera Module 3 (Autofocus), Stereo Hoparlör ve USB Mikrofon Dizisi.
-* **Şık Tasarım:** 3D baskı (PETG) "Premium Wedge" masaüstü formu.
-
-
-## 🚀 Öne Çıkan Yazılım ve AI Özellikler
-- **Edge AI Vision:** Hailo-8 ile saniyede 100+ FPS nesne tanıma ve takip.
-- **Cognitive Personality:** LLM (Llama-3) entegrasyonu ile zeki ve yaratıcı diyaloglar.
-- **Autonomous Behavior:** "Behavior Tree" (Davranış Ağacı) ile sıkılma, sevinme gibi insani tepkiler.
-- **Long-term Memory:** ChromaDB vektör veri tabanı ile geçmiş sohbetleri ve kullanıcı tercihlerini hatırlama.
-- **100% Offline:** Gizlilik odaklı, internet gerektirmeyen STT (Whisper) ve TTS (Piper) motorları.
-
-## 🛠 Teknoloji Yığını
-- **Brain:** Raspberry Pi 5 (8GB)
-- **Vision NPU:** Hailo-8 Century
-- **Intelligence:** Llama-3 / Phi-3 (via Ollama)
-- **UI/UX:** Pygame (V18+ Dynamic Face Rig)
-- **Storage:** Samsung PM981 NVMe SSD
-
-## 📂 Dosya Yapısı
-- `face_ui.py`: Görsel motor ve mimik yönetimi.
-- `speech_engine.py`: Sesli iletişim katmanı.
-- `main.py`: Ana orkestrasyon ve döngü.
-- `ARCHITECTURE.md`: Detaylı sistem mimarisi.
+2. **Raspberry Pi 5 Target Environment**
+   - Raspberry Pi 5 + Hailo AI HAT+
+   - Kamera, mikrofon, hoparlör, dokunmatik ekran
+   - Offline STT / TTS / LLM / memory / vision entegrasyonu
+   - Nihai edge-AI robot platformu
 
 ---
 
-## 📅 Proje Fazları ve Durum
+## Current Working Status
 
-### ✅ Faz 1: Kontrol ve Terminal (Tamamlanmak Üzere)
-* [x] Pi 5 & AI HAT Tedariği.
-* [x] 7" DSI Ekran Seçimi ve Tasarım Entegrasyonu.
-* [x] DIY Güç Sistemi (UPS) Tasarımı.
-* [ ] Kasa Üretimi (3D Baskı - Süreçte).
+Şu anda çalışan ana bileşenler:
 
-### 🎙️ Faz 2: Duyular ve Etkileşim (Planlama Aşamasında)
-* [ ] Sesli Komut ve Yanıt Sistemi (Python + OpenAI/Local LLM).
-* [ ] Tanem için Yüz Tanıma ve Özelleştirilmiş Eğitim Modülleri.
-* [ ] USB Mikrofon ve Stereo Hoparlör Montajı.
+- Pygame tabanlı yüz ve gaze arayüzü
+- Mikrofon dinleme ve VAD tabanlı konuşma tespiti
+- Offline / local STT hattı
+- Local LLM ile cevap üretimi
+- Piper ile lokal TTS
+- Temel doğal konuşma döngüsü
+- Sessiz moda geçme / “hey” ile yeniden aktifleşme
 
-### ⚙️ Faz 3: Hareket ve Mobilite (Gelecek Vizyonu)
-* [ ] 4WD Tahrik Sistemi ve Otonom Sürüş.
+Kısmen çalışan veya iyileştirme gereken alanlar:
+
+- Türkçe STT doğruluğu
+- Yanlış STT girişlerinde daha iyi clarification
+- LLM persona disiplini ve tekrar kontrolü
+- Memory retrieval relevance filtering
+- Robotun kendi sesini tekrar kullanıcı konuşması sanmasını azaltma
+- Vision entegrasyonu
+- Hailo hızlandırmalı production pipeline
+
+Planlanan alanlar:
+
+- Raspberry Pi 5 + Hailo üzerinde tam deployment
+- Camera Module 3 ile vision
+- Long-term memory iyileştirmeleri
+- Wake handling ve behavior orchestration
+- Mobilite / balancing / hareket katmanı
 
 ---
 
-## 🛠️ Hızlı Başlangıç ve Dökümantasyon
-Projenin detaylı teknik dökümanlarına aşağıdaki linklerden ulaşabilirsiniz:
+## Hardware Vision
 
-1. [📋 **BOM.md**](./BOM.md): Malzeme Listesi ve Bütçe Takibi.
-2. [⚙️ **DESIGN_SPEC.md**](./DESIGN_SPEC.md): Kasa Tasarımı ve Teknik Çizim Ölçüleri.
-3. [🚀 **Pre-Flight-Check.md**](./Pre-Flight-Check.md): İlk Çalıştırma Öncesi Kontrol Listesi.
+- Raspberry Pi 5
+- Raspberry Pi AI HAT+ / Hailo tabanlı vision acceleration
+- 7" dokunmatik ekran
+- USB / array mikrofon
+- Stereo hoparlör
+- Kamera modülü
+- 3D baskı wedge / robot enclosure
+- Batarya ve güç yönetimi
 
 ---
 
-## 🔋 Güç ve Termal Strateji
-Sistem, 4 adet 18650 pilden oluşan 4S paketi üzerinden beslenir. Isı yönetimi, Pi 5 Active Cooler ve kasa arkasındaki 40mm tahliye fanı ile sağlanan bir hava tüneli üzerinden gerçekleştirilir.
+## Software Stack
+
+- **UI:** Pygame
+- **Speech-to-Text:** faster-whisper + VAD pipeline
+- **Text-to-Speech:** Piper
+- **LLM:** Llama-3 / Phi-3 (local)
+- **Memory:** JSON / memory manager today, vector memory later
+- **Vision:** Hailo accelerated pipeline (target)
+- **Platform:** macOS dev + Raspberry Pi OS target
 
 ---
 
-## 👨‍💻 Geliştirici
-**Fahri** | *Teknoloji Hub & Ekosistem Stratejisti*
+## Repository Structure
 
-*"Tanem için, geleceğin teknolojisiyle bugün tanışma fırsatı."*
+- `brain/`  
+  Robotun karar verme, konuşma, hafıza ve UI orkestrasyonu
+
+- `docs/`  
+  BOM, tasarım spesifikasyonu, karar kayıtları ve pre-flight kontroller
+
+- `firmware/`  
+  Düşük seviye kontrol ve ileride hareket / donanım entegrasyonu
+
+- `mechanical/`  
+  Kasa, montaj ve fiziksel tasarım bileşenleri
+
+- `README.md`  
+  Projenin üst seviye görünümü
+
+- `ROADMAPPING.md`  
+  Yol haritası
+
+- `VALUE_PROPOSITION.md`  
+  Ürün değeri ve kullanım perspektifi
+
+---
+
+## Development Principle
+
+Bu repo bir “tek seferlik demo” değil; adım adım ürünleşen bir edge-AI robot platformudur.
+
+Bu yüzden her özellik için şu ayrım önemlidir:
+
+- **Working today**
+- **Needs tuning**
+- **Planned for RPi 5 + Hailo**
+
+---
+
+## Documentation
+
+Detaylı teknik belgeler:
+
+- `docs/BOM.md`
+- `docs/DESIGN_SPEC.md`
+- `docs/Decision-Log.md`
+- `docs/Pre-Flight-Check.md`
+
+---
+
+## Short Roadmap
+
+### Phase 1 — Conversational Desktop Prototype
+- Local speech loop
+- UI / face rig
+- LLM persona
+- Memory discipline
+- Clarification handling
+
+### Phase 2 — Edge-AI Terminal
+- Raspberry Pi 5 migration
+- Hailo vision integration
+- Camera + microphone + speaker integration
+- Offline reliability improvements
+
+### Phase 3 — Embodied Robot
+- Physical mobility
+- Behavior orchestration
+- Advanced interaction
+- Long-term learning
+
+---
+
+## Maintainer
+
+Fahri Şengül
+
+Tanem için, geleceğin teknolojisini bugünden erişilebilir kılma hedefiyle geliştirilmektedir.
