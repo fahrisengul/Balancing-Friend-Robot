@@ -71,9 +71,11 @@ class PoodleSpeech:
             return self.event_queue.pop(0)
         return {"type": "none"}
 
+    # speech_engine.py içindeki _listener_loop metodunu şu şekilde güncelleyelim. 06/04/2026 18:40
     def _listener_loop(self):
-        self.recorder = PvRecorder(device_index=self.device_index, frame_length=self.frame_length)
-        self.recorder.start()
+        # Kaydediciyi başlatırken hata payını azaltmak için frame_length sabit kalsın
+        recorder = PvRecorder(device_index=self.device_index, frame_length=self.frame_length)
+        recorder.start()
         
         collected_audio = []
         silent_frames = 0
@@ -81,21 +83,28 @@ class PoodleSpeech:
 
         try:
             while self._listener_running:
-                frame = self.recorder.read()
+                frame = recorder.read()
                 
                 if self._busy:
                     collected_audio = []
                     recording = False
                     continue
 
+                # Sesi normalize edip VAD'a gönderiyoruz
                 audio_float32 = np.array(frame, dtype=np.float32) / 32768.0
                 audio_tensor = torch.from_numpy(audio_float32)
                 
-                speech_ts = get_speech_timestamps(audio_tensor, self.vad_model, sampling_rate=16000)
+                # threshold=0.3 ekleyerek algılamayı daha hassas yaptık (varsayılan 0.5'tir)
+                speech_ts = get_speech_timestamps(
+                    audio_tensor, 
+                    self.vad_model, 
+                    sampling_rate=16000,
+                    threshold=0.3 
+                )
 
                 if len(speech_ts) > 0:
                     if not recording:
-                        log_time(">>> [AUDIO] Ses algılandı...")
+                        log_time(">>> [AUDIO] Ses algılandı (VAD Tetiklendi)...")
                         recording = True
                     collected_audio.extend(frame)
                     silent_frames = 0
@@ -103,18 +112,21 @@ class PoodleSpeech:
                     collected_audio.extend(frame)
                     silent_frames += 1
                     
-                    if silent_frames > 40: # Yaklaşık 1.2 saniye sessizlik
-                        log_time(">>> [VAD] Konuşma bitti, işleniyor...")
-                        self._process_speech(np.array(collected_audio, dtype=np.int16))
+                    # Konuşma bittikten sonra bekleme süresini 40 frame (~1.3sn) yapalım
+                    if silent_frames > 40: 
+                        log_time(">>> [VAD] Konuşma bitti, STT başlıyor...")
+                        # Arka planda işleyerek ana döngüyü kilitlemiyoruz
+                        audio_data = np.array(collected_audio, dtype=np.int16)
+                        threading.Thread(target=self._process_speech, args=(audio_data,), daemon=True).start()
+                        
                         collected_audio = []
                         recording = False
                         silent_frames = 0
         except Exception as e:
             log_time(f">>> [RECORDER ERROR] {e}")
         finally:
-            if self.recorder:
-                self.recorder.stop()
-                self.recorder.delete()
+            recorder.stop()
+            recorder.delete()
 
     def _process_speech(self, audio_int16):
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
