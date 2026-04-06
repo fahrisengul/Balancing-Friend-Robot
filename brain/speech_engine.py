@@ -9,6 +9,7 @@ import queue
 from datetime import datetime
 from collections import deque
 import array
+import re
 
 from pvrecorder import PvRecorder
 import numpy as np
@@ -48,7 +49,7 @@ class PoodleSpeech:
         self.stt_worker_thread = None
 
         log_time(">>> Modeller yükleniyor (Whisper/VAD/Piper)...")
-        self.stt_model = WhisperModel("small", device="cpu", compute_type="int8")
+        self.stt_model = WhisperModel("base", device="cpu", compute_type="int8")
         self.vad_model = load_silero_vad()
         self.voice = PiperVoice.load("tr_TR-fahrettin-medium.onnx")
 
@@ -86,7 +87,6 @@ class PoodleSpeech:
         self._listener_running = False
         self._shutting_down = True
 
-        # worker'ı uyandır
         try:
             self.stt_queue.put_nowait(None)
         except Exception:
@@ -240,6 +240,57 @@ class PoodleSpeech:
                 if not self._shutting_down:
                     log_time(f">>> [STT WORKER ERROR] {type(e).__name__}: {e}")
 
+    def _normalize_text(self, text: str) -> str:
+        t = text.lower().strip()
+        t = (
+            t.replace("ı", "i")
+             .replace("ğ", "g")
+             .replace("ş", "s")
+             .replace("ç", "c")
+             .replace("ö", "o")
+             .replace("ü", "u")
+        )
+        t = re.sub(r"[^a-z0-9\s]", " ", t)
+        t = re.sub(r"\s+", " ", t).strip()
+        return t
+
+    def _text_quality(self, text: str) -> str:
+        """
+        Dönen değerler:
+        - good
+        - weak
+        - bad
+        """
+        n = self._normalize_text(text)
+        if not n:
+            return "bad"
+
+        tokens = n.split()
+        if len(tokens) == 0:
+            return "bad"
+
+        weak_words = {
+            "sultan", "aba", "baba", "tamam", "peki", "hmm", "evet", "hey"
+        }
+
+        if len(tokens) == 1:
+            if tokens[0] in weak_words:
+                return "bad"
+            if len(tokens[0]) <= 3:
+                return "bad"
+
+        if len(tokens) == 2:
+            if all(len(t) <= 5 for t in tokens):
+                return "weak"
+
+        question_words = {"ne", "neden", "nasil", "hangi", "kim", "mi", "mı", "mu", "mü"}
+        has_question_signal = any(q in n for q in question_words)
+
+        if not has_question_signal and len(tokens) <= 2:
+            return "weak"
+
+        return "good"
+
     def _process_speech(self, audio_int16):
         if len(audio_int16) == 0:
             return
@@ -263,7 +314,10 @@ class PoodleSpeech:
                 beam_size=2,
                 vad_filter=False,
                 condition_on_previous_text=False,
-                initial_prompt="Türkçe konuşma. Günlük konuşma. Robot asistan.",
+                initial_prompt=(
+                    "Türkçe konuşma. Günlük konuşma. Robot asistan. "
+                    "Kullanıcı doğal cümleler kuruyor. Bozuk STT durumunda uydurma yapma."
+                ),
             )
             text = " ".join([s.text.strip() for s in segments if s.text]).strip()
 
@@ -290,6 +344,23 @@ class PoodleSpeech:
             self._muted = False
             log_time(">>> [MODE] Aktif mod.")
             self.event_queue.put({"type": "resumed"})
+            return
+
+        quality = self._text_quality(text)
+        log_time(f">>> [STT QUALITY] {quality}")
+
+        if quality == "bad":
+            self.event_queue.put({
+                "type": "clarify",
+                "text": "Seni tam anlayamadım. Son cümleni biraz daha net tekrar eder misin?"
+            })
+            return
+
+        if quality == "weak":
+            self.event_queue.put({
+                "type": "clarify",
+                "text": "Son söylediğini tam çıkaramadım. Bir kez daha söyler misin?"
+            })
             return
 
         if not self._muted:
