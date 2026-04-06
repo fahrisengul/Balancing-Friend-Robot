@@ -6,7 +6,7 @@ import platform
 import subprocess
 import time
 from datetime import datetime
-from pvrecorder import PvRecorder # Yeni ve stabil kaydedici
+from pvrecorder import PvRecorder 
 import numpy as np
 import torch
 from faster_whisper import WhisperModel
@@ -20,22 +20,22 @@ def log_time(message):
     print(f"[{get_now()}] {message}")
 
 class PoodleSpeech:
-    def __init__(self, lang="tr", input_device=None):
+    def __init__(self, lang="tr", input_device_index=-1):
         self.lang = lang
-        self.frame_length = 512 # pvrecorder için optimize edilmiş blok
-        self.event_queue = [] # Basit bir liste üzerinden event yönetimi
+        self.frame_length = 512 
+        self.event_queue = [] 
 
         self._listener_running = False
         self._busy = False
         self._muted = False
+        self.recorder = None
         
         log_time(">>> Modeller yükleniyor (Whisper/VAD/Piper)...")
         self.stt_model = WhisperModel("base", device="cpu", compute_type="int8")
         self.vad_model = load_silero_vad()
         self.voice = PiperVoice.load("tr_TR-fahrettin-medium.onnx")
         
-        # Giriş cihazı seçimi
-        self.device_index = input_device if input_device is not None else -1
+        self.device_index = input_device_index
         log_time(">>> [SES] Tüm sistemler hazır.")
 
     def debug_list_input_devices(self):
@@ -48,9 +48,15 @@ class PoodleSpeech:
     def set_busy(self, val): self._busy = val
 
     def start_auto_listener(self):
+        if self._listener_running: return
         self._listener_running = True
         threading.Thread(target=self._listener_loop, daemon=True).start()
         log_time("[DINLEME MODU] Arka plan dinlemesi aktif.")
+
+    def stop_auto_listener(self):
+        self._listener_running = False
+        if self.recorder:
+            self.recorder.stop()
 
     def get_pending_event(self):
         if len(self.event_queue) > 0:
@@ -58,8 +64,8 @@ class PoodleSpeech:
         return {"type": "none"}
 
     def _listener_loop(self):
-        recorder = PvRecorder(device_index=self.device_index, frame_length=self.frame_length)
-        recorder.start()
+        self.recorder = PvRecorder(device_index=self.device_index, frame_length=self.frame_length)
+        self.recorder.start()
         
         collected_audio = []
         silent_frames = 0
@@ -67,14 +73,13 @@ class PoodleSpeech:
 
         try:
             while self._listener_running:
-                frame = recorder.read()
+                frame = self.recorder.read()
                 
                 if self._busy:
                     collected_audio = []
                     recording = False
                     continue
 
-                # VAD kontrolü (Numpy int16'dan Float32'ye çevrim)
                 audio_float32 = np.array(frame, dtype=np.float32) / 32768.0
                 audio_tensor = torch.from_numpy(audio_float32)
                 
@@ -90,8 +95,7 @@ class PoodleSpeech:
                     collected_audio.extend(frame)
                     silent_frames += 1
                     
-                    # Yaklaşık 1 saniye sessizlik (16000 / 512 = ~31 frame)
-                    if silent_frames > 30:
+                    if silent_frames > 40: # Yaklaşık 1.2 saniye sessizlik
                         log_time(">>> [VAD] Konuşma bitti, işleniyor...")
                         self._process_speech(np.array(collected_audio, dtype=np.int16))
                         collected_audio = []
@@ -100,8 +104,9 @@ class PoodleSpeech:
         except Exception as e:
             log_time(f">>> [RECORDER ERROR] {e}")
         finally:
-            recorder.stop()
-            recorder.delete()
+            if self.recorder:
+                self.recorder.stop()
+                self.recorder.delete()
 
     def _process_speech(self, audio_int16):
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
@@ -113,16 +118,15 @@ class PoodleSpeech:
             wf.setframerate(16000)
             wf.writeframes(audio_int16.tobytes())
 
-        # Whisper işlemi
-        start_stt = time.time()
         segments, _ = self.stt_model.transcribe(tmp_path, language=self.lang)
         text = " ".join([s.text for s in segments]).strip()
-        os.remove(tmp_path)
+        
+        try: os.remove(tmp_path)
+        except: pass
 
-        if not text: return
-        log_time(f">>> [STT] '{text}' ({time.time()-start_stt:.2f}s)")
+        if not text or len(text) < 2: return
+        log_time(f">>> [STT] '{text}'")
 
-        # Komutlar
         if any(w in text.lower() for w in ["sus", "sessiz ol", "dur"]):
             self._muted = True
             log_time(">>> [MODE] Sessiz mod.")
@@ -150,8 +154,11 @@ class PoodleSpeech:
                 wav_file.setsampwidth(2)
                 wav_file.setframerate(self.voice.config.sample_rate)
                 self.voice.synthesize(text, wav_file)
+            
             cmd = "afplay" if platform.system() == "Darwin" else "aplay"
-            subprocess.run([cmd, "-q", "1", temp_path])
-            if os.path.exists(temp_path): os.remove(temp_path)
+            subprocess.run([cmd, temp_path])
+            
+            try: os.remove(temp_path)
+            except: pass
         finally:
             self._busy = False
