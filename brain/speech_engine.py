@@ -368,8 +368,12 @@ class PoodleSpeech:
                 vad_filter=False,
                 condition_on_previous_text=False,
                 initial_prompt=(
-                    "Türkçe konuşma. Günlük konuşma. Robot asistan. "
-                    "Kullanıcı doğal cümleler kuruyor. Bozuk STT durumunda uydurma yapma."
+                    "Türkçe günlük konuşma. "
+                    "Kısa ve doğal cümleler. "
+                    "Sık ifadeler: selam, merhaba, nasılsın, adın ne, sen kimsin, bugün ne yaptın, "
+                    "sen ne yaptın, teşekkür ederim, doğum günüm ne zaman, kaç yaşına gireceğim. "
+                    "Robotun adı Poodle. Kullanıcı adı Tanem olabilir. "
+                    "Bozuk tahmin üretme."
                 ),
             )
             text = " ".join([s.text.strip() for s in segments if s.text]).strip()
