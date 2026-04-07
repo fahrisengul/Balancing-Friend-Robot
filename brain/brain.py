@@ -22,8 +22,10 @@ class PoodleBrain:
         cleaned = (text or "").strip()
         normalized = cleaned.lower()
 
-        # 1) intent tespit et
-        intent = self.intent.detect(cleaned)
+        context = self.dialogue.get_context()
+
+        # 1) intent tespit et (context ile)
+        intent = self.intent.detect(cleaned, context=context)
 
         # 2) response kaynağını seç
         decision = self.policy.choose_source(cleaned, intent)
@@ -48,7 +50,7 @@ class PoodleBrain:
 
         # 4) template
         if decision.source == "template":
-            template_reply = self.memory.get_template(intent) or self._handle_template_reply(intent, cleaned)
+            template_reply = self.memory.get_template(intent) or self._handle_template_reply(intent, cleaned, context)
 
             self.dialogue.update(cleaned, template_reply, intent)
             self._log_turn(
@@ -62,7 +64,7 @@ class PoodleBrain:
 
         # 5) deterministic skill
         if decision.source == "skill":
-            skill_result = self.skills.handle(intent, cleaned)
+            skill_result = self.skills.handle(intent, cleaned, context=context)
             if skill_result:
                 self.dialogue.update(cleaned, skill_result, intent)
                 self._log_turn(
@@ -74,7 +76,6 @@ class PoodleBrain:
                 )
                 return BrainResult(reply_text=skill_result, intent=intent)
 
-            # skill bekleniyordu ama sonuç yoksa güvenli fallback
             fallback = "Bunu şu an net cevaplayamadım. Biraz daha açık sorar mısın?"
             self.dialogue.update(cleaned, fallback, intent)
             self._log_turn(
@@ -88,7 +89,7 @@ class PoodleBrain:
 
         # 6) LLM fallback
         memories = self.memory.search_memories(cleaned, limit=3)
-        prompt = self._build_prompt(cleaned, memories)
+        prompt = self._build_prompt(cleaned, context=context, memories=memories)
 
         raw = self.llm.generate(prompt)
         answer = self.policy.apply(raw)
@@ -108,16 +109,21 @@ class PoodleBrain:
             memory_used=memories if memories else None,
         )
 
-    def _build_prompt(self, cleaned: str, memories=None) -> str:
-        context = self.dialogue.get_context()
+    def _build_prompt(self, cleaned: str, context=None, memories=None) -> str:
+        context = context or {}
+        history_text = self.dialogue.get_recent_turns_as_text(limit=3)
 
         context_block = ""
-        if context.get("last_user") and context.get("last_bot"):
+        if history_text:
             context_block = f"""
-Önceki kısa bağlam:
-Kullanıcı: {context["last_user"]}
-Poodle: {context["last_bot"]}
+Önceki kısa konuşma:
+{history_text}
 """.strip()
+
+        topic_block = ""
+        current_topic = context.get("current_topic")
+        if current_topic:
+            topic_block = f"Mevcut konu: {current_topic}"
 
         memory_block = ""
         if memories:
@@ -130,23 +136,39 @@ Poodle: {context["last_bot"]}
         prompt = f"""
 {self.system_prompt}
 
+{topic_block}
+
 {context_block}
 
 {memory_block}
 
 Kullanıcı:
 {cleaned}
+
+Kurallar:
+- Kısa ve doğal cevap ver.
+- Gerekirse önceki konuşmayı dikkate al.
+- Kullanıcının son cümlesine doğrudan cevap ver.
+- Saçma tekrar yapma.
 """.strip()
 
         return prompt
 
-    def _handle_template_reply(self, intent: str, text: str) -> str:
+    def _handle_template_reply(self, intent: str, text: str, context=None) -> str:
         t = (text or "").strip().lower()
+        context = context or {}
+        topic = context.get("current_topic")
 
         if intent == "smalltalk_short":
             return "Anladım."
 
         if intent == "followup":
+            if topic == "school":
+                return "Okulla ilgili kısmı biraz daha anlatır mısın?"
+            if topic == "birthday":
+                return "Doğum günüyle ilgili neyi merak ettiğini biraz daha açar mısın?"
+            if topic == "emotion":
+                return "Nasıl hissettiğini biraz daha anlatmak ister misin?"
             return "Bunu biraz daha açar mısın?"
 
         if t in {"tamam", "peki", "olur"}:
@@ -171,5 +193,4 @@ Kullanıcı:
                 reply_text=reply_text,
             )
         except Exception:
-            # Log başarısız olsa da konuşma akışı bozulmasın
             pass
