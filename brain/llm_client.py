@@ -13,8 +13,8 @@ class LLMClient:
             "prompt": prompt,
             "stream": False,
             "options": {
-                "temperature": 0.45,
-                "top_p": 0.9,
+                "temperature": 0.3,
+                "top_p": 0.8,
                 "repeat_penalty": 1.2,
                 "num_predict": 80,
             },
