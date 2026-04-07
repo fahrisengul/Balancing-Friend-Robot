@@ -3,21 +3,12 @@ from typing import Dict, Optional
 
 
 class DialogueManager:
-    """
-    Konuşma bağlamını tutar.
-    - Son mesajlar
-    - Aktif konu
-    - Son intent
-    """
 
     def __init__(self, max_turns: int = 6):
         self.history = deque(maxlen=max_turns)
         self.current_topic: Optional[str] = None
         self.last_intent: Optional[str] = None
 
-    # -----------------------------------------------------
-    # UPDATE
-    # -----------------------------------------------------
     def update(self, user_text: str, bot_reply: str, intent: str):
         self.history.append({
             "user": user_text,
@@ -31,9 +22,6 @@ class DialogueManager:
         if inferred_topic:
             self.current_topic = inferred_topic
 
-    # -----------------------------------------------------
-    # CONTEXT
-    # -----------------------------------------------------
     def get_context(self) -> Dict:
         last_turn = self.history[-1] if self.history else {}
 
@@ -44,13 +32,9 @@ class DialogueManager:
             "current_topic": self.current_topic,
         }
 
-    # -----------------------------------------------------
-    # TOPIC INFERENCE
-    # -----------------------------------------------------
     def _infer_topic(self, user_text: str, intent: str) -> Optional[str]:
         normalized = self._normalize(user_text)
 
-        # ---- Intent bazlı ----
         if intent in {"ask_birthdate", "ask_age"}:
             return "birthday"
 
@@ -66,28 +50,23 @@ class DialogueManager:
         if intent == "ask_activity":
             return "daily_life"
 
-        # 🔥 KRİTİK FIX (hata buradaydı)
         if intent == "followup":
             return self.current_topic
 
-        # ---- Keyword bazlı ----
-        if "okul" in normalized or "ders" in normalized or "sinav" in normalized or "sınav" in user_text.lower():
+        if "okul" in normalized or "ders" in normalized or "sinav" in normalized:
             return "school"
 
-        if "dogum gunu" in normalized or "doğum günü" in user_text.lower():
+        if "dogum gunu" in normalized:
             return "birthday"
 
-        if "uzgun" in normalized or "üzgün" in user_text.lower() or "moral" in normalized:
+        if "uzgun" in normalized or "moral" in normalized:
             return "emotion"
 
-        if "matematik" in normalized or "fen" in normalized or "ingilizce" in normalized or "lgs" in normalized:
+        if "matematik" in normalized or "fen" in normalized:
             return "education"
 
         return self.current_topic
 
-    # -----------------------------------------------------
-    # NORMALIZE
-    # -----------------------------------------------------
     def _normalize(self, text: str) -> str:
         t = (text or "").lower().strip()
         t = (
