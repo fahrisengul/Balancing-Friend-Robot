@@ -254,7 +254,7 @@ class PoodleSpeech:
         t = re.sub(r"\s+", " ", t).strip()
         return t
 
-      def _is_whitelisted_short_utterance(self, normalized: str) -> bool:
+    def _is_whitelisted_short_utterance(self, normalized: str) -> bool:
         whitelist_phrases = {
             "selam",
             "merhaba",
@@ -279,12 +279,11 @@ class PoodleSpeech:
         suspicious_tokens = {
             "mursun", "nasirsan", "nasir", "dom", "nonuc",
             "ikibu", "koday", "sakni", "ejem", "tum",
-            "gorsun", "gorsen", "saknı"
+            "gorsun", "gorsen", "sakni"
         }
         return any(tok in suspicious_tokens for tok in tokens)
 
     def _looks_like_garbled_phrase(self, normalized: str, tokens) -> bool:
-        # Çok kısa ve anlamsız tek/iki kelimelik bozuk örnekler
         if len(tokens) == 1:
             if tokens[0] in {"tum", "tüm", "ejem", "sultan"}:
                 return True
@@ -299,12 +298,10 @@ class PoodleSpeech:
             if normalized in suspicious_pairs:
                 return True
 
-        # Garip tekrar hissi veren fonetik yapı
         if len(tokens) >= 2:
             if tokens[0] == tokens[1]:
                 return True
 
-        # sayı/tarih gibi ama bariz bozuk
         if "tarihim" in normalized and any(tok in normalized for tok in ["dom", "nonuc", "ikibu"]):
             return True
 
@@ -337,7 +334,6 @@ class PoodleSpeech:
         - weak
         - bad
         """
-
         n = self._normalize_text(text)
         if not n:
             return "bad"
@@ -374,7 +370,6 @@ class PoodleSpeech:
             if len(tok) <= 2:
                 return "bad"
 
-            # tek kelime ama anlamlı görünmüyorsa weak
             return "weak"
 
         # 4) Kısa doğal sorular geçsin
@@ -385,8 +380,6 @@ class PoodleSpeech:
         if len(tokens) <= 3:
             if self._has_question_signal(n):
                 return "good"
-
-            # çok kısa ama doğal olmayan şeyler weak
             return "weak"
 
         # 6) Uzun cümlelerde bariz bozukluk yoksa geç
@@ -416,14 +409,14 @@ class PoodleSpeech:
                 vad_filter=False,
                 condition_on_previous_text=False,
                 initial_prompt=(
-                  "Türkçe günlük konuşma. "
-                  "Kullanıcı kısa ve doğal cümleler kuruyor. "
-                  "Sık ifadeler: selam, merhaba, nasılsın, adın ne, sen kimsin, bugün ne yaptın, "
-                  "sen ne yaptın, teşekkür ederim, tamam teşekkür ederim, doğum günüm ne zaman, kaç yaşına gireceğim. "
-                  "Robotun adı Poodle. "
-                  "Kısa soru cümlelerini bozma. "
-                  "Bozuk tahmin üretme."
-              ),
+                    "Türkçe günlük konuşma. "
+                    "Kullanıcı kısa ve doğal cümleler kuruyor. "
+                    "Sık ifadeler: selam, merhaba, nasılsın, adın ne, sen kimsin, bugün ne yaptın, "
+                    "sen ne yaptın, teşekkür ederim, tamam teşekkür ederim, doğum günüm ne zaman, kaç yaşına gireceğim. "
+                    "Robotun adı Poodle. "
+                    "Kısa soru cümlelerini bozma. "
+                    "Bozuk tahmin üretme."
+                ),
             )
             text = " ".join([s.text.strip() for s in segments if s.text]).strip()
 
