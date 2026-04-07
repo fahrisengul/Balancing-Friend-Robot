@@ -105,6 +105,12 @@ class DialogueManager:
         if intent in {"education_help"}:
             return "education"
 
+        if intent == "ask_activity":
+            return "daily_life"
+
+        if intent == "followup":
+            return self.current_topic
+
         if "okul" in normalized or "ders" in normalized or "sinav" in normalized or "sınav" in normalized:
             return "school"
 
@@ -117,7 +123,7 @@ class DialogueManager:
         if "matematik" in normalized or "fen" in normalized or "ingilizce" in normalized or "lgs" in normalized:
             return "education"
 
-        return self.current_topic
+    return self.current_topic
 
     def _normalize(self, text: str) -> str:
         t = (text or "").lower().strip()
