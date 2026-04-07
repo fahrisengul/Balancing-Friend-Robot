@@ -1,19 +1,26 @@
 class Orchestrator:
-
     def __init__(self, brain, speech, face):
         self.brain = brain
         self.speech = speech
         self.face = face
-
         self.state = "idle"
+        self.running = True
 
-    def set_state(self, new_state):
-        self.state = new_state
-        self.face.set_state(new_state)
+    def stop(self):
+        self.running = False
+
+    def set_state(self, state):
+        self.state = state
+        try:
+            self.face.set_state(state)
+        except Exception:
+            pass
 
     def handle_event(self, event):
+        if not self.running:
+            return
 
-        etype = event.get("type")
+        etype = event.get("type", "none")
 
         if etype == "none":
             return
@@ -28,12 +35,14 @@ class Orchestrator:
 
         if etype == "clarify":
             self.set_state("speaking")
-            self.speech.speak(event["text"])
+            self.speech.speak(event.get("text", "Seni tam anlayamadım."))
             self.set_state("idle")
             return
 
         if etype == "command":
-            text = event.get("text")
+            text = event.get("text", "").strip()
+            if not text:
+                return
 
             self.set_state("thinking")
 
@@ -46,6 +55,7 @@ class Orchestrator:
 
             except Exception as e:
                 print(f">>> [ORCHESTRATOR ERROR] {e}")
+                self.set_state("error")
                 self.speech.speak("Şu an küçük bir sorun oluştu.")
 
             finally:
