@@ -34,3 +34,28 @@ Robot karakteri
 ---
 
 ## 🔁 Akış
+
+- Input → Intent → Skill? → Template? → LLM → Post-process
+
+---
+
+## ⚠️ Kurallar
+
+- Önce skill
+- sonra template
+- en son LLM
+
+---
+
+## 🎯 Amaç
+
+- hızlı
+- güvenilir
+- doğal
+
+---
+
+## 📌 Not
+
+Brain = logic  
+LLM = sadece dil üretimi
