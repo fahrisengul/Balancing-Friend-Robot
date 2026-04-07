@@ -1,153 +1,117 @@
-# Balancing Friend Robot
+# 🐶 Poodle Robot — Child Companion AI
 
-Balancing Friend Robot, Tanem için geliştirilen; doğal konuşabilen, görebilen, öğrenebilen ve ileride hareket kabiliyeti kazanacak bir edge-AI robot arkadaştır.
+Poodle, Raspberry Pi üzerinde çalışan, çocuk odaklı, uzun süreli ilişki kurabilen bir yapay zeka robotudur.
 
-Bu proje bugün iki farklı çalışma modunda ele alınmaktadır:
-
-1. **Mac Development Environment**
-   - Pygame tabanlı yüz arayüzü
-   - Offline / local speech pipeline
-   - Local LLM entegrasyonu
-   - Hızlı prototipleme ve davranış geliştirme
-
-2. **Raspberry Pi 5 Target Environment**
-   - Raspberry Pi 5 + Hailo AI HAT+
-   - Kamera, mikrofon, hoparlör, dokunmatik ekran
-   - Offline STT / TTS / LLM / memory / vision entegrasyonu
-   - Nihai edge-AI robot platformu
+Bu proje bir “konuşan oyuncak” değil;
+bir **arkadaş, refakatçi, eğitim koçu ve güvenli dijital hafıza sistemi** olarak tasarlanmıştır.
 
 ---
 
-## Current Working Status
+## 🎯 Vizyon
 
-Şu anda çalışan ana bileşenler:
-
-- Pygame tabanlı yüz ve gaze arayüzü
-- Mikrofon dinleme ve VAD tabanlı konuşma tespiti
-- Offline / local STT hattı
-- Local LLM ile cevap üretimi
-- Piper ile lokal TTS
-- Temel doğal konuşma döngüsü
-- Sessiz moda geçme / “hey” ile yeniden aktifleşme
-
-Kısmen çalışan veya iyileştirme gereken alanlar:
-
-- Türkçe STT doğruluğu
-- Yanlış STT girişlerinde daha iyi clarification
-- LLM persona disiplini ve tekrar kontrolü
-- Memory retrieval relevance filtering
-- Robotun kendi sesini tekrar kullanıcı konuşması sanmasını azaltma
-- Vision entegrasyonu
-- Hailo hızlandırmalı production pipeline
-
-Planlanan alanlar:
-
-- Raspberry Pi 5 + Hailo üzerinde tam deployment
-- Camera Module 3 ile vision
-- Long-term memory iyileştirmeleri
-- Wake handling ve behavior orchestration
-- Mobilite / balancing / hareket katmanı
+Poodle:
+- Tanem’i tanır
+- Onunla bağ kurar
+- Arkadaşlarını öğrenir
+- Eğitim sürecini destekler
+- Duygusal olarak yanında olur
+- Yıllar içinde gelişen bir hafıza oluşturur
 
 ---
 
-## Hardware Vision
+## 🧠 Sistem Yaklaşımı
 
-- Raspberry Pi 5
-- Raspberry Pi AI HAT+ / Hailo tabanlı vision acceleration
-- 7" dokunmatik ekran
-- USB / array mikrofon
-- Stereo hoparlör
-- Kamera modülü
-- 3D baskı wedge / robot enclosure
-- Batarya ve güç yönetimi
+LLM merkezli değil,
+**Orchestration + Memory + Perception merkezli mimari**
 
 ---
 
-## Software Stack
+## 🧱 Ana Katmanlar
 
-- **UI:** Pygame
-- **Speech-to-Text:** faster-whisper + VAD pipeline
-- **Text-to-Speech:** Piper
-- **LLM:** Llama-3 / Phi-3 (local)
-- **Memory:** JSON / memory manager today, vector memory later
-- **Vision:** Hailo accelerated pipeline (target)
-- **Platform:** macOS dev + Raspberry Pi OS target
+1. **Perception**
+   - Mikrofon (STT + VAD)
+   - Kamera (vision)
+   - OCR / belge okuma
 
----
+2. **Identity & Memory**
+   - Kişi tanıma
+   - İlişki grafı
+   - Uzun vadeli hafıza
 
-## Repository Structure
+3. **Decision (Brain)**
+   - Intent router
+   - Dialogue manager
+   - Skill system
+   - Safety policy
 
-- `brain/`  
-  Robotun karar verme, konuşma, hafıza ve UI orkestrasyonu
-
-- `docs/`  
-  BOM, tasarım spesifikasyonu, karar kayıtları ve pre-flight kontroller
-
-- `firmware/`  
-  Düşük seviye kontrol ve ileride hareket / donanım entegrasyonu
-
-- `mechanical/`  
-  Kasa, montaj ve fiziksel tasarım bileşenleri
-
-- `README.md`  
-  Projenin üst seviye görünümü
-
-- `ROADMAPPING.md`  
-  Yol haritası
-
-- `VALUE_PROPOSITION.md`  
-  Ürün değeri ve kullanım perspektifi
+4. **Expression**
+   - TTS (Piper)
+   - Yüz animasyonu
+   - Davranış (state machine)
 
 ---
 
-## Development Principle
+## ⚙️ Donanım Hedefi
 
-Bu repo bir “tek seferlik demo” değil; adım adım ürünleşen bir edge-AI robot platformudur.
-
-Bu yüzden her özellik için şu ayrım önemlidir:
-
-- **Working today**
-- **Needs tuning**
-- **Planned for RPi 5 + Hailo**
+- Raspberry Pi 5 (8GB önerilir)
+- Hailo AI Accelerator (13 TOPS)
+- Pi Camera
+- USB Mikrofon + Hoparlör
+- 7” ekran
 
 ---
 
-## Documentation
+## 🧭 Yol Haritası
 
-Detaylı teknik belgeler:
+### Faz 1 — Core AI
+- [x] Speech pipeline (Whisper + VAD + Piper)
+- [x] Brain v1 (LLM + intent)
+- [x] Face UI
 
-- `docs/BOM.md`
-- `docs/DESIGN_SPEC.md`
-- `docs/Decision-Log.md`
-- `docs/Pre-Flight-Check.md`
+### Faz 2 — Brain Refactor (aktif)
+- [ ] Dialogue manager
+- [ ] Response policy
+- [ ] Deterministic skills
+- [ ] Memory relevance
 
----
+### Faz 3 — Identity & Vision
+- [ ] Kişi tanıma
+- [ ] Takip sistemi
+- [ ] Arkadaş öğrenme
 
-## Short Roadmap
+### Faz 4 — Education Engine
+- [ ] Sınav tarama
+- [ ] LGS hazırlık sistemi
+- [ ] Öğrenme profili
 
-### Phase 1 — Conversational Desktop Prototype
-- Local speech loop
-- UI / face rig
-- LLM persona
-- Memory discipline
-- Clarification handling
-
-### Phase 2 — Edge-AI Terminal
-- Raspberry Pi 5 migration
-- Hailo vision integration
-- Camera + microphone + speaker integration
-- Offline reliability improvements
-
-### Phase 3 — Embodied Robot
-- Physical mobility
-- Behavior orchestration
-- Advanced interaction
-- Long-term learning
+### Faz 5 — Emotional Support
+- [ ] Support policy
+- [ ] Risk detection
+- [ ] Parent awareness
 
 ---
 
-## Maintainer
+## 🚨 Tasarım İlkeleri
 
-Fahri Şengül
+- Çocuk güvenliği önceliklidir
+- Uydurma bilgi üretme
+- Kısa ve doğal konuş
+- Gereksiz tekrar yapma
+- Hafızayı kontrollü kullan
 
-Tanem için, geleceğin teknolojisini bugünden erişilebilir kılma hedefiyle geliştirilmektedir.
+---
+
+## 📌 Mevcut Durum
+
+- STT pipeline stabil
+- TTS stabil
+- Basic conversational loop çalışıyor
+- Quality gate aktif
+- Brain refactor süreci başladı
+
+---
+
+## 📎 Not
+
+Bu proje uzun vadeli bir AI companion sistemidir.
+Mimari sadelikten çok **doğru katman ayrımı** hedeflenmiştir.
