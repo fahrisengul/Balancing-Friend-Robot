@@ -75,6 +75,10 @@ class ResponsePolicy:
         if intent in llm_intents:
             return PolicyDecision(source="llm")
 
+        # 6.1) Açık uçlu konuşmalar
+        if intent in ["greeting", "ask_status", "ask_name"]:
+            return Decision(source="template")
+
         # 7) Güvenli fallback
         return PolicyDecision(
             source="clarify",
