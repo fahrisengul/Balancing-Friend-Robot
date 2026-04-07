@@ -78,39 +78,41 @@ class PoodleSpeech:
         self._listener_running = True
         self._shutting_down = False
 
-        self.stt_worker_thread = threading.Thread(target=self._stt_worker_loop, daemon=True)
+        self.stt_worker_thread = threading.Thread(
+            target=self._stt_worker_loop,
+            daemon=True
+        )
         self.stt_worker_thread.start()
 
-        self.listener_thread = threading.Thread(target=self._listener_loop, daemon=True)
+        self.listener_thread = threading.Thread(
+            target=self._listener_loop,
+            daemon=True
+        )
         self.listener_thread.start()
 
         log_time("[DINLEME MODU] Arka plan dinlemesi aktif.")
 
-     def stop_auto_listener(self):
+    def stop_auto_listener(self):
         self._listener_running = False
         self._shutting_down = True
-    
-        # queue unblock
+
         try:
             self.stt_queue.put_nowait(None)
         except Exception:
             pass
-    
-        # recorder stop
+
         if self.recorder:
             try:
                 self.recorder.stop()
             except Exception:
                 pass
-    
-        # thread join (NON-BLOCKING)
+
         if self.listener_thread and self.listener_thread.is_alive():
             self.listener_thread.join(timeout=1.0)
-    
+
         if self.stt_worker_thread and self.stt_worker_thread.is_alive():
             self.stt_worker_thread.join(timeout=1.0)
-    
-        # recorder delete
+
         if self.recorder:
             try:
                 self.recorder.delete()
@@ -208,14 +210,18 @@ class PoodleSpeech:
                     silent_frames += 1
 
                     if silent_frames >= silence_limit_frames:
-                        log_time(">>> [VAD] Konuşma bitti, STT kuyruğa alınıyor...")
                         audio_data = np.array(collected_audio, dtype=np.int16)
+                        seconds = len(audio_data) / self.sample_rate
+                        log_time(f">>> [VAD] Konuşma bitti, STT kuyruğa alınıyor... ({seconds:.2f}s)")
 
                         if len(audio_data) >= int(self.sample_rate * 0.5):
                             try:
                                 self.stt_queue.put_nowait(audio_data)
-                            except Exception:
-                                pass
+                                log_time(f">>> [STT QUEUE] Segment eklendi. samples={len(audio_data)}")
+                            except Exception as e:
+                                log_time(f">>> [STT QUEUE ERROR] {type(e).__name__}: {e}")
+                        else:
+                            log_time(">>> [STT QUEUE] Segment çok kısa, atlandı.")
 
                         collected_audio = []
                         recording = False
@@ -235,20 +241,29 @@ class PoodleSpeech:
                 pass
 
     def _stt_worker_loop(self):
+        log_time(">>> [STT WORKER] Hazır.")
         while not self._shutting_down:
             try:
                 item = self.stt_queue.get(timeout=0.5)
             except queue.Empty:
                 continue
-    
+
             if item is None:
+                log_time(">>> [STT WORKER] Kapatma sinyali alındı.")
                 break
-    
+
             try:
+                if self._shutting_down:
+                    break
+                log_time(f">>> [STT WORKER] Segment işleniyor... samples={len(item)}")
                 self._process_speech(item)
+                log_time(">>> [STT WORKER] Segment tamamlandı.")
             except Exception as e:
                 if not self._shutting_down:
                     log_time(f">>> [STT WORKER ERROR] {type(e).__name__}: {e}")
+
+        log_time(">>> [STT WORKER] Durdu.")
+
     # ---------------------------------------------------------
     # TEXT NORMALIZATION / QUALITY
     # ---------------------------------------------------------
@@ -282,10 +297,11 @@ class PoodleSpeech:
             "beni duyabiliyor musun",
             "beni duyuyor musun",
             "hey poodle",
+            "hey poodle nasil gidiyor",
             "hey pudil",
             "hey puddle",
             "hey poodil",
-            "hey poodle beni duyuyor musun",
+            "poodle",
             "bugun ne yaptin",
             "sen ne yaptin",
             "ne yaptin",
@@ -293,6 +309,7 @@ class PoodleSpeech:
             "ne yapiyorsun",
             "neler yapiyorsun",
             "iyi misin",
+            "ben de iyiyim",
             "dogum gunum ne zaman",
             "kac yasina girecegim",
             "saat kac",
@@ -301,59 +318,23 @@ class PoodleSpeech:
         }
         return normalized in whitelist_phrases
 
-    def _contains_suspicious_tokens(self, tokens) -> bool:
+    def _contains_suspicious_tokens(self, tokens):
         suspicious_tokens = {
             "mursun", "nasirsan", "nasir", "dom", "nonuc",
             "ikibu", "koday", "sakni", "ejem", "tum",
-            "gorsun", "gorsen", "sakni"
+            "gorsun", "gorsen"
         }
         return any(tok in suspicious_tokens for tok in tokens)
 
-    def _looks_like_garbled_phrase(self, normalized: str, tokens) -> bool:
-        if len(tokens) == 1:
-            if tokens[0] in {"tum", "tüm", "ejem", "sultan", "bekir"}:
-                return True
-
-        if len(tokens) == 2:
-            suspicious_pairs = {
-                "mursun sen",
-                "nasirsan nasir",
-                "koday bilir",
-                "dom tarihim",
-            }
-            if normalized in suspicious_pairs:
-                return True
-
-        if len(tokens) >= 2 and tokens[0] == tokens[1]:
-            return True
-
-        if "tarihim" in normalized and any(tok in normalized for tok in ["dom", "nonuc", "ikibu"]):
-            return True
-
-        # Prompt leakage benzeri metinler
-        leakage_phrases = {
-            "kisa soru cumlelerini bozma",
-            "kullanici kisa ve dogal cumleler kuruyor",
+    def _looks_like_prompt_leakage(self, normalized: str) -> bool:
+        leakage_markers = [
+            "kisa dogal diyalog",
             "robotun adi poodle",
+            "robotun adı poodle",
             "turkce gunluk konusma",
-        }
-        if normalized in leakage_phrases:
-            return True
-
-        # 2-4 kelime ama doğal cümle izi çok zayıf
-        if 2 <= len(tokens) <= 4:
-            allowed_keywords = {
-                "ne", "neden", "nasil", "kim", "kac", "mi", "beni",
-                "duyuyor", "duyabiliyor", "tesekkurler", "super",
-                "sevindim", "poodle", "hey", "bugun", "yaptin",
-                "yapiyorsun", "adin", "kimsin", "gorusuruz"
-            }
-            overlap = sum(1 for tok in tokens if tok in allowed_keywords)
-            if overlap == 0:
-                # örn: iyi adi yaptin
-                return True
-
-        return False
+            "bozuk tahmin uretme",
+        ]
+        return any(m in normalized for m in leakage_markers)
 
     def _is_short_natural_question(self, normalized: str) -> bool:
         question_patterns = [
@@ -372,11 +353,14 @@ class PoodleSpeech:
             "kac yasina girecegim",
             "saat kac",
             "bugun gunlerden ne",
+            "nerede",
+            "neden",
+            "hangi",
         ]
         return any(p in normalized for p in question_patterns)
 
     def _has_question_signal(self, normalized: str) -> bool:
-        question_words = {"ne", "neden", "nasil", "hangi", "kim", "mi", "mı", "mu", "mü", "kac"}
+        question_words = {"ne", "neden", "nasil", "hangi", "kim", "mi", "mı", "mu", "mü", "kac", "nerede"}
         return any(q in normalized for q in question_words)
 
     def _is_wake_phrase(self, normalized: str) -> bool:
@@ -386,53 +370,85 @@ class PoodleSpeech:
             "hey pudil",
             "hey puddle",
             "hey poodil",
+            "poodle",
         }
         return normalized in wake_phrases
 
     def _text_quality(self, text: str) -> str:
         n = self._normalize_text(text)
-    
         if not n:
             return "bad"
-    
+
         tokens = n.split()
-    
-        # 🔥 DOĞAL KISA CÜMLELER (EN KRİTİK FIX)
-        natural_short = {
-            "selam", "merhaba",
-            "nasilsin",
-            "ben de iyiyim",
-            "iyiyim",
-            "tesekkur ederim",
-            "tamam", "peki",
-            "gorustuk", "gorusuruz",
-        }
-    
-        if n in natural_short:
-            return "good"
-    
-        # 🔥 2-4 kelimelik doğal cümle
-        if 2 <= len(tokens) <= 5:
-            return "good"
-    
-        # 🔥 soru sinyali varsa geç
-        question_words = {"ne", "neden", "nasil", "hangi", "kim", "kac", "mi", "mı"}
-        if any(q in n for q in question_words):
-            return "good"
-    
-        # 🔴 tek kelime kısa saçmalık
-        if len(tokens) == 1 and len(tokens[0]) <= 2:
+        if len(tokens) == 0:
             return "bad"
-    
-        return "weak"
+
+        if self._is_whitelisted_short_utterance(n):
+            return "good"
+
+        if self._is_wake_phrase(n):
+            return "good"
+
+        if self._looks_like_prompt_leakage(n):
+            return "bad"
+
+        if self._contains_suspicious_tokens(tokens):
+            return "bad"
+
+        weak_words = {"aba", "baba", "hmm", "peki", "hey"}
+
+        if len(tokens) == 1:
+            tok = tokens[0]
+
+            if tok in {"selam", "merhaba", "nasilsin", "gorusuruz", "poodle"}:
+                return "good"
+
+            if tok in weak_words:
+                return "bad"
+
+            if len(tok) <= 2:
+                return "bad"
+
+            return "weak"
+
+        if self._is_short_natural_question(n):
+            return "good"
+
+        if 2 <= len(tokens) <= 5:
+            if self._has_question_signal(n):
+                return "good"
+            # kısa doğal ifadeler
+            return "good"
+
+        return "good"
+
     # ---------------------------------------------------------
     # STT PROCESSING
     # ---------------------------------------------------------
+    def _transcribe_audio(self, tmp_path: str) -> str:
+        segments, _ = self.stt_model.transcribe(
+            tmp_path,
+            language=self.lang,
+            beam_size=2,
+            vad_filter=False,
+            condition_on_previous_text=False,
+            initial_prompt=(
+                "Türkçe günlük konuşma. "
+                "Kısa ve doğal cümleler. "
+                "Örnek: merhaba, nasılsın, bugün ne yaptın. "
+                "Bozuk tahmin üretme."
+            ),
+        )
+        text = " ".join([s.text.strip() for s in segments if s.text]).strip()
+        return text
+
     def _process_speech(self, audio_int16):
         if len(audio_int16) == 0:
+            log_time(">>> [STT] Boş segment, atlandı.")
             return
 
         if len(audio_int16) < self.sample_rate * 0.5:
+            log_time(">>> [STT] Çok kısa segment, atlandı.")
             return
 
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
@@ -445,19 +461,11 @@ class PoodleSpeech:
                 wf.setframerate(self.sample_rate)
                 wf.writeframes(audio_int16.tobytes())
 
-            segments, _ = self.stt_model.transcribe(
-                tmp_path,
-                language=self.lang,
-                beam_size=2,
-                vad_filter=False,
-                condition_on_previous_text=False,
-                initial_prompt=(
-                    "Türkçe günlük konuşma. "
-                    "Kısa doğal diyalog. "
-                    "Robotun adı Poodle."
-                ),
-            )
-            text = " ".join([s.text.strip() for s in segments if s.text]).strip()
+            text = self._transcribe_audio(tmp_path)
+
+        except Exception as e:
+            log_time(f">>> [STT TRANSCRIBE ERROR] {type(e).__name__}: {e}")
+            return
 
         finally:
             try:
@@ -465,28 +473,26 @@ class PoodleSpeech:
             except Exception:
                 pass
 
-        if not text or len(text) < 2:
+        if not text or len(text) < 1:
+            log_time(">>> [STT] Boş transkript döndü.")
             return
 
         log_time(f">>> [STT] '{text}'")
 
         normalized = self._normalize_text(text)
 
-        # Muted komutları
         if any(w in normalized for w in ["sus", "sessiz ol", "dur"]):
             self._muted = True
             log_time(">>> [MODE] Sessiz mod.")
             self.event_queue.put({"type": "sleep"})
             return
 
-        # Wake phrase
         if self._is_wake_phrase(normalized):
             if self._muted:
                 self._muted = False
                 log_time(">>> [MODE] Aktif mod.")
                 self.event_queue.put({"type": "resumed"})
             else:
-                # muted değilse de bunu command olarak geçirebiliriz
                 self.event_queue.put({"type": "command", "text": "Hey Poodle"})
             return
 
