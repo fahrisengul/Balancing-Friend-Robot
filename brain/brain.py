@@ -18,60 +18,73 @@ class PoodleBrain:
 
     def handle_user_input(self, text: str) -> BrainResult:
         cleaned = (text or "").strip()
+
+        # 1) intent tespit et
         intent = self.intent.detect(cleaned)
 
-        # 1) Deterministic kısa ve güvenli cevaplar
-        deterministic_reply = self._handle_deterministic_reply(cleaned, intent)
-        if deterministic_reply:
-            self.dialogue.update(cleaned, deterministic_reply, intent)
-            return BrainResult(reply_text=deterministic_reply, intent=intent)
+        # 2) response kaynağını seç
+        decision = self.policy.choose_source(cleaned, intent)
 
-        # 2) Skill handler varsa onu kullan
-        skill_result = self.skills.handle(intent)
-        if skill_result:
-            self.dialogue.update(cleaned, skill_result, intent)
-            return BrainResult(reply_text=skill_result, intent=intent)
+        # 3) clarification gerekiyorsa doğrudan dön
+        if decision.source == "clarify":
+            reply = decision.clarify_text or "Bunu tam anlayamadım. Bir kez daha söyler misin?"
+            self.dialogue.update(cleaned, reply, intent)
+            return BrainResult(reply_text=reply, intent=intent)
 
-        # 3) LLM
-        prompt = f"""
-{self.system_prompt}
+        # 4) deterministic skill
+        if decision.source == "skill":
+            skill_result = self.skills.handle(intent, cleaned)
+            if skill_result:
+                self.dialogue.update(cleaned, skill_result, intent)
+                return BrainResult(reply_text=skill_result, intent=intent)
 
-Kullanıcı:
-{cleaned}
-""".strip()
+        # 5) template sistemi (şimdilik basit fallback)
+        if decision.source == "template":
+            template_reply = self._handle_template_reply(intent, cleaned)
+            self.dialogue.update(cleaned, template_reply, intent)
+            return BrainResult(reply_text=template_reply, intent=intent)
+
+        # 6) LLM fallback
+        prompt = self._build_prompt(cleaned)
 
         raw = self.llm.generate(prompt)
         answer = self.policy.apply(raw)
 
         self.dialogue.update(cleaned, answer, intent)
-
         return BrainResult(reply_text=answer, intent=intent)
 
-    def _handle_deterministic_reply(self, text: str, intent: str):
-        t = text.lower().strip()
+    def _build_prompt(self, cleaned: str) -> str:
+        context = self.dialogue.get_context()
 
-        # selamlaşma
-        if intent == "greeting" or t in {"selam", "merhaba"}:
-            return "Selam, ben Poodle."
+        context_block = ""
+        if context.get("last_user") and context.get("last_bot"):
+            context_block = f"""
+Önceki kısa bağlam:
+Kullanıcı: {context["last_user"]}
+Poodle: {context["last_bot"]}
+""".strip()
 
-        # isim sorusu
-        if intent == "ask_name" or "adın ne" in t or "adin ne" in t:
-            return "Benim adım Poodle."
+        prompt = f"""
+{self.system_prompt}
 
-        # kimlik sorusu
-        if intent == "ask_identity" or "sen kimsin" in t:
-            return "Ben Poodle. Seninle konuşan robot arkadaşınım."
+{context_block}
 
-        # durum sorusu
-        if intent == "ask_status" or "nasılsın" in t or "nasilsin" in t:
-            return "İyiyim, teşekkür ederim. Sen nasılsın?"
+Kullanıcı:
+{cleaned}
+""".strip()
 
-        # teşekkür
-        if "teşekkür ederim" in t or "tesekkur ederim" in t:
-            return "Rica ederim."
+        return prompt
 
-        # kısa onay
-        if t in {"tamam", "peki"}:
+    def _handle_template_reply(self, intent: str, text: str) -> str:
+        t = (text or "").strip().lower()
+
+        if intent == "smalltalk_short":
+            return "Anladım."
+
+        if intent == "followup":
+            return "Bunu biraz daha açar mısın?"
+
+        if t in {"tamam", "peki", "olur"}:
             return "Tamam."
 
-        return None
+        return "Anladım."
