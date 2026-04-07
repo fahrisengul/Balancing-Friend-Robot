@@ -20,6 +20,7 @@ class PoodleBrain:
 
     def handle_user_input(self, text: str) -> BrainResult:
         cleaned = (text or "").strip()
+        normalized = cleaned.lower()
 
         # 1) intent tespit et
         intent = self.intent.detect(cleaned)
@@ -27,35 +28,87 @@ class PoodleBrain:
         # 2) response kaynağını seç
         decision = self.policy.choose_source(cleaned, intent)
 
-        # 3) clarification gerekiyorsa doğrudan dön
+        # 3) clarification
         if decision.source == "clarify":
-            reply = decision.clarify_text or "Bunu tam anlayamadım. Bir kez daha söyler misin?"
+            reply = (
+                self.memory.get_template("clarify")
+                or decision.clarify_text
+                or "Bunu tam anlayamadım. Bir kez daha söyler misin?"
+            )
+
             self.dialogue.update(cleaned, reply, intent)
+            self._log_turn(
+                raw_text=cleaned,
+                normalized_text=normalized,
+                intent=intent,
+                response_source="clarify",
+                reply_text=reply,
+            )
             return BrainResult(reply_text=reply, intent=intent)
 
-        # 4) deterministic skill
+        # 4) template
+        if decision.source == "template":
+            template_reply = self.memory.get_template(intent) or self._handle_template_reply(intent, cleaned)
+
+            self.dialogue.update(cleaned, template_reply, intent)
+            self._log_turn(
+                raw_text=cleaned,
+                normalized_text=normalized,
+                intent=intent,
+                response_source="template",
+                reply_text=template_reply,
+            )
+            return BrainResult(reply_text=template_reply, intent=intent)
+
+        # 5) deterministic skill
         if decision.source == "skill":
             skill_result = self.skills.handle(intent, cleaned)
             if skill_result:
                 self.dialogue.update(cleaned, skill_result, intent)
+                self._log_turn(
+                    raw_text=cleaned,
+                    normalized_text=normalized,
+                    intent=intent,
+                    response_source="skill",
+                    reply_text=skill_result,
+                )
                 return BrainResult(reply_text=skill_result, intent=intent)
 
-        # 5) template sistemi (şimdilik basit fallback)
-        if decision.source == "template":
-            template_reply = self._handle_template_reply(intent, cleaned)
-            self.dialogue.update(cleaned, template_reply, intent)
-            return BrainResult(reply_text=template_reply, intent=intent)
+            # skill bekleniyordu ama sonuç yoksa güvenli fallback
+            fallback = "Bunu şu an net cevaplayamadım. Biraz daha açık sorar mısın?"
+            self.dialogue.update(cleaned, fallback, intent)
+            self._log_turn(
+                raw_text=cleaned,
+                normalized_text=normalized,
+                intent=intent,
+                response_source="skill_fallback",
+                reply_text=fallback,
+            )
+            return BrainResult(reply_text=fallback, intent=intent)
 
         # 6) LLM fallback
-        prompt = self._build_prompt(cleaned)
+        memories = self.memory.search_memories(cleaned, limit=3)
+        prompt = self._build_prompt(cleaned, memories)
 
         raw = self.llm.generate(prompt)
         answer = self.policy.apply(raw)
 
         self.dialogue.update(cleaned, answer, intent)
-        return BrainResult(reply_text=answer, intent=intent)
+        self._log_turn(
+            raw_text=cleaned,
+            normalized_text=normalized,
+            intent=intent,
+            response_source="llm",
+            reply_text=answer,
+        )
 
-    def _build_prompt(self, cleaned: str) -> str:
+        return BrainResult(
+            reply_text=answer,
+            intent=intent,
+            memory_used=memories if memories else None,
+        )
+
+    def _build_prompt(self, cleaned: str, memories=None) -> str:
         context = self.dialogue.get_context()
 
         context_block = ""
@@ -66,10 +119,20 @@ Kullanıcı: {context["last_user"]}
 Poodle: {context["last_bot"]}
 """.strip()
 
+        memory_block = ""
+        if memories:
+            lines = "\n".join(f"- {m}" for m in memories)
+            memory_block = f"""
+İlgili hafıza:
+{lines}
+""".strip()
+
         prompt = f"""
 {self.system_prompt}
 
 {context_block}
+
+{memory_block}
 
 Kullanıcı:
 {cleaned}
@@ -90,3 +153,23 @@ Kullanıcı:
             return "Tamam."
 
         return "Anladım."
+
+    def _log_turn(
+        self,
+        raw_text: str,
+        normalized_text: str,
+        intent: str,
+        response_source: str,
+        reply_text: str,
+    ) -> None:
+        try:
+            self.memory.log_conversation(
+                raw_text=raw_text,
+                normalized_text=normalized_text,
+                intent=intent,
+                response_source=response_source,
+                reply_text=reply_text,
+            )
+        except Exception:
+            # Log başarısız olsa da konuşma akışı bozulmasın
+            pass
