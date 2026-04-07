@@ -3,29 +3,14 @@ from typing import Deque, Dict, List, Optional
 
 
 class DialogueManager:
-    """
-    Sprint 3/4 final:
-    - son kullanıcı mesajı
-    - son bot cevabı
-    - son intent
-    - kısa konuşma geçmişi
-    - topic continuity
-    - follow-up destekli bağlam
-    """
-
     def __init__(self, max_turns: int = 6):
         self.max_turns = max_turns
-
         self.last_user: Optional[str] = None
         self.last_bot: Optional[str] = None
         self.last_intent: Optional[str] = None
-
         self.history: Deque[Dict[str, str]] = deque(maxlen=max_turns)
         self.current_topic: Optional[str] = None
 
-    # ---------------------------------------------------------
-    # PUBLIC API
-    # ---------------------------------------------------------
     def update(self, user_text: str, bot_text: str, intent: str) -> None:
         self.last_user = user_text
         self.last_bot = bot_text
@@ -70,66 +55,38 @@ class DialogueManager:
 
     def is_followup(self, text: str) -> bool:
         normalized = self._normalize(text)
-
         followup_phrases = {
-            "sonra",
-            "e sonra",
-            "ee sonra",
-            "peki sonra",
-            "neden",
-            "neden oyle",
-            "nasil",
-            "nasil yani",
-            "emin misin",
-            "sonra ne oldu",
-            "ne anladin",
-            "ne dedin",
-            "ne demek istedin",
-            "yani",
-            "peki",
-            "ee",
+            "sonra", "e sonra", "ee sonra", "peki sonra",
+            "neden", "neden oyle", "nasil", "nasil yani",
+            "emin misin", "sonra ne oldu", "ne anladin",
+            "ne dedin", "ne demek istedin", "yani", "ee",
         }
-
         return normalized in followup_phrases
 
-    # ---------------------------------------------------------
-    # INTERNALS
-    # ---------------------------------------------------------
     def _infer_topic(self, user_text: str, intent: str) -> Optional[str]:
         normalized = self._normalize(user_text)
 
-        # Intent bazlı güçlü eşleşme
         if intent in {"ask_birthdate", "ask_age"}:
             return "birthday"
-
         if intent in {"ask_name", "ask_identity"}:
             return "identity"
-
         if intent in {"ask_status", "emotional_support"}:
             return "emotion"
-
         if intent in {"education_help"}:
             return "education"
-
         if intent == "ask_activity":
             return "daily_life"
-
         if intent == "followup":
             return self.current_topic
 
-        # Keyword bazlı eşleşme
         if any(k in normalized for k in {"okul", "ders", "sinav"}):
             return "school"
-
         if "dogum gunu" in normalized:
             return "birthday"
-
         if any(k in normalized for k in {"uzgun", "moral", "kotu hissediyorum"}):
             return "emotion"
-
         if any(k in normalized for k in {"matematik", "fen", "ingilizce", "lgs"}):
             return "education"
-
         if any(k in normalized for k in {"bugun", "yaptim", "yapiyorum", "gunum"}):
             return "daily_life"
 
