@@ -69,3 +69,32 @@ Alt modüller:
 ---
 
 ## 🔄 Veri Akışı
+
+- Mic → VAD → STT → Intent → Skill / LLM → Response → TTS
+- Camera → Detection → Identity → Memory → Behavior
+
+## ⚠️ Kritik Tasarım Kararı
+
+LLM:
+- karar verici değil
+- sadece üretici
+
+Karar:
+- policy + state machine tarafından verilir
+
+---
+
+## 📌 Edge-first yaklaşım
+
+- Offline çalışabilmeli
+- Minimum latency
+- Veri güvenliği
+
+---
+
+## 🚀 Gelecek genişleme
+
+- Vision tracking
+- Multi-person awareness
+- Education engine
+- Emotion-aware interaction
