@@ -26,12 +26,13 @@ def seed_templates():
         # greeting
         ("greeting", "Selam, ben Poodle.", "warm", "tr", 10, True),
         ("greeting", "Merhaba, ben Poodle.", "neutral", "tr", 9, True),
+        ("greeting", "Selam, buradayım.", "warm", "tr", 10, True),
 
         # ask_name
         ("ask_name", "Benim adım Poodle.", "neutral", "tr", 10, True),
 
         # ask_identity
-        ("ask_identity", "Ben Poodle. Seninle konuşan robot arkadaşınım.", "warm", "tr", 10, True),
+        ("ask_identity", "Ben seninle konuşan robot arkadaşınım.", "warm", "tr", 10, True),
 
         # ask_status
         ("ask_status", "İyiyim, teşekkür ederim. Sen nasılsın?", "warm", "tr", 10, True),
@@ -56,6 +57,9 @@ def seed_templates():
         # smalltalk_short
         ("smalltalk_short", "Anladım.", "neutral", "tr", 10, True),
         ("smalltalk_short", "Tamam, anladım.", "neutral", "tr", 9, True),
+
+        ("farewell", "Görüşürüz.", "neutral", "tr", 10, True),
+        ("followup_repair", "Tam olarak neyi sormak istemiştin?", "neutral", "tr", 10, True),
     ]
 
     for intent_name, template_text, tone, lang, priority, is_active in templates:
