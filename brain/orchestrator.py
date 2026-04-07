@@ -1,14 +1,13 @@
 import threading
 import time
-from typing import Optional, Dict, Any
+from typing import Optional
 
 from .behavior_state_machine import BehaviorStateMachine
 
 
 class RobotOrchestrator:
     """
-    Speech + Brain + UI + State Machine birleşim katmanı.
-    main.py'nin yükünü azaltır.
+    Speech + Brain + Character UI + State Machine
     """
 
     def __init__(self, face, speech, brain):
@@ -21,32 +20,17 @@ class RobotOrchestrator:
         self.is_busy = False
         self.last_interaction_time = time.time()
 
-        # Face state mapping
-        self.face_state_map = {
-            "idle": "idle",
-            "attentive": "attentive",
-            "listening": "listening",
-            "thinking": "thinking",
-            "speaking": "speaking",
-            "muted": "muted",
-            "sleeping": "muted",
-            "curious": "attentive",
-            "error": "error",
-        }
-
     # ---------------------------------------------------------
     # PUBLIC
     # ---------------------------------------------------------
     def start(self):
         self.speech.start_auto_listener()
+        self._set_character_state("idle")
 
     def stop(self):
         self.speech.stop_auto_listener()
 
     def handle_pending_speech_events(self):
-        """
-        main loop içinde düzenli çağrılmalı.
-        """
         if self.is_busy:
             return
 
@@ -58,14 +42,17 @@ class RobotOrchestrator:
 
         if evt_type == "sleep":
             self._on_sleep()
+            return
 
-        elif evt_type == "resumed":
+        if evt_type == "resumed":
             self._on_resumed()
+            return
 
-        elif evt_type == "clarify":
+        if evt_type == "clarify":
             self._on_clarify(evt.get("text"))
+            return
 
-        elif evt_type == "command":
+        if evt_type == "command":
             text = evt.get("text")
             if text:
                 threading.Thread(
@@ -73,31 +60,10 @@ class RobotOrchestrator:
                     args=(text,),
                     daemon=True
                 ).start()
-
-    def update_face_idle_behavior(self, now: float, mouse_pos: tuple[int, int], idle_look_timer: float):
-        """
-        main.py içinden görsel davranışlar için çağrılır.
-        Geriye yeni idle_look_timer döner.
-        """
-        if self.is_busy:
-            return idle_look_timer
-
-        if self.speech.is_muted():
-            self._apply_face_state("muted")
-            return idle_look_timer
-
-        if now - self.last_interaction_time > 10:
-            if now > idle_look_timer:
-                import random
-                self.face.update_gaze(random.randint(200, 800), random.randint(150, 450))
-                return now + random.uniform(3, 6)
-        else:
-            self.face.update_gaze(mouse_pos[0], mouse_pos[1])
-
-        return idle_look_timer
+            return
 
     # ---------------------------------------------------------
-    # INTERNAL EVENT HANDLERS
+    # EVENT HANDLERS
     # ---------------------------------------------------------
     def _on_sleep(self):
         self.state_machine.transition("mute")
@@ -115,7 +81,7 @@ class RobotOrchestrator:
 
         threading.Thread(
             target=self._speak_direct,
-            args=(clarify_text, "error"),
+            args=(clarify_text,),
             daemon=True
         ).start()
 
@@ -124,8 +90,7 @@ class RobotOrchestrator:
         if not cleaned:
             return
 
-        # çok zayıf girdiler
-        bad_inputs = {"hey", "poodle", "tamam", "peki", "evet", "hmm", "aba", "baba"}
+        bad_inputs = {"hey", "tamam", "peki", "evet", "hmm"}
         if cleaned.lower() in bad_inputs:
             return
 
@@ -150,7 +115,7 @@ class RobotOrchestrator:
             self._sync_face()
 
         except Exception as e:
-            print(f">>> [ORCHESTRATOR HATASI] {type(e).__name__}: {e}")
+            print(f">>> [ORCHESTRATOR ERROR] {type(e).__name__}: {e}")
             try:
                 self.state_machine.transition("error")
                 self._sync_face()
@@ -164,26 +129,23 @@ class RobotOrchestrator:
             self.last_interaction_time = time.time()
             self._set_busy(False)
 
-    def _speak_direct(self, text: str, face_state: str = "speaking"):
+    def _speak_direct(self, text: str):
         if not text:
             return
 
         self._set_busy(True)
-        try:
-            # state machine ile uyumlu geçiş
-            if face_state == "error":
-                self.state_machine.set_state("error")
-            else:
-                self.state_machine.set_state("speaking")
 
+        try:
+            self.state_machine.set_state("speaking")
             self._sync_face()
+
             self.speech.speak(text)
 
             self.state_machine.transition("done")
             self._sync_face()
 
         except Exception as e:
-            print(f">>> [SPEAK DIRECT HATASI] {type(e).__name__}: {e}")
+            print(f">>> [SPEAK DIRECT ERROR] {type(e).__name__}: {e}")
             try:
                 self.state_machine.set_state("error")
                 self._sync_face()
@@ -202,12 +164,10 @@ class RobotOrchestrator:
         self.speech.set_busy(value)
 
     def _sync_face(self):
-        state = self.state_machine.state
-        self._apply_face_state(state)
+        self._set_character_state(self.state_machine.state)
 
-    def _apply_face_state(self, state: str):
-        face_state = self.face_state_map.get(state, "idle")
+    def _set_character_state(self, state: str):
         try:
-            self.face.set_state(face_state)
+            self.face.set_state(state)
         except Exception:
             pass
