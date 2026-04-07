@@ -5,6 +5,7 @@ from .response_policy import ResponsePolicy
 from .llm_client import LLMClient
 from .persona import build_system_prompt
 from .models import BrainResult
+from memory.memory_manager import MemoryManager
 
 
 class PoodleBrain:
@@ -15,6 +16,7 @@ class PoodleBrain:
         self.policy = ResponsePolicy()
         self.llm = LLMClient()
         self.system_prompt = build_system_prompt()
+        self.memory = MemoryManager()
 
     def handle_user_input(self, text: str) -> BrainResult:
         cleaned = (text or "").strip()
