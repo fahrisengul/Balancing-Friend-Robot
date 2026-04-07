@@ -22,7 +22,7 @@ def main():
     # Varsayılan mikrofon
     # İstersen sabitle:
     # speech = PoodleSpeech(input_device_index=1)
-    speech = PoodleSpeech(input_device_index=-1)
+    speech = PoodleSpeech(input_device_index=0)
     speech.debug_list_input_devices()
 
     # Orchestrator mevcut yapıyla aynı kalıyor
