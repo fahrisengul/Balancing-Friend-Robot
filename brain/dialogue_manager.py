@@ -8,8 +8,8 @@ class DialogueManager:
         self.last_user: Optional[str] = None
         self.last_bot: Optional[str] = None
         self.last_intent: Optional[str] = None
-        self.history: Deque[Dict[str, str]] = deque(maxlen=max_turns)
         self.current_topic: Optional[str] = None
+        self.history: Deque[Dict[str, str]] = deque(maxlen=max_turns)
 
     def update(self, user_text: str, bot_text: str, intent: str) -> None:
         self.last_user = user_text
@@ -22,9 +22,9 @@ class DialogueManager:
             "intent": intent,
         })
 
-        inferred_topic = self._infer_topic(user_text, intent)
-        if inferred_topic:
-            self.current_topic = inferred_topic
+        inferred = self._infer_topic(user_text, intent)
+        if inferred:
+            self.current_topic = inferred
 
     def get_context(self) -> Dict[str, object]:
         return {
@@ -42,10 +42,9 @@ class DialogueManager:
         turns = list(self.history)[-limit:]
         lines: List[str] = []
 
-        for item in turns:
-            user = item.get("user", "").strip()
-            bot = item.get("bot", "").strip()
-
+        for turn in turns:
+            user = turn.get("user", "").strip()
+            bot = turn.get("bot", "").strip()
             if user:
                 lines.append(f"Kullanıcı: {user}")
             if bot:
@@ -53,41 +52,31 @@ class DialogueManager:
 
         return "\n".join(lines).strip()
 
-    def is_followup(self, text: str) -> bool:
-        normalized = self._normalize(text)
-        followup_phrases = {
-            "sonra", "e sonra", "ee sonra", "peki sonra",
-            "neden", "neden oyle", "nasil", "nasil yani",
-            "emin misin", "sonra ne oldu", "ne anladin",
-            "ne dedin", "ne demek istedin", "yani", "ee",
-        }
-        return normalized in followup_phrases
-
     def _infer_topic(self, user_text: str, intent: str) -> Optional[str]:
-        normalized = self._normalize(user_text)
+        n = self._normalize(user_text)
+
+        if intent in {"ask_name", "ask_identity"}:
+            return "identity"
+
+        if intent in {"ask_status", "emotional_support"}:
+            return "emotion"
 
         if intent in {"ask_birthdate", "ask_age"}:
             return "birthday"
-        if intent in {"ask_name", "ask_identity"}:
-            return "identity"
-        if intent in {"ask_status", "emotional_support"}:
-            return "emotion"
+
+        if intent in {"ask_activity"}:
+            return "daily_life"
+
         if intent in {"education_help"}:
             return "education"
-        if intent == "ask_activity":
-            return "daily_life"
-        if intent == "followup":
+
+        if intent in {"followup_repair"}:
             return self.current_topic
 
-        if any(k in normalized for k in {"okul", "ders", "sinav"}):
-            return "school"
-        if "dogum gunu" in normalized:
-            return "birthday"
-        if any(k in normalized for k in {"uzgun", "moral", "kotu hissediyorum"}):
-            return "emotion"
-        if any(k in normalized for k in {"matematik", "fen", "ingilizce", "lgs"}):
+        if any(x in n for x in ["ders", "sinav", "motivasyon", "matematik", "lgs"]):
             return "education"
-        if any(k in normalized for k in {"bugun", "yaptim", "yapiyorum", "gunum"}):
+
+        if any(x in n for x in ["bugun", "gun", "dolastin", "dolaştın", "neler yaptin", "ne yaptin"]):
             return "daily_life"
 
         return self.current_topic
