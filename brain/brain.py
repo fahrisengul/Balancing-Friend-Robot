@@ -159,10 +159,28 @@ Kurallar:
         context = context or {}
         topic = context.get("current_topic")
         last_intent = context.get("last_intent")
-
+    
+        if intent == "greeting":
+            return "Selam, ben Poodle."
+    
+        if intent == "ask_name":
+            return "Benim adım Poodle."
+    
+        if intent == "ask_identity":
+            return "Ben Poodle. Seninle konuşan robot arkadaşınım."
+    
+        if intent == "ask_status":
+            return "İyiyim, teşekkür ederim. Sen nasılsın?"
+    
+        if intent == "thanks":
+            return "Rica ederim."
+    
+        if intent == "acknowledge":
+            return "Tamam."
+    
         if intent == "smalltalk_short":
             return "Anladım."
-
+    
         if intent == "followup":
             if topic == "school":
                 return "Okulla ilgili kısmı biraz daha anlatır mısın?"
@@ -174,14 +192,9 @@ Kurallar:
                 return "Nasıl hissettiğini biraz daha anlatmak ister misin?"
             if topic == "education":
                 return "Dersle ilgili hangi kısmı kastettiğini biraz daha açık söyler misin?"
-            if topic == "identity":
-                return "Bunu biraz daha netleştirir misin?"
             return "Bunu biraz daha açar mısın?"
 
-        if t in {"tamam", "peki", "olur"}:
-            return "Tamam."
-
-        return "Anladım."
+    return "Bunu biraz daha açık söyler misin?"
 
     def _log_turn(
         self,
