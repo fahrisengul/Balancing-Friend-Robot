@@ -158,6 +158,7 @@ Kurallar:
         t = (text or "").strip().lower()
         context = context or {}
         topic = context.get("current_topic")
+        last_intent = context.get("last_intent")
 
         if intent == "smalltalk_short":
             return "Anladım."
@@ -166,9 +167,15 @@ Kurallar:
             if topic == "school":
                 return "Okulla ilgili kısmı biraz daha anlatır mısın?"
             if topic == "birthday":
+                if last_intent in {"ask_birthdate", "ask_age"}:
+                    return "Doğum günüyle ilgili neyi netleştirmek istediğini biraz daha açar mısın?"
                 return "Doğum günüyle ilgili neyi merak ettiğini biraz daha açar mısın?"
             if topic == "emotion":
                 return "Nasıl hissettiğini biraz daha anlatmak ister misin?"
+            if topic == "education":
+                return "Dersle ilgili hangi kısmı kastettiğini biraz daha açık söyler misin?"
+            if topic == "identity":
+                return "Bunu biraz daha netleştirir misin?"
             return "Bunu biraz daha açar mısın?"
 
         if t in {"tamam", "peki", "olur"}:
