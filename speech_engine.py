@@ -86,27 +86,31 @@ class PoodleSpeech:
 
         log_time("[DINLEME MODU] Arka plan dinlemesi aktif.")
 
-    def stop_auto_listener(self):
+     def stop_auto_listener(self):
         self._listener_running = False
         self._shutting_down = True
-
+    
+        # queue unblock
         try:
             self.stt_queue.put_nowait(None)
         except Exception:
             pass
-
+    
+        # recorder stop
         if self.recorder:
             try:
                 self.recorder.stop()
             except Exception:
                 pass
-
+    
+        # thread join (NON-BLOCKING)
         if self.listener_thread and self.listener_thread.is_alive():
-            self.listener_thread.join(timeout=2.0)
-
+            self.listener_thread.join(timeout=1.0)
+    
         if self.stt_worker_thread and self.stt_worker_thread.is_alive():
-            self.stt_worker_thread.join(timeout=4.0)
-
+            self.stt_worker_thread.join(timeout=1.0)
+    
+        # recorder delete
         if self.recorder:
             try:
                 self.recorder.delete()
@@ -236,16 +240,15 @@ class PoodleSpeech:
                 item = self.stt_queue.get(timeout=0.5)
             except queue.Empty:
                 continue
-
+    
             if item is None:
                 break
-
+    
             try:
                 self._process_speech(item)
             except Exception as e:
                 if not self._shutting_down:
                     log_time(f">>> [STT WORKER ERROR] {type(e).__name__}: {e}")
-
     # ---------------------------------------------------------
     # TEXT NORMALIZATION / QUALITY
     # ---------------------------------------------------------
