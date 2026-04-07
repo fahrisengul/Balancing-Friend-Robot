@@ -9,7 +9,6 @@ from memory.memory_manager import MemoryManager
 
 
 class PoodleBrain:
-
     def __init__(self):
         self.intent = IntentRouter()
         self.dialogue = DialogueManager()
@@ -25,33 +24,34 @@ class PoodleBrain:
         intent = self.intent.detect(cleaned)
         decision = self.policy.choose_source(cleaned, intent)
 
-        # 🔴 CLARIFY
+        # clarify
         if decision.source == "clarify":
-            reply = decision.clarify_text
+            reply = decision.clarify_text or "Seni tam anlayamadım. Tekrar söyler misin?"
             self.dialogue.update(cleaned, reply, intent)
             return BrainResult(reply_text=reply, intent=intent)
 
-        # 🔹 TEMPLATE / DETERMINISTIC
+        # deterministic skill
+        if decision.source == "skill":
+            skill_result = self.skills.handle(intent, cleaned)
+            if skill_result:
+                self.dialogue.update(cleaned, skill_result, intent)
+                return BrainResult(reply_text=skill_result, intent=intent)
+
+        # template
         if decision.source == "template":
             reply = self._handle_template(intent, cleaned)
             self.dialogue.update(cleaned, reply, intent)
             return BrainResult(reply_text=reply, intent=intent)
 
-        # 🔹 LLM
+        # llm
         prompt = self._build_prompt(cleaned)
-
         raw = self.llm.generate(prompt)
         answer = self.policy.apply(raw)
 
         self.dialogue.update(cleaned, answer, intent)
-
         return BrainResult(reply_text=answer, intent=intent)
 
-    # ---------------------------------------------------------
-
     def _handle_template(self, intent: str, text: str) -> str:
-        t = text.lower()
-
         if intent == "greeting":
             return "Selam, buradayım."
 
@@ -67,34 +67,41 @@ class PoodleBrain:
         if intent == "ask_status":
             return "İyiyim, teşekkür ederim. Sen nasılsın?"
 
+        if intent == "thanks":
+            return "Rica ederim."
+
+        if intent == "acknowledge":
+            return "Tamam."
+
         if intent == "followup_repair":
             return "Tam olarak neyi sormak istemiştin?"
 
         if intent == "statement":
             return "Anladım."
 
-        return "Tam anlayamadım. Biraz daha açar mısın?"
-
-    # ---------------------------------------------------------
+        return "Biraz daha açık söyler misin?"
 
     def _build_prompt(self, cleaned: str) -> str:
         context = self.dialogue.get_context()
+        history_block = self.dialogue.get_recent_turns_as_text(limit=3)
 
-        context_block = ""
-        if context.get("last_user") and context.get("last_bot"):
-            context_block = f"""
-Önceki konuşma:
-Kullanıcı: {context["last_user"]}
-Poodle: {context["last_bot"]}
-""".strip()
+        topic = context.get("current_topic")
+        topic_line = f"Mevcut konu: {topic}" if topic else ""
 
         return f"""
 {self.system_prompt}
 
-{context_block}
+{topic_line}
+
+Önceki kısa konuşma:
+{history_block}
 
 Kullanıcı:
 {cleaned}
 
-Kısa ve doğal cevap ver.
+Kurallar:
+- Her zaman Türkçe cevap ver.
+- 1-2 kısa cümle kullan.
+- Soruya direkt cevap ver.
+- Gereksiz neşe sesleri veya İngilizce kullanma.
 """.strip()
