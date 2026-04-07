@@ -56,6 +56,9 @@ class PoodleSpeech:
         self.device_index = input_device_index
         log_time(">>> [SES] Tüm sistemler hazır.")
 
+    # ---------------------------------------------------------
+    # PUBLIC
+    # ---------------------------------------------------------
     def debug_list_input_devices(self):
         devices = PvRecorder.get_available_devices()
         log_time(">>> [MIC DEBUG] Cihaz Listesi:")
@@ -117,6 +120,9 @@ class PoodleSpeech:
         except queue.Empty:
             return {"type": "none"}
 
+    # ---------------------------------------------------------
+    # AUDIO LISTENING
+    # ---------------------------------------------------------
     def _has_speech(self, audio_float32, threshold=0.35):
         if len(audio_float32) == 0:
             return False
@@ -240,8 +246,11 @@ class PoodleSpeech:
                 if not self._shutting_down:
                     log_time(f">>> [STT WORKER ERROR] {type(e).__name__}: {e}")
 
+    # ---------------------------------------------------------
+    # TEXT NORMALIZATION / QUALITY
+    # ---------------------------------------------------------
     def _normalize_text(self, text: str) -> str:
-        t = text.lower().strip()
+        t = (text or "").lower().strip()
         t = (
             t.replace("ı", "i")
              .replace("ğ", "g")
@@ -260,18 +269,32 @@ class PoodleSpeech:
             "merhaba",
             "nasilsin",
             "adin ne",
+            "senin adin ne",
             "sen kimsin",
             "tesekkur ederim",
+            "tesekkurler",
+            "tesekkurler sevinirim",
             "tamam tesekkur ederim",
+            "super sevindim",
+            "beni duyabiliyor musun",
+            "beni duyuyor musun",
+            "hey poodle",
+            "hey pudil",
+            "hey puddle",
+            "hey poodil",
+            "hey poodle beni duyuyor musun",
             "bugun ne yaptin",
             "sen ne yaptin",
+            "ne yaptin",
+            "neler yaptin",
             "ne yapiyorsun",
+            "neler yapiyorsun",
             "iyi misin",
-            "beni duyuyor musun",
             "dogum gunum ne zaman",
             "kac yasina girecegim",
             "saat kac",
             "bugun gunlerden ne",
+            "gorusuruz",
         }
         return normalized in whitelist_phrases
 
@@ -285,7 +308,7 @@ class PoodleSpeech:
 
     def _looks_like_garbled_phrase(self, normalized: str, tokens) -> bool:
         if len(tokens) == 1:
-            if tokens[0] in {"tum", "tüm", "ejem", "sultan"}:
+            if tokens[0] in {"tum", "tüm", "ejem", "sultan", "bekir"}:
                 return True
 
         if len(tokens) == 2:
@@ -298,24 +321,50 @@ class PoodleSpeech:
             if normalized in suspicious_pairs:
                 return True
 
-        if len(tokens) >= 2:
-            if tokens[0] == tokens[1]:
-                return True
+        if len(tokens) >= 2 and tokens[0] == tokens[1]:
+            return True
 
         if "tarihim" in normalized and any(tok in normalized for tok in ["dom", "nonuc", "ikibu"]):
             return True
+
+        # Prompt leakage benzeri metinler
+        leakage_phrases = {
+            "kisa soru cumlelerini bozma",
+            "kullanici kisa ve dogal cumleler kuruyor",
+            "robotun adi poodle",
+            "turkce gunluk konusma",
+        }
+        if normalized in leakage_phrases:
+            return True
+
+        # 2-4 kelime ama doğal cümle izi çok zayıf
+        if 2 <= len(tokens) <= 4:
+            allowed_keywords = {
+                "ne", "neden", "nasil", "kim", "kac", "mi", "beni",
+                "duyuyor", "duyabiliyor", "tesekkurler", "super",
+                "sevindim", "poodle", "hey", "bugun", "yaptin",
+                "yapiyorsun", "adin", "kimsin", "gorusuruz"
+            }
+            overlap = sum(1 for tok in tokens if tok in allowed_keywords)
+            if overlap == 0:
+                # örn: iyi adi yaptin
+                return True
 
         return False
 
     def _is_short_natural_question(self, normalized: str) -> bool:
         question_patterns = [
             "adin ne",
+            "senin adin ne",
             "sen kimsin",
             "nasilsin",
             "ne yaptin",
-            "sen ne yaptin",
+            "neler yaptin",
             "ne yapiyorsun",
+            "neler yapiyorsun",
             "iyi misin",
+            "beni duyabiliyor musun",
+            "beni duyuyor musun",
             "dogum gunum ne zaman",
             "kac yasina girecegim",
             "saat kac",
@@ -326,6 +375,16 @@ class PoodleSpeech:
     def _has_question_signal(self, normalized: str) -> bool:
         question_words = {"ne", "neden", "nasil", "hangi", "kim", "mi", "mı", "mu", "mü", "kac"}
         return any(q in normalized for q in question_words)
+
+    def _is_wake_phrase(self, normalized: str) -> bool:
+        wake_phrases = {
+            "hey",
+            "hey poodle",
+            "hey pudil",
+            "hey puddle",
+            "hey poodil",
+        }
+        return normalized in wake_phrases
 
     def _text_quality(self, text: str) -> str:
         """
@@ -342,11 +401,15 @@ class PoodleSpeech:
         if len(tokens) == 0:
             return "bad"
 
-        # 1) Çok doğal kısa ifadeler direkt geçsin
+        # 1) doğal whitelist
         if self._is_whitelisted_short_utterance(n):
             return "good"
 
-        # 2) Açık bozuk örnekler direkt düşsün
+        # 2) wake phrase özel geçsin
+        if self._is_wake_phrase(n):
+            return "good"
+
+        # 3) açık bozuk / leakage
         if self._contains_suspicious_tokens(tokens):
             return "bad"
 
@@ -357,11 +420,11 @@ class PoodleSpeech:
             "aba", "baba", "hmm", "peki", "tamam", "hey"
         }
 
-        # 3) Tek kelimelik kararlar
+        # 4) tek kelime
         if len(tokens) == 1:
             tok = tokens[0]
 
-            if tok in {"selam", "merhaba", "nasilsin"}:
+            if tok in {"selam", "merhaba", "nasilsin", "gorusuruz"}:
                 return "good"
 
             if tok in weak_words:
@@ -372,19 +435,22 @@ class PoodleSpeech:
 
             return "weak"
 
-        # 4) Kısa doğal sorular geçsin
+        # 5) kısa doğal soru/ifade
         if self._is_short_natural_question(n):
             return "good"
 
-        # 5) 2-3 token ve soru sinyali varsa genelde geçir
+        # 6) 2-3 token ve soru sinyali varsa geçir
         if len(tokens) <= 3:
             if self._has_question_signal(n):
                 return "good"
             return "weak"
 
-        # 6) Uzun cümlelerde bariz bozukluk yoksa geç
+        # 7) orta uzunlukta ama bariz bozuk değilse geçir
         return "good"
 
+    # ---------------------------------------------------------
+    # STT PROCESSING
+    # ---------------------------------------------------------
     def _process_speech(self, audio_int16):
         if len(audio_int16) == 0:
             return
@@ -410,12 +476,8 @@ class PoodleSpeech:
                 condition_on_previous_text=False,
                 initial_prompt=(
                     "Türkçe günlük konuşma. "
-                    "Kullanıcı kısa ve doğal cümleler kuruyor. "
-                    "Sık ifadeler: selam, merhaba, nasılsın, adın ne, sen kimsin, bugün ne yaptın, "
-                    "sen ne yaptın, teşekkür ederim, tamam teşekkür ederim, doğum günüm ne zaman, kaç yaşına gireceğim. "
-                    "Robotun adı Poodle. "
-                    "Kısa soru cümlelerini bozma. "
-                    "Bozuk tahmin üretme."
+                    "Kısa doğal diyalog. "
+                    "Robotun adı Poodle."
                 ),
             )
             text = " ".join([s.text.strip() for s in segments if s.text]).strip()
@@ -431,18 +493,24 @@ class PoodleSpeech:
 
         log_time(f">>> [STT] '{text}'")
 
-        lower = text.lower()
+        normalized = self._normalize_text(text)
 
-        if any(w in lower for w in ["sus", "sessiz ol", "dur"]):
+        # Muted komutları
+        if any(w in normalized for w in ["sus", "sessiz ol", "dur"]):
             self._muted = True
             log_time(">>> [MODE] Sessiz mod.")
             self.event_queue.put({"type": "sleep"})
             return
 
-        if self._muted and ("hey" in lower):
-            self._muted = False
-            log_time(">>> [MODE] Aktif mod.")
-            self.event_queue.put({"type": "resumed"})
+        # Wake phrase
+        if self._is_wake_phrase(normalized):
+            if self._muted:
+                self._muted = False
+                log_time(">>> [MODE] Aktif mod.")
+                self.event_queue.put({"type": "resumed"})
+            else:
+                # muted değilse de bunu command olarak geçirebiliriz
+                self.event_queue.put({"type": "command", "text": "Hey Poodle"})
             return
 
         quality = self._text_quality(text)
@@ -451,20 +519,23 @@ class PoodleSpeech:
         if quality == "bad":
             self.event_queue.put({
                 "type": "clarify",
-                "text": "Seni tam anlayamadım. Son cümleni biraz daha net tekrar eder misin?"
+                "text": "Seni tam anlayamadım. Bir daha söyler misin?"
             })
             return
 
         if quality == "weak":
             self.event_queue.put({
                 "type": "clarify",
-                "text": "Son söylediğini tam çıkaramadım. Bir kez daha söyler misin?"
+                "text": "Galiba tam duyamadım. Daha net söyler misin?"
             })
             return
 
         if not self._muted:
             self.event_queue.put({"type": "command", "text": text})
 
+    # ---------------------------------------------------------
+    # TTS
+    # ---------------------------------------------------------
     def _chunk_to_bytes(self, chunk):
         if isinstance(chunk, (bytes, bytearray)):
             return bytes(chunk)
