@@ -47,7 +47,12 @@ class ResponsePolicy:
         if intent in template_intents:
             return PolicyDecision(source="template")
 
-        # 4) Deterministic skill intent'leri
+        # 4) Follow-up intent’leri
+        # Follow-up için tek başına "Anladım." dönmek yerine template fallback kullanılsın.
+        if intent == "followup":
+            return PolicyDecision(source="template")
+
+        # 5) Deterministic skill intent'leri
         deterministic_skill_intents = {
             "ask_birthdate",
             "ask_age",
@@ -58,11 +63,6 @@ class ResponsePolicy:
         }
         if intent in deterministic_skill_intents:
             return PolicyDecision(source="skill")
-
-        # 5) Follow-up intent'leri
-        # Kısa devam cümleleri ama anlamı bağlama bağlı → template fallback + llm destekli
-        if intent == "followup":
-            return PolicyDecision(source="template")
 
         # 6) Açık uçlu konuşmalar
         llm_intents = {
@@ -101,25 +101,38 @@ class ResponsePolicy:
         # Prompt leakage / robotik ifade temizliği
         robotic_markers = [
             "ben sen poodle",
-            "görevim",
-            "robot arkadaşındır",
-            "kullanıcı:",
-            "görev:",
+            "gorevim",
+            "robot arkadasinim",
+            "robot arkadasindirim",
+            "kullanici:",
+            "gorev:",
             "system prompt",
-            "önceki kısa konuşma:",
-            "ilgili hafıza:",
+            "onceki kisa konusma:",
+            "ilgili hafiza:",
             "mevcut konu:",
         ]
-        lower = cleaned.lower()
+        lower = self._normalize(cleaned)
         if any(marker in lower for marker in robotic_markers):
-            return "Bunu daha sade söyleyeyim: seni anladım. Biraz daha anlatmak ister misin?"
+            return "Seni anladım. Bunu biraz daha doğal konuşalım istersen."
 
         # Çok kısa ama anlamsız saçmalamalar
-        if lower in {"52", "iyi şey", "tamam işte"}:
+        if lower in {"52", "iyi sey", "tamam iste"}:
             return "Bundan tam emin değilim. Biraz daha açık sorar mısın?"
 
-        # Kullanıcının cümlesini anlamsız tekrar etmesin
-        if len(cleaned.split()) <= 2 and lower in {"anladım", "olur", "tamam"}:
-            return cleaned
+        # Fazla genel fallback’leri temizle
+        if lower == "anladim":
+            return "Seni duydum. Biraz daha açık anlatır mısın?"
 
         return cleaned
+
+    def _normalize(self, text: str) -> str:
+        t = (text or "").lower().strip()
+        t = (
+            t.replace("ı", "i")
+             .replace("ğ", "g")
+             .replace("ş", "s")
+             .replace("ç", "c")
+             .replace("ö", "o")
+             .replace("ü", "u")
+        )
+        return " ".join(t.split())
