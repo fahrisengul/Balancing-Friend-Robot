@@ -1,9 +1,4 @@
 class BehaviorStateMachine:
-    """
-    Robot davranış durum makinesi.
-    UI ve speech/brain akışını daha öngörülebilir yapar.
-    """
-
     VALID_STATES = {
         "idle",
         "attentive",
@@ -11,8 +6,6 @@ class BehaviorStateMachine:
         "thinking",
         "speaking",
         "muted",
-        "sleeping",
-        "curious",
         "error",
     }
 
@@ -26,9 +19,6 @@ class BehaviorStateMachine:
         return self.state
 
     def transition(self, event: str) -> str:
-        """
-        Event bazlı durum geçişi.
-        """
         if self.state == "idle":
             if event == "audio_detected":
                 self.state = "attentive"
@@ -38,18 +28,20 @@ class BehaviorStateMachine:
         elif self.state == "attentive":
             if event == "speech_started":
                 self.state = "listening"
-            elif event == "timeout":
-                self.state = "idle"
+            elif event == "reply_ready":
+                self.state = "speaking"
             elif event == "mute":
                 self.state = "muted"
+            elif event == "timeout":
+                self.state = "idle"
 
         elif self.state == "listening":
             if event == "stt_good":
                 self.state = "thinking"
             elif event == "stt_bad":
-                self.state = "speaking"
-            elif event == "timeout":
-                self.state = "idle"
+                self.state = "attentive"
+            elif event == "mute":
+                self.state = "muted"
             elif event == "error":
                 self.state = "error"
 
@@ -70,12 +62,8 @@ class BehaviorStateMachine:
         elif self.state == "muted":
             if event == "wake":
                 self.state = "attentive"
-            elif event == "sleep":
-                self.state = "sleeping"
-
-        elif self.state == "sleeping":
-            if event == "wake":
-                self.state = "attentive"
+            elif event == "error":
+                self.state = "error"
 
         elif self.state == "error":
             if event == "recover":
