@@ -387,67 +387,41 @@ class PoodleSpeech:
         return normalized in wake_phrases
 
     def _text_quality(self, text: str) -> str:
-        """
-        Dönen değerler:
-        - good
-        - weak
-        - bad
-        """
         n = self._normalize_text(text)
+    
         if not n:
             return "bad"
-
+    
         tokens = n.split()
-        if len(tokens) == 0:
-            return "bad"
-
-        # 1) doğal whitelist
-        if self._is_whitelisted_short_utterance(n):
-            return "good"
-
-        # 2) wake phrase özel geçsin
-        if self._is_wake_phrase(n):
-            return "good"
-
-        # 3) açık bozuk / leakage
-        if self._contains_suspicious_tokens(tokens):
-            return "bad"
-
-        if self._looks_like_garbled_phrase(n, tokens):
-            return "bad"
-
-        weak_words = {
-            "aba", "baba", "hmm", "peki", "tamam", "hey"
+    
+        # 🔥 DOĞAL KISA CÜMLELER (EN KRİTİK FIX)
+        natural_short = {
+            "selam", "merhaba",
+            "nasilsin",
+            "ben de iyiyim",
+            "iyiyim",
+            "tesekkur ederim",
+            "tamam", "peki",
+            "gorustuk", "gorusuruz",
         }
-
-        # 4) tek kelime
-        if len(tokens) == 1:
-            tok = tokens[0]
-
-            if tok in {"selam", "merhaba", "nasilsin", "gorusuruz"}:
-                return "good"
-
-            if tok in weak_words:
-                return "bad"
-
-            if len(tok) <= 2:
-                return "bad"
-
-            return "weak"
-
-        # 5) kısa doğal soru/ifade
-        if self._is_short_natural_question(n):
+    
+        if n in natural_short:
             return "good"
-
-        # 6) 2-3 token ve soru sinyali varsa geçir
-        if len(tokens) <= 3:
-            if self._has_question_signal(n):
-                return "good"
-            return "weak"
-
-        # 7) orta uzunlukta ama bariz bozuk değilse geçir
-        return "good"
-
+    
+        # 🔥 2-4 kelimelik doğal cümle
+        if 2 <= len(tokens) <= 5:
+            return "good"
+    
+        # 🔥 soru sinyali varsa geç
+        question_words = {"ne", "neden", "nasil", "hangi", "kim", "kac", "mi", "mı"}
+        if any(q in n for q in question_words):
+            return "good"
+    
+        # 🔴 tek kelime kısa saçmalık
+        if len(tokens) == 1 and len(tokens[0]) <= 2:
+            return "bad"
+    
+        return "weak"
     # ---------------------------------------------------------
     # STT PROCESSING
     # ---------------------------------------------------------
