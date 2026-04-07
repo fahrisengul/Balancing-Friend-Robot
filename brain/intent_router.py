@@ -1,20 +1,20 @@
 class IntentRouter:
     """
-    Amaç:
-    - kısa ve güvenli intent'leri erkenden yakalamak
-    - deterministic skill hattına yönlendirmek
-    - follow-up cümlelerini ayrı ele almak
-    - açık uçlu konuşmaları LLM'e bırakmak
+    Final sürüm:
+    - kısa ve güvenli intent'leri erkenden yakalar
+    - varyasyonları daha iyi destekler
+    - follow-up cümlelerini bağlamlı işler
+    - açık uçlu konuşmaları LLM'e bırakır
     """
 
     def detect(self, text: str, context=None) -> str:
-        t = (text or "").lower().strip()
+        raw = (text or "").strip()
+        t = raw.lower()
+        normalized = self._normalize(raw)
         context = context or {}
 
-        if not t:
+        if not normalized:
             return "clarification_needed"
-
-        normalized = self._normalize(t)
 
         # -----------------------------------------------------
         # Follow-up detection
@@ -22,6 +22,7 @@ class IntentRouter:
         followup_phrases = {
             "sonra",
             "e sonra",
+            "ee sonra",
             "peki sonra",
             "neden",
             "neden oyle",
@@ -29,102 +30,130 @@ class IntentRouter:
             "nasil yani",
             "emin misin",
             "sonra ne oldu",
+            "ne anladin",
+            "ne dedin",
+            "ne demek istedin",
+            "yani",
             "ee",
-            "ee sonra",
         }
         if normalized in followup_phrases:
             return "followup"
 
+        # Context varsa bazı kısa follow-up’ları daha rahat followup say
+        if context.get("current_topic") and normalized in {"peki", "tamam peki"}:
+            return "followup"
+
         # -----------------------------------------------------
-        # Exact / strong intents
+        # Strong intents
         # -----------------------------------------------------
-        if "kaç yaş" in t or "kac yas" in normalized:
+        if "kac yas" in normalized or "kaç yaş" in t:
             return "ask_age"
 
-        if ("doğum" in t or "dogum" in normalized) and ("ne zaman" in t or "ne zaman" in normalized):
+        if ("dogum" in normalized or "doğum" in t) and "ne zaman" in t:
             return "ask_birthdate"
 
-        if "saat kaç" in t or "saat kac" in normalized:
+        if "saat kac" in normalized or "saat kaç" in t:
             return "ask_time"
 
-        if "bugün günlerden ne" in t or "bugun gunlerden ne" in normalized:
+        if "bugun gunlerden ne" in normalized or "bugün günlerden ne" in t:
             return "ask_day_date"
 
-        if "adın ne" in t or "adin ne" in normalized:
+        if "senin adin ne" in normalized or "adin ne" in normalized or "adın ne" in t:
             return "ask_name"
 
-        if "sen kimsin" in t:
+        if "sen kimsin" in normalized:
             return "ask_identity"
 
-        if "nasılsın" in t or "nasilsin" in normalized:
+        # greeting + status birleşik hali
+        if ("selam" in normalized or "merhaba" in normalized) and ("nasilsin" in normalized or "nasılsın" in t):
             return "ask_status"
 
-        if "bugün ne yaptın" in t or "bugun ne yaptin" in normalized:
+        if "nasilsin" in normalized or "nasılsın" in t:
+            return "ask_status"
+
+        if "neler yapiyorsun" in normalized or "neler yapıyorsun" in t:
             return "ask_activity"
 
-        if "sen ne yaptın" in t or "sen ne yaptin" in normalized:
+        if "ne yapiyorsun" in normalized or "ne yapıyorsun" in t:
             return "ask_activity"
 
-        if "selam" in t or "merhaba" in t:
+        if "bugun ne yaptin" in normalized or "bugün ne yaptın" in t:
+            return "ask_activity"
+
+        if "sen ne yaptin" in normalized or "sen ne yaptın" in t:
+            return "ask_activity"
+
+        if "selam" in normalized or "merhaba" in normalized:
             return "greeting"
 
-        if "teşekkür ederim" in t or "tesekkur ederim" in normalized:
+        if "tesekkur ederim" in normalized or "teşekkür ederim" in t:
             return "thanks"
 
         if normalized in {"tamam", "peki", "olur"}:
             return "acknowledge"
 
-        if "sus" in t or "sessiz ol" in t or "dur" in t:
+        if "sus" in normalized or "sessiz ol" in normalized or "dur" in normalized:
             return "mute"
 
         if normalized == "hey" or normalized.startswith("hey "):
             return "wake"
 
         # -----------------------------------------------------
-        # Topic-aware weak follow-up handling
+        # Emotional / educational markers
         # -----------------------------------------------------
-        current_topic = context.get("current_topic")
-        if current_topic and normalized in {"anladim", "devam", "sonra peki"}:
-            return "followup"
+        emotional_markers = {
+            "uzgunum",
+            "moralim bozuk",
+            "kotu hissediyorum",
+            "yalniz hissediyorum",
+            "canim sikkin",
+        }
+        if any(marker in normalized for marker in emotional_markers):
+            return "emotional_support"
+
+        educational_markers = {
+            "matematik",
+            "fen",
+            "ingilizce",
+            "lgs",
+            "sinav",
+            "ders",
+            "netlerim",
+            "test cozdum",
+        }
+        if any(marker in normalized for marker in educational_markers):
+            return "education_help"
 
         # -----------------------------------------------------
         # Short natural utterances
         # -----------------------------------------------------
-        if len(normalized.split()) <= 2:
+        if len(normalized.split()) <= 3:
             short_natural = {
                 "selam",
                 "merhaba",
                 "nasilsin",
                 "adin ne",
+                "senin adin ne",
                 "sen kimsin",
                 "iyi misin",
+                "ne anladin",
             }
             if normalized in short_natural:
-                if "adin ne" == normalized:
+                if "adin ne" in normalized:
                     return "ask_name"
                 if "kimsin" in normalized:
                     return "ask_identity"
-                if "nasilsin" in normalized:
+                if "nasilsin" in normalized or "iyi misin" in normalized:
                     return "ask_status"
+                if normalized == "ne anladin":
+                    return "followup"
                 return "greeting"
 
             return "low_confidence"
 
         # -----------------------------------------------------
-        # Emotional / educational markers
+        # General fallback
         # -----------------------------------------------------
-        emotional_markers = {
-            "üzgünüm", "uzgunum", "moralim bozuk", "kötü hissediyorum", "kotu hissediyorum"
-        }
-        if any(marker in t for marker in emotional_markers):
-            return "emotional_support"
-
-        educational_markers = {
-            "matematik", "fen", "ingilizce", "lgs", "sınav", "sinav", "ders"
-        }
-        if any(marker in normalized for marker in educational_markers):
-            return "education_help"
-
         return "general"
 
     def _normalize(self, text: str) -> str:
