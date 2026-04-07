@@ -78,10 +78,10 @@ class PoodleSpeech:
         self._listener_running = True
         self._shutting_down = False
 
-        self.stt_worker_thread = threading.Thread(target=self._stt_worker_loop, daemon=False)
+        self.stt_worker_thread = threading.Thread(target=self._stt_worker_loop, daemon=True)
         self.stt_worker_thread.start()
 
-        self.listener_thread = threading.Thread(target=self._listener_loop, daemon=False)
+        self.listener_thread = threading.Thread(target=self._listener_loop, daemon=True)
         self.listener_thread.start()
 
         log_time("[DINLEME MODU] Arka plan dinlemesi aktif.")
