@@ -39,15 +39,6 @@ Bu döküman, **AI-Friend-Robot** projesinin kavramsal aşamadan, Tanem ile etki
 
 ---
 
-### ⚙️ Faz 3: Hareket ve Otonomi (Gelecek Vizyonu)
-*Hedef: Robotun masaüstünden zemine inmesi ve bağımsız hareket etmesi.*
-
-1.  **Tahrik Sistemi:** JGB37-520 Motorlar ve 100mm Tekerleklerin montajı.
-2.  **Otonom Sürüş:** HC-SR04 Mesafe Sensörleri ile engel sakınma algoritması.
-3.  **Stabilizasyon:** MPU-6050 ile denge ve yön tayini kontrolü.
-
----
-
 ## 📈 Başarı Kriterleri (KPIs)
 * **Termal:** Yük altında (AI çalışırken) Pi 5 sıcaklığı 65°C'yi geçmemeli.
 * **Güç:** Tek şarjla en az 4 saat aktif kullanım sağlanmalı.
