@@ -15,25 +15,29 @@ class PoodleCharacter:
     def __init__(self, width=1024, height=600):
         self.width = width
         self.height = height
-
+    
         self.state = "idle"
         self.audio_source = None
-
+    
         self.start_time = time.time()
         self.last_update = time.time()
-
+    
         self.center_x = width // 2
         self.center_y = height // 2
-
+    
         self.orb_size = 360
+    
+        # supersampling
         self.render_scale = 2
         self.render_size = self.orb_size * self.render_scale
+    
+        # render_size tanımlandıktan sonra çağrılmalı
         self._build_grids()
-
+    
         self.smoothed_amp = 0.0
         self.smoothed_input_amp = 0.0
         self.smoothed_tts_amp = 0.0
-
+    
         pygame.font.init()
         self.font = pygame.font.SysFont("Arial", 22)
         self.small_font = pygame.font.SysFont("Arial", 18)
