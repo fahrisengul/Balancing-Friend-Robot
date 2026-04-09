@@ -181,40 +181,51 @@ class PoodleCharacter:
         amp_boost = max(input_boost, tts_boost)
     
         radius = p["radius"] + amp_boost + 0.01 * math.sin(t * 1.2)
-        warp = p["warp"] + amp_boost * 0.9
         speed = p["speed"]
         brightness = p["brightness"]
     
-        # daha yumuşak deformasyon
+        # --------------------------------------------------
+        # SEAM-FREE DEFORMATION
+        # theta var ama sadece integer harmonics ile kullanılıyor
+        # böylece -pi / +pi birleşiminde kırık oluşmuyor
+        # --------------------------------------------------
         deform = (
             1.0
-            + warp * np.sin(3.2 * self.theta + t * speed * 1.8)
-            + 0.03 * np.sin(5.7 * self.theta - t * speed * 1.1)
-            + 0.02 * np.sin(8.3 * self.theta + t * speed * 0.7)
+            + 0.08 * np.sin(3.0 * self.theta + t * speed * 1.4)
+            + 0.05 * np.sin(5.0 * self.theta - t * speed * 0.9)
+            + 0.03 * np.sin(7.0 * self.theta + t * speed * 0.6)
         )
-        deform = np.clip(deform, 0.78, 1.28)
+    
+        # ek olarak x-y domain üzerinden çok yumuşak akış
+        deform += (
+            0.025 * np.sin(self.xx * 5.0 + self.yy * 3.0 + t * speed * 0.8)
+            + 0.020 * np.sin(self.yy * 4.0 - self.xx * 2.0 - t * speed * 0.7)
+        )
+    
+        deform = np.clip(deform, 0.82, 1.22)
     
         rr_warped = self.rr / deform
     
         inside = rr_warped <= radius
-    
-        # daha geniş ve temiz antialias edge
-        edge_width = 0.045
+        edge_width = 0.050
         edge = np.clip(1.0 - np.abs(rr_warped - radius) / edge_width, 0.0, 1.0)
-    
         fill = np.clip(1.0 - rr_warped / max(radius, 1e-6), 0.0, 1.0)
     
         shift = p["palette_shift"]
-        f1 = np.sin((self.xx * 4.6 + self.yy * 1.5) + t * speed * 1.35 + shift)
-        f2 = np.sin((self.yy * 5.0 - self.xx * 1.1) - t * speed * 1.05 + 1.7 + shift)
-        f3 = np.sin((self.xx + self.yy) * 5.7 + t * speed * 0.85 + 3.0 + shift)
+    
+        # --------------------------------------------------
+        # shader-benzeri renk alanı (seam-free)
+        # --------------------------------------------------
+        f1 = np.sin((self.xx * 4.5 + self.yy * 1.7) + t * speed * 1.25 + shift)
+        f2 = np.sin((self.yy * 4.8 - self.xx * 1.3) - t * speed * 1.05 + 1.4 + shift)
+        f3 = np.sin((self.xx + self.yy) * 5.5 + t * speed * 0.85 + 2.6 + shift)
     
         iridescence = np.clip((edge ** 1.9) * p["edge_glow"], 0.0, 1.0)
-        dark_core = np.clip(0.06 + fill * 0.16, 0.0, 1.0)
+        dark_core = np.clip(0.05 + fill * 0.14, 0.0, 1.0)
     
-        r = (dark_core * 16 + iridescence * (145 + 85 * (f1 * 0.5 + 0.5))).astype(np.float32)
-        g = (dark_core * 20 + iridescence * (155 + 80 * (f2 * 0.5 + 0.5))).astype(np.float32)
-        b = (dark_core * 28 + iridescence * (210 + 40 * (f3 * 0.5 + 0.5))).astype(np.float32)
+        r = (dark_core * 16 + iridescence * (145 + 80 * (f1 * 0.5 + 0.5))).astype(np.float32)
+        g = (dark_core * 20 + iridescence * (155 + 75 * (f2 * 0.5 + 0.5))).astype(np.float32)
+        b = (dark_core * 28 + iridescence * (210 + 35 * (f3 * 0.5 + 0.5))).astype(np.float32)
     
         # highlight
         highlight = np.exp(-(((self.xx + 0.28) ** 2) / 0.018 + ((self.yy + 0.34) ** 2) / 0.075))
@@ -222,17 +233,18 @@ class PoodleCharacter:
         g += highlight * 125
         b += highlight * 145
     
-        # state shimmer
+        # active states shimmer
         if self.state in {"listening", "speaking", "thinking"}:
-            shimmer = (0.5 + 0.5 * np.sin((self.xx * 7.6 + self.yy * 6.8) + t * speed * 3.0)) * (edge ** 2.2)
-            r += shimmer * 28
-            g += shimmer * 24
-            b += shimmer * 34
+            shimmer = (
+                0.5 + 0.5 * np.sin((self.xx * 7.0 + self.yy * 6.2) + t * speed * 2.8)
+            ) * (edge ** 2.1)
+            r += shimmer * 24
+            g += shimmer * 20
+            b += shimmer * 30
     
         rgb = np.stack([r, g, b], axis=-1) * brightness
         rgb = np.clip(rgb, 0, 255).astype(np.uint8)
     
-        # alpha mask daha temiz
         alpha_core = inside.astype(np.float32) * 235.0
         alpha_edge = edge * 110.0
         alpha = np.clip(alpha_core + alpha_edge, 0, 255).astype(np.uint8)
@@ -246,14 +258,13 @@ class PoodleCharacter:
             "RGBA",
         ).convert_alpha()
     
-        # supersampling -> daha temiz kenar
         orb_surface = pygame.transform.smoothscale(
             hi_surface,
             (self.orb_size, self.orb_size)
         )
     
         return orb_surface
-        
+            
     def _draw_state_label(self, screen: pygame.Surface):
         p = self._state_params()
         label = p["label"]
