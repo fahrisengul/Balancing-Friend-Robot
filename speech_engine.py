@@ -55,6 +55,11 @@ class PoodleSpeech:
 
         self.device_index = input_device_index
         log_time(">>> [SES] Tüm sistemler hazır.")
+    
+        self._input_level = 0.0
+        self._tts_level = 0.0
+        self._tts_peak_level = 0.0
+        self._tts_play_until = 0.0
 
     # ---------------------------------------------------------
     # PUBLIC
@@ -64,7 +69,20 @@ class PoodleSpeech:
         log_time(">>> [MIC DEBUG] Cihaz Listesi:")
         for i, name in enumerate(devices):
             print(f"    #{i}: {name}")
-
+    
+    def get_visual_state(self):
+        now = time.time()
+    
+        if now >= self._tts_play_until:
+            self._tts_level *= 0.90
+    
+        self._input_level *= 0.92
+    
+        return {
+            "input_level": float(max(0.0, min(1.0, self._input_level))),
+            "tts_level": float(max(0.0, min(1.0, self._tts_level))),
+        }
+    
     def is_muted(self):
         return self._muted
 
@@ -183,6 +201,10 @@ class PoodleSpeech:
 
                 frame_np = np.array(frame, dtype=np.int16)
                 frame_f32 = frame_np.astype(np.float32) / 32768.0
+
+                rms = float(np.sqrt(np.mean(np.square(frame_f32)))) if len(frame_f32) else 0.0
+                norm_rms = min(1.0, rms * 18.0)
+                self._input_level += (norm_rms - self._input_level) * 0.35
 
                 ring_buffer.append(frame_np)
                 analysis_buffer.append(frame_f32)
@@ -575,6 +597,14 @@ class PoodleSpeech:
                 if chunk_bytes:
                     pcm_buffer.extend(chunk_bytes)
 
+            if chunk_bytes:
+                pcm16 = np.frombuffer(chunk_bytes, dtype=np.int16).astype(np.float32) / 32768.0
+                if len(pcm16):
+                    rms = float(np.sqrt(np.mean(np.square(pcm16))))
+                    level = min(1.0, rms * 14.0)
+                    if level > self._tts_peak_level:
+                        self._tts_peak_level = level
+                        
             if len(pcm_buffer) == 0:
                 raise RuntimeError("Piper ses verisi üretmedi.")
 
@@ -586,6 +616,11 @@ class PoodleSpeech:
                 wav_file.setsampwidth(2)
                 wav_file.setframerate(sample_rate)
                 wav_file.writeframes(bytes(pcm_buffer))
+
+                duration_sec = len(pcm_buffer) / (2 * sample_rate)  # 16-bit mono
+                self._tts_level = max(0.15, min(1.0, self._tts_peak_level if self._tts_peak_level > 0 else 0.35))
+                self._tts_play_until = time.time() + duration_sec
+                self._tts_peak_level = 0.0
 
             cmd = "/usr/bin/afplay" if platform.system() == "Darwin" else "aplay"
             subprocess.run([cmd, temp_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
