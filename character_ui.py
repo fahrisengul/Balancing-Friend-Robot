@@ -36,6 +36,9 @@ class PoodleCharacter:
         self.font = pygame.font.SysFont("Arial", 22)
         self.small_font = pygame.font.SysFont("Arial", 18)
 
+        self.render_scale = 2
+        self.render_size = self.orb_size * self.render_scale
+
     # ---------------------------------------------------------
     # PUBLIC API
     # ---------------------------------------------------------
@@ -81,12 +84,12 @@ class PoodleCharacter:
     # INTERNALS
     # ---------------------------------------------------------
     def _build_grids(self):
-        s = self.orb_size
+        s = self.render_size
         axis = np.linspace(-1.0, 1.0, s, dtype=np.float32)
         self.xx, self.yy = np.meshgrid(axis, axis)
         self.rr = np.sqrt(self.xx ** 2 + self.yy ** 2)
         self.theta = np.arctan2(self.yy, self.xx)
-
+        
     def _state_params(self):
         base = {
             "radius": 0.78,
@@ -169,69 +172,85 @@ class PoodleCharacter:
 
     def _render_orb(self, t: float) -> pygame.Surface:
         p = self._state_params()
-
+    
         input_boost = self.smoothed_input_amp * 0.20 if self.state in {"listening", "attentive"} else 0.0
         tts_boost = self.smoothed_tts_amp * 0.24 if self.state == "speaking" else 0.0
         amp_boost = max(input_boost, tts_boost)
-
+    
         radius = p["radius"] + amp_boost + 0.01 * math.sin(t * 1.2)
         warp = p["warp"] + amp_boost * 0.9
         speed = p["speed"]
         brightness = p["brightness"]
-
-        # deformasyon
+    
+        # daha yumuşak deformasyon
         deform = (
             1.0
             + warp * np.sin(3.2 * self.theta + t * speed * 1.8)
-            + 0.04 * np.sin(6.0 * self.theta - t * speed * 1.3)
+            + 0.03 * np.sin(5.7 * self.theta - t * speed * 1.1)
+            + 0.02 * np.sin(8.3 * self.theta + t * speed * 0.7)
         )
-        rr_warped = self.rr / np.clip(deform, 0.65, 1.4)
-
+        deform = np.clip(deform, 0.78, 1.28)
+    
+        rr_warped = self.rr / deform
+    
         inside = rr_warped <= radius
-        edge = np.clip(1.0 - np.abs(rr_warped - radius) / 0.08, 0.0, 1.0)
+    
+        # daha geniş ve temiz antialias edge
+        edge_width = 0.045
+        edge = np.clip(1.0 - np.abs(rr_warped - radius) / edge_width, 0.0, 1.0)
+    
         fill = np.clip(1.0 - rr_warped / max(radius, 1e-6), 0.0, 1.0)
-
-        # shader-benzeri renk alanı
+    
         shift = p["palette_shift"]
-        f1 = np.sin((self.xx * 4.7 + self.yy * 1.3) + t * speed * 1.4 + shift)
-        f2 = np.sin((self.yy * 5.1 - self.xx * 1.2) - t * speed * 1.1 + 1.7 + shift)
-        f3 = np.sin((self.xx + self.yy) * 6.0 + t * speed * 0.9 + 3.1 + shift)
-
-        # koyu merkez + iridescent kenar
-        iridescence = np.clip((edge ** 1.7) * p["edge_glow"], 0.0, 1.0)
-        dark_core = np.clip(0.08 + fill * 0.18, 0.0, 1.0)
-
-        r = (dark_core * 18 + iridescence * (140 + 90 * (f1 * 0.5 + 0.5))).astype(np.float32)
-        g = (dark_core * 22 + iridescence * (155 + 80 * (f2 * 0.5 + 0.5))).astype(np.float32)
-        b = (dark_core * 30 + iridescence * (210 + 45 * (f3 * 0.5 + 0.5))).astype(np.float32)
-
+        f1 = np.sin((self.xx * 4.6 + self.yy * 1.5) + t * speed * 1.35 + shift)
+        f2 = np.sin((self.yy * 5.0 - self.xx * 1.1) - t * speed * 1.05 + 1.7 + shift)
+        f3 = np.sin((self.xx + self.yy) * 5.7 + t * speed * 0.85 + 3.0 + shift)
+    
+        iridescence = np.clip((edge ** 1.9) * p["edge_glow"], 0.0, 1.0)
+        dark_core = np.clip(0.06 + fill * 0.16, 0.0, 1.0)
+    
+        r = (dark_core * 16 + iridescence * (145 + 85 * (f1 * 0.5 + 0.5))).astype(np.float32)
+        g = (dark_core * 20 + iridescence * (155 + 80 * (f2 * 0.5 + 0.5))).astype(np.float32)
+        b = (dark_core * 28 + iridescence * (210 + 40 * (f3 * 0.5 + 0.5))).astype(np.float32)
+    
         # highlight
-        highlight = np.exp(-(((self.xx + 0.30) ** 2) / 0.02 + ((self.yy + 0.35) ** 2) / 0.08))
-        r += highlight * 140
-        g += highlight * 140
-        b += highlight * 160
-
-        # speaking/listening shimmer
-        shimmer = 0.0
+        highlight = np.exp(-(((self.xx + 0.28) ** 2) / 0.018 + ((self.yy + 0.34) ** 2) / 0.075))
+        r += highlight * 125
+        g += highlight * 125
+        b += highlight * 145
+    
+        # state shimmer
         if self.state in {"listening", "speaking", "thinking"}:
-            shimmer = (0.5 + 0.5 * np.sin((self.xx * 8.0 + self.yy * 7.0) + t * speed * 3.2)) * (edge ** 2.0)
-            r += shimmer * 35
-            g += shimmer * 28
-            b += shimmer * 40
-
+            shimmer = (0.5 + 0.5 * np.sin((self.xx * 7.6 + self.yy * 6.8) + t * speed * 3.0)) * (edge ** 2.2)
+            r += shimmer * 28
+            g += shimmer * 24
+            b += shimmer * 34
+    
         rgb = np.stack([r, g, b], axis=-1) * brightness
         rgb = np.clip(rgb, 0, 255).astype(np.uint8)
-
-        alpha = np.clip((inside.astype(np.float32) * 255) + edge * 80, 0, 255).astype(np.uint8)
-
-        rgba = np.dstack([rgb, alpha])
-        surf = pygame.image.frombuffer(
+    
+        # alpha mask daha temiz
+        alpha_core = inside.astype(np.float32) * 235.0
+        alpha_edge = edge * 110.0
+        alpha = np.clip(alpha_core + alpha_edge, 0, 255).astype(np.uint8)
+    
+        rgba = np.dstack([rgb, alpha]).astype(np.uint8)
+        rgba = np.ascontiguousarray(rgba)
+    
+        hi_surface = pygame.image.frombuffer(
             rgba.tobytes(),
-            (self.orb_size, self.orb_size),
+            (self.render_size, self.render_size),
             "RGBA",
+        ).convert_alpha()
+    
+        # supersampling -> daha temiz kenar
+        orb_surface = pygame.transform.smoothscale(
+            hi_surface,
+            (self.orb_size, self.orb_size)
         )
-        return surf.convert_alpha()
-
+    
+        return orb_surface
+        
     def _draw_state_label(self, screen: pygame.Surface):
         p = self._state_params()
         label = p["label"]
