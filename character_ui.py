@@ -26,6 +26,8 @@ class PoodleCharacter:
         self.center_y = height // 2
 
         self.orb_size = 360
+        self.render_scale = 2
+        self.render_size = self.orb_size * self.render_scale
         self._build_grids()
 
         self.smoothed_amp = 0.0
@@ -35,10 +37,7 @@ class PoodleCharacter:
         pygame.font.init()
         self.font = pygame.font.SysFont("Arial", 22)
         self.small_font = pygame.font.SysFont("Arial", 18)
-
-        self.render_scale = 2
-        self.render_size = self.orb_size * self.render_scale
-
+        
     # ---------------------------------------------------------
     # PUBLIC API
     # ---------------------------------------------------------
