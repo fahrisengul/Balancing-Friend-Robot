@@ -23,11 +23,9 @@ class ResponsePolicy:
         if not t:
             return Decision("clarify", "Seni tam anlayamadım. Tekrar söyler misin?")
 
-        # düşük kalite
         if intent in {"low_confidence", "clarification_needed"}:
             return Decision("clarify", "Galiba tam duyamadım. Daha net söyler misin?")
 
-        # deterministic sosyal cevaplar
         if intent in {
             "greeting",
             "farewell",
@@ -41,7 +39,6 @@ class ResponsePolicy:
         }:
             return Decision("template")
 
-        # deterministic skill
         if intent in {
             "ask_birthdate",
             "ask_age",
@@ -52,56 +49,70 @@ class ResponsePolicy:
         }:
             return Decision("skill")
 
-        # gerçek soru
         if intent in {
             "question",
             "ask_activity",
             "education_help",
             "emotional_support",
             "general",
+            "statement",
         }:
             return Decision("llm")
-
-        # statement → kısa ama daha akıllı template
-        if intent == "statement":
-            return Decision("template")
 
         return Decision("clarify", "Bunu tam anlayamadım. Biraz daha açık söyler misin?")
 
     def apply(self, raw: str) -> str:
         if not raw:
-            return "Tam anlayamadım. Bir daha söyler misin?"
+            return "Bunu biraz daha açık söyler misin?"
 
         text = " ".join(raw.strip().split())
-
         lowered = text.lower()
 
-        # ❌ persona drift temizliği
-        bad_patterns = [
-            "ahaha", "hehe", "ooh", "oh dear",
-            "hello", "i am",
-            "ben poodle", "masaustu robot", "masaüstü robot",
-            "kullanici:", "kullanıcı:", "system prompt",
-            "robotun adi", "robotun adı",
-            "kisa dogal diyalog", "kısa doğal diyalog"
+        hard_reject_patterns = [
+            "ahaha",
+            "hehe",
+            "ooh",
+            "oh dear",
+            "hello",
+            "how are you",
+            "nice to meet you",
+            "i'm doing well",
+            "i am",
+            "kullanıcı:",
+            "system prompt",
+            "robotun adı poodle",
+            "robotun adi poodle",
+            "kısa doğal diyalog",
+            "kisa dogal diyalog",
         ]
+        if any(p in lowered for p in hard_reject_patterns):
+            return "Bunu daha sade söyleyeyim: biraz daha açık anlatır mısın?"
 
-        if any(p in lowered for p in bad_patterns):
-            return "Seni duydum. Biraz daha net anlatır mısın?"
+        leak_fragments = [
+            "2013 yılında doğduğu",
+            "ana kullanıcı profili",
+            "okul çağındadır",
+            "tanem ile konuşmaya hazırım",
+            "tanem'le konuşmaya hazırım",
+            "tanem ile çok keyifli sohbet etmek isterim",
+            "tanem'le birlikte sohbet etmeye hazırım",
+        ]
+        for frag in leak_fragments:
+            text = text.replace(frag, "").replace(frag.capitalize(), "")
 
-        # ❌ İngilizce kaçakları kes
-        if any(word in lowered for word in ["hello", "hi ", "how are you", "i am"]):
-            return "Türkçe devam edelim. Ne demek istediğini biraz açar mısın?"
+        text = " ".join(text.split())
 
-        # ❌ aşırı uzunluk kes
-        parts = [p.strip() for p in text.split(".") if p.strip()]
-        if len(parts) > 2:
-            text = ". ".join(parts[:2]).strip()
+        english_markers = ["hello", "how are you", "nice to meet you", "what's new", "today?"]
+        if any(m in lowered for m in english_markers):
+            return "Türkçe devam edelim. Ne demek istediğini biraz daha açık söyler misin?"
+
+        sentences = [s.strip() for s in text.split(".") if s.strip()]
+        if len(sentences) > 2:
+            text = ". ".join(sentences[:2]).strip()
             if not text.endswith("."):
                 text += "."
 
-        # ❌ anlamsız kısa
         if len(text) < 3:
-            return "Biraz daha açık söyler misin?"
+            return "Bunu biraz daha açık söyler misin?"
 
         return text
