@@ -23,9 +23,10 @@ Bu dosya, projenin Faz 1 (Terminal) ve Faz 2 (Etkileşim) aşamalarındaki tüm 
 - **[x]** Robotistan 10 A SMD Sigorta - 6x2 mm| 150 TL| ✅ sipariş Verildi |
 - **[x]** Dark USB Type C - M.2 NVMe Disk Kutusu** | SSD-USB Köprüsü | 1 | 799 TL | ✅ sipariş Verildi |
 - **[x]** WEKO 4S LİTYUM BATARYA SARJ ADAPTÖRÜ 16.8 VOLT 2A  (Hızlı şarj eder)  | 328 TL| ✅ sipariş Verildi |
+| **Raspberry Pi 5 (16GB)** | Ana İşlemci | 1 | 20.000 TL | 🔴 Stok Bekleniyor | 1 |
 
 
-## | **TOPLAM**  **7.668,83 TL** | 
+## | **TOPLAM**  **27.668,83 TL** | 
 
 ---
 
@@ -33,7 +34,6 @@ Bu dosya, projenin Faz 1 (Terminal) ve Faz 2 (Etkileşim) aşamalarındaki tüm 
 
 | Malzeme | Görev | Miktar | Birim Fiyat | Durum | Faz |
 | :--- | :--- | :---: | :--- | :--- | :---: |
-| **Raspberry Pi 5 (8GB)** | Ana İşlemci | 1 | 8.500 TL | 🔴 Stok Bekleniyor | 1 |
 | **Waveshare 7" DSI LCD (C)** | Kullanıcı Arayüzü | 1 | 4.413,25 TL | 🟠 Sepette | 1 | 
 
 https://www.direnc.net/raspberry-pi-icin-7-inc-kapasitif-dokunmatik-ips-ekran-1024600
