@@ -1,115 +1,72 @@
-# 🐶 Poodle Robot — Child Companion AI
+# 🤖 Balancing Friend Robot
 
-Poodle, Raspberry Pi üzerinde çalışan, çocuk odaklı, uzun süreli ilişki kurabilen bir yapay zeka robotudur.
-
-Bu proje bir “konuşan oyuncak” değil;
-bir **arkadaş, refakatçi, eğitim koçu ve güvenli dijital hafıza sistemi** olarak tasarlanmıştır.
+Tanem için uzun süreli, güvenli, öğrenen ve bağ kurabilen bir robot arkadaş.
 
 ---
 
-## 🎯 Vizyon
+# 🎯 Vizyon
 
-Poodle:
-- Tanem’i tanır
-- Onunla bağ kurar
-- Arkadaşlarını öğrenir
-- Eğitim sürecini destekler
-- Duygusal olarak yanında olur
-- Yıllar içinde gelişen bir hafıza oluşturur
+Bu proje:
+> sadece konuşan bir robot değil,  
+> Tanem’in yıllarca yanında olacak  
+> akıllı, güvenli ve duygusal bir companion üretmeyi amaçlar.
 
 ---
 
-## 🧠 Sistem Yaklaşımı
+# 🧠 Sistem Genel Yapısı
 
-LLM merkezli değil,
-**Orchestration + Memory + Perception merkezli mimari**
+## Katmanlar
 
----
+### 1. Perception (Algılama)
+- Mikrofon (STT)
+- Kamera (Vision / Identity)
+- OCR (doküman / sınav okuma)
 
-## 🧱 Ana Katmanlar
+### 2. Decision (Karar)
+- Intent Router
+- Dialogue Manager
+- Response Policy
+- Skill System
 
-1. **Perception**
-   - Mikrofon (STT + VAD)
-   - Kamera (vision)
-   - OCR / belge okuma
+### 3. Memory (Hafıza)
+- SQLite tabanlı memory
+- Template system
+- (Sprint 7) RAG / semantic memory
 
-2. **Identity & Memory**
-   - Kişi tanıma
-   - İlişki grafı
-   - Uzun vadeli hafıza
-
-3. **Decision (Brain)**
-   - Intent router
-   - Dialogue manager
-   - Skill system
-   - Safety policy
-
-4. **Expression**
-   - TTS (Piper)
-   - Yüz animasyonu
-   - Davranış (state machine)
+### 4. Expression (İfade)
+- TTS (Piper)
+- Character UI (Orb / Animation)
+- State machine
 
 ---
 
-## ⚙️ Donanım Hedefi
+# 🧱 Donanım
 
-- Raspberry Pi 5 (16 GB)
-- Hailo AI Accelerator (13 TOPS)
-- Pi Camera
-- USB Mikrofon + Hoparlör
+### 🎯 Hedef Platform
+- Raspberry Pi 5 — **16 GB RAM**
 - 7” ekran
+- USB mikrofon + hoparlör
+- Raspberry Pi Camera
+- (opsiyonel) Hailo AI Accelerator (13 TOPS)
 
 ---
 
-## 🧭 Yol Haritası
+# ⚙️ Neden 16 GB?
 
-### Faz 1 — Core AI
-- [x] Speech pipeline (Whisper + VAD + Piper)
-- [x] Brain v1 (LLM + intent)
-- [x] Face UI
+16 GB ile sistem:
 
-### Faz 2 — Brain Refactor (aktif)
-- [ ] Dialogue manager
-- [ ] Response policy
-- [ ] Deterministic skills
-- [ ] Memory relevance
+- aynı anda STT + UI + Vision + Brain çalıştırabilir
+- memory + embedding + retrieval katmanını kaldırabilir
+- daha büyük context ve model kullanabilir
+- service-based mimariye geçebilir
 
-### Faz 3 — Identity & Vision
-- [ ] Kişi tanıma
-- [ ] Takip sistemi
-- [ ] Arkadaş öğrenme
-
-### Faz 4 — Education Engine
-- [ ] Sınav tarama
-- [ ] LGS hazırlık sistemi
-- [ ] Öğrenme profili
-
-### Faz 5 — Emotional Support
-- [ ] Support policy
-- [ ] Risk detection
-- [ ] Parent awareness
+👉 Hedef artık:
+> single-process demo değil,  
+> multi-service companion system
 
 ---
 
-## 🚨 Tasarım İlkeleri
+# 🚀 Çalıştırma
 
-- Çocuk güvenliği önceliklidir
-- Uydurma bilgi üretme
-- Kısa ve doğal konuş
-- Gereksiz tekrar yapma
-- Hafızayı kontrollü kullan
-
----
-
-## 📌 Mevcut Durum
-
-- STT pipeline stabil
-- TTS stabil
-- Basic conversational loop çalışıyor
-- Quality gate aktif
-- Brain refactor süreci başladı
-
-## 📎 Not
-
-Bu proje uzun vadeli bir AI companion sistemidir.
-Mimari sadelikten çok **doğru katman ayrımı** hedeflenmiştir.
+```bash
+python main.py
