@@ -6,7 +6,7 @@ from .llm_client import LLMClient
 from .persona import build_system_prompt
 from .models import BrainResult
 from memory.memory_manager import MemoryManager
-
+from .education_engine import EducationEngine
 
 class PoodleBrain:
     def __init__(self):
@@ -17,6 +17,7 @@ class PoodleBrain:
         self.llm = LLMClient()
         self.system_prompt = build_system_prompt()
         self.memory = MemoryManager()
+        self.education = EducationEngine()
 
         self.template_first_intents = {
             "greeting",
@@ -39,6 +40,11 @@ class PoodleBrain:
         context = self.dialogue.get_context()
 
         intent = self.intent.detect(cleaned, context)
+        
+        education_reply = self.education.handle(cleaned, intent)
+        if education_reply:
+            self.dialogue.update(cleaned, education_reply, intent)
+            return BrainResult(reply_text=education_reply, intent=intent)
 
         # -----------------------------------
         # Önce deterministic shortcut
