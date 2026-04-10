@@ -1,109 +1,111 @@
 class IntentRouter:
-    def detect(self, text: str) -> str:
+
+    def detect(self, text: str, context=None) -> str:
         raw = (text or "").strip()
         t = raw.lower()
-        n = self._normalize(raw)
+        normalized = self._normalize(raw)
+        context = context or {}
 
-        if not n:
+        if not normalized:
             return "clarification_needed"
 
-        # greeting
-        if any(x in n for x in ["selam", "merhaba", "hey poodle", "hey pudil", "hey puddle"]):
-            # "hey poodle nasıl gidiyor" gibi birleşik ifadelerde status öncelikli olsun
-            if any(q in n for q in ["nasil gidiyor", "nasilsin", "iyi misin"]):
-                return "ask_status"
-            return "greeting"
+        # -----------------------------------------------------
+        # FOLLOW-UP (çok kritik fix)
+        # -----------------------------------------------------
+        followup_phrases = {
+            "neden",
+            "nasil",
+            "peki",
+            "yani",
+            "ee",
+            "ne anladin",
+            "ne demek istedin",
+            "sonra",
+        }
 
-        # farewell
-        if any(x in n for x in ["gorusuruz", "hosca kal", "bay bay", "bye"]):
+        if normalized in followup_phrases:
+            return "followup"
+
+        if context.get("current_topic") and len(normalized.split()) <= 2:
+            if normalized in {"peki", "tamam", "yani"}:
+                return "followup"
+
+        # -----------------------------------------------------
+        # FAREWELL (eksikti → kritik)
+        # -----------------------------------------------------
+        if any(x in normalized for x in ["gorusuruz", "görüşürüz", "bay bay", "bye"]):
             return "farewell"
 
-        # thanks
-        if any(x in n for x in ["tesekkur ederim", "tesekkurler", "sag ol", "sağ ol"]):
-            return "thanks"
-
-        # acknowledge
-        if n in {"tamam", "peki", "olur", "anladim", "anladım"}:
-            return "acknowledge"
-
-        # name / identity
-        if any(x in n for x in ["adin ne", "senin adin ne"]):
-            return "ask_name"
-
-        if "sen kimsin" in n:
-            return "ask_identity"
-
-        # status
-        if any(x in n for x in ["nasilsin", "iyi misin", "nasil gidiyor", "nasil gidiy"]):
+        # -----------------------------------------------------
+        # GREETING / STATUS
+        # -----------------------------------------------------
+        if ("selam" in normalized or "merhaba" in normalized) and "nasilsin" in normalized:
             return "ask_status"
 
-        # deterministic skill intent'leri
-        if "dogum gunum ne zaman" in n or "dogum gunu ne zaman" in n:
-            return "ask_birthdate"
+        if "nasilsin" in normalized:
+            return "ask_status"
 
-        if "kac yas" in n or "kaç yaş" in t:
-            return "ask_age"
+        if "selam" in normalized or "merhaba" in normalized:
+            return "greeting"
 
-        if "saat kac" in n or "saat kaç" in t:
-            return "ask_time"
+        # -----------------------------------------------------
+        # BASIC QUESTIONS
+        # -----------------------------------------------------
+        if "adin ne" in normalized:
+            return "ask_name"
 
-        if "bugun gunlerden ne" in n or "bugün günlerden ne" in t:
-            return "ask_day_date"
+        if "kimsin" in normalized:
+            return "ask_identity"
 
-        if any(x in n for x in ["sus", "sessiz ol", "dur artik", "dur artık"]):
-            return "mute"
-
-        if n in {"hey", "uyan", "geri gel"}:
-            return "wake"
-
-        # follow-up repair / önceki konuşmayı düzeltme
-        if any(x in n for x in [
-            "sormustum", "sormuştum",
-            "demek istemistim", "demek istemiştim",
-            "yanlis soyledim", "yanlış söyledim",
-            "tekrar soruyorum", "seni bunu sormustum"
-        ]):
-            return "followup_repair"
-
-        # activity
-        if any(x in n for x in [
-            "bugun ne yaptin", "sen ne yaptin",
-            "ne yaptin", "neler yaptin",
-            "ne yapiyorsun", "neler yapiyorsun",
-            "bugun neler yaptin"
-        ]):
+        if "ne yapiyorsun" in normalized or "neler yapiyorsun" in normalized:
             return "ask_activity"
 
-        # education / motivation
-        if any(x in n for x in [
-            "ders", "sinav", "motivasyon", "matematik", "fen", "ingilizce", "lgs", "tavsiye"
-        ]):
-            if "tavsiye" in n or "ne dersin" in n:
-                return "question"
+        # -----------------------------------------------------
+        # THANKS
+        # -----------------------------------------------------
+        if "tesekkur" in normalized:
+            return "thanks"
+
+        # -----------------------------------------------------
+        # COMMANDS
+        # -----------------------------------------------------
+        if any(x in normalized for x in ["sus", "dur", "sessiz ol"]):
+            return "mute"
+
+        if normalized.startswith("hey"):
+            return "wake"
+
+        # -----------------------------------------------------
+        # EDUCATION
+        # -----------------------------------------------------
+        if any(x in normalized for x in ["sinav", "ders", "matematik", "lgs"]):
             return "education_help"
 
-        # emotional
-        if any(x in n for x in [
-            "moralim bozuk", "uzgunum", "üzgünüm", "kotu hissediyorum", "kötü hissediyorum"
-        ]):
+        # -----------------------------------------------------
+        # EMOTION
+        # -----------------------------------------------------
+        if any(x in normalized for x in ["uzgun", "moralim bozuk", "kotu hissediyorum"]):
             return "emotional_support"
 
-        # doğal soru kalıpları
-        if self._is_question(n):
-            return "question"
+        # -----------------------------------------------------
+        # SHORT BUT VALID (kritik fix)
+        # -----------------------------------------------------
+        words = normalized.split()
 
-        # 2+ kelimelik normal ifade
-        if len(n.split()) >= 2:
-            return "statement"
+        if len(words) <= 3:
+            if "nasilsin" in normalized:
+                return "ask_status"
+            if "adin ne" in normalized:
+                return "ask_name"
+            if "kimsin" in normalized:
+                return "ask_identity"
+            if normalized in {"tamam", "peki", "olur"}:
+                return "acknowledge"
 
-        return "smalltalk_short"
+            # artık direkt low_confidence demiyoruz
+            return "general"
 
-    def _is_question(self, text: str) -> bool:
-        question_words = [
-            "ne", "neden", "nasil", "nerede", "ne zaman",
-            "hangi", "kim", "kac", "mi", "mı", "mu", "mü"
-        ]
-        return any(q in text for q in question_words)
+        return "general"
 
     def _normalize(self, text: str) -> str:
         t = (text or "").lower().strip()
