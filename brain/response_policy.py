@@ -9,13 +9,6 @@ class Decision:
 
 
 class ResponsePolicy:
-    """
-    source:
-    - clarify
-    - template
-    - skill
-    - llm
-    """
 
     def choose_source(self, text: str, intent: str) -> Decision:
         t = (text or "").strip().lower()
@@ -23,7 +16,6 @@ class ResponsePolicy:
         if not t:
             return Decision("clarify", "Seni tam anlayamadım. Tekrar söyler misin?")
 
-        # 🚨 CRITICAL FIX: conversational intents
         conversational_intents = {
             "conversation_start",
             "ask_question_back",
@@ -35,7 +27,7 @@ class ResponsePolicy:
             return Decision("template")
 
         if intent in {"low_confidence", "clarification_needed"}:
-            return Decision("clarify", "Galiba tam duyamadım. Daha net söyler misin?")
+            return Decision("clarify", "Tam duyamadım. Bir daha söyler misin?")
 
         if intent in {
             "greeting",
@@ -46,7 +38,6 @@ class ResponsePolicy:
             "thanks",
             "acknowledge",
             "followup",
-            "followup_repair",
         }:
             return Decision("template")
 
@@ -55,44 +46,60 @@ class ResponsePolicy:
             "ask_age",
             "ask_day_date",
             "ask_time",
-            "mute",
-            "wake",
         }:
             return Decision("skill")
 
-        # 🎯 geri kalan → LLM
         return Decision("llm")
 
+    # -------------------------------------------------
+    # 🔥 DOĞALLIK MOTORU
+    # -------------------------------------------------
     def apply(self, raw: str) -> str:
         if not raw:
             return "Biraz daha açık söyler misin?"
 
         text = " ".join(raw.strip().split())
-        lowered = text.lower()
 
-        # ❌ prompt leak filtre
-        bad_patterns = [
-            "kisa dogal diyalog",
-            "robotun adı poodle",
-            "system prompt",
+        # ❌ İngilizce temizle
+        bad_english = ["hello", "hi ", "how are you", "i am"]
+        if any(b in text.lower() for b in bad_english):
+            return "Türkçe devam edelim. Ne demek istedin?"
+
+        # ❌ gereksiz girişleri sil
+        starters = [
+            "selam!",
+            "merhaba!",
+            "selam",
+            "merhaba",
+            "ben poodle",
+            "ben de",
         ]
 
-        if any(p in lowered for p in bad_patterns):
-            return "Seni duydum. Biraz daha net anlatır mısın?"
+        lower = text.lower()
+        for s in starters:
+            if lower.startswith(s):
+                text = text[len(s):].strip().capitalize()
 
-        # ❌ İngilizce kaçak
-        if any(word in lowered for word in ["hello", "hi ", "how are you", "i am"]):
-            return "Türkçe devam edelim. Ne demek istediğini biraz açar mısın?"
+        # ❌ robotik ifadeleri temizle
+        replacements = {
+            "gibi görünüyor": "",
+            "gibi hissediyorum": "",
+            "şu an": "",
+        }
 
-        # ❌ çok uzun kes
+        for k, v in replacements.items():
+            text = text.replace(k, v)
+
+        # ❌ fazla uzun cevap kır
         parts = [p.strip() for p in text.split(".") if p.strip()]
         if len(parts) > 2:
-            text = ". ".join(parts[:2]).strip()
-            if not text.endswith("."):
-                text += "."
+            text = ". ".join(parts[:2])
 
-        # ❌ çok kısa
+        # ❌ boşluk düzelt
+        text = text.strip()
+
+        # ❌ çok kısa fallback
         if len(text) < 3:
-            return "Biraz daha açık söyler misin?"
+            return "Biraz açar mısın?"
 
         return text
