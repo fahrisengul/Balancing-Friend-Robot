@@ -5,6 +5,9 @@ from typing import Any, Dict, List, Optional
 
 from .db import get_connection, init_db
 
+import random
+return random.choice(templates)
+
 
 class MemoryManager:
     """
