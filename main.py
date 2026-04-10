@@ -13,24 +13,22 @@ def main():
     pygame.display.set_caption("Poodle Robot")
     clock = pygame.time.Clock()
 
-    # -------------------------
-    # SPEECH INIT
-    # -------------------------
-    speech = PoodleSpeech()
+    # Input tarafında Jabra yerine daha stabil mikrofonları önce dene.
+    speech = PoodleSpeech(
+        preferred_input_names=[
+            "MacBook Pro Mikrofonu",
+            "FahriSengul Mikrofonu",
+            "Jabra",
+        ]
+    )
 
-    # Jabra'yı seç
-    speech.debug_list_input_devices()
-    speech.set_input_device_by_name("Jabra")
-
-    # -------------------------
-    # CORE SYSTEM
-    # -------------------------
     brain = PoodleBrain()
     face = PoodleCharacter(1024, 600)
     face.bind_audio_source(speech)
 
     orch = Orchestrator(brain, speech, face)
 
+    speech.debug_list_input_devices()
     speech.start_auto_listener()
 
     print("\n--- Poodle Aktif ---\n")
@@ -44,9 +42,6 @@ def main():
             dt = max(0.001, (now_ticks - last_ticks) / 1000.0)
             last_ticks = now_ticks
 
-            # -------------------------
-            # EVENTS
-            # -------------------------
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
@@ -54,16 +49,9 @@ def main():
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                     running = False
 
-            # -------------------------
-            # SPEECH EVENT
-            # -------------------------
             evt = speech.get_pending_event()
-            if evt:
-                orch.handle_event(evt)
+            orch.handle_event(evt)
 
-            # -------------------------
-            # RENDER
-            # -------------------------
             face.update(dt)
             face.draw(screen)
 
