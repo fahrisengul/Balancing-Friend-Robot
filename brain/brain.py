@@ -1,128 +1,103 @@
-from .intent_router import IntentRouter
-from .dialogue_manager import DialogueManager
-from .skill_handlers import SkillHandlers
-from .response_policy import ResponsePolicy
-from .llm_client import LLMClient
-from .persona import build_system_prompt
-from .models import BrainResult
+import random
+from typing import Optional
+
+from brain.intent_router import IntentRouter
 from memory.memory_manager import MemoryManager
 
 
 class PoodleBrain:
     def __init__(self):
-        self.intent_router = IntentRouter()
-        self.dialogue = DialogueManager()
-        self.skills = SkillHandlers()
-        self.policy = ResponsePolicy()
-        self.llm = LLMClient()
-        self.system_prompt = build_system_prompt()
         self.memory = MemoryManager()
+        self.router = IntentRouter()
 
-    def handle_user_input(self, text: str) -> BrainResult:
-        cleaned = (text or "").strip()
+        patterns = self.memory.get_intent_patterns()
+        self.router.load_patterns(patterns)
 
-        if not cleaned:
-            reply = "Seni tam anlayamadım. Tekrar söyler misin?"
-            self.dialogue.update(cleaned, reply, "clarification_needed")
-            return BrainResult(reply_text=reply, intent="clarification_needed")
+    def respond(self, text: str) -> str:
+        intent, confidence = self.router.detect(text)
 
-        # 1) intent
-        intent = self.intent_router.detect(cleaned)
+        if confidence < 0.4:
+            return self._fallback()
 
-        # 2) policy
-        decision = self.policy.choose_source(cleaned, intent)
+        handler = getattr(self, f"_handle_{intent}", None)
 
-        # 3) clarify
-        if decision.source == "clarify":
-            reply = decision.clarify_text or "Bunu biraz daha açık söyler misin?"
-            self.dialogue.update(cleaned, reply, intent)
-            return BrainResult(reply_text=reply, intent=intent)
+        if handler:
+            return handler(text)
 
-        # 4) deterministic skill
-        if decision.source == "skill":
-            skill_result = self.skills.handle(intent, cleaned)
-            if skill_result:
-                self.dialogue.update(cleaned, skill_result, intent)
-                return BrainResult(reply_text=skill_result, intent=intent)
+        return self._template_or_fallback(intent)
 
-            # skill başarısızsa LLM fallback
-            decision.source = "llm"
+    # -------------------------
+    # CORE HANDLERS
+    # -------------------------
 
-        # 5) template + optional followup
-        if decision.source == "template":
-            template = self.memory.get_template(intent_name=intent)
+    def _handle_greeting(self, text):
+        return self._template_or_fallback("greeting")
 
-            if template:
-                followup = self.memory.get_followup(intent_name=intent)
-                reply = f"{template} {followup}".strip() if followup else template
-                reply = self.policy.apply(reply)
+    def _handle_identity(self, text):
+        return "Ben Poodle. Seninle konuşan sakin bir robot arkadaşım."
 
-                self.dialogue.update(cleaned, reply, intent)
-                return BrainResult(reply_text=reply, intent=intent)
+    def _handle_ask_name(self, text):
+        return "Benim adım Poodle."
 
-            # template yoksa LLM'e düş
-            decision.source = "llm"
+    def _handle_smalltalk_howareyou(self, text):
+        return "İyiyim. Sen nasılsın?"
 
-        # 6) LLM
-        prompt = self._build_prompt(cleaned, intent)
-        raw = self.llm.generate(prompt)
-        answer = self.policy.apply(raw)
+    # -------------------------
+    # SOCIAL FLOW
+    # -------------------------
 
-        self.dialogue.update(cleaned, answer, intent)
-        return BrainResult(reply_text=answer, intent=intent)
+    def _handle_request_questioning(self, text):
+        questions = [
+            "Bugün seni en çok ne mutlu etti?",
+            "Okulda en çok hangi dersi seviyorsun?",
+            "Şu sıralar seni zorlayan bir şey var mı?",
+        ]
+        return random.choice(questions)
 
-    def _build_prompt(self, cleaned: str, intent: str) -> str:
-        recent_turns = self.dialogue.get_recent_turns_as_text(limit=3)
-        topic = self.dialogue.get_current_topic()
+    def _handle_topic_suggestion(self, text):
+        topics = [
+            "İstersen oyunlar hakkında konuşabiliriz.",
+            "İstersen okul hakkında konuşabiliriz.",
+            "Bugün nasıl geçtiğini anlatmak ister misin?",
+        ]
+        return random.choice(topics)
 
-        person = self.memory.get_person_by_role("tanem")
-        person_block = ""
+    # -------------------------
+    # EDUCATION COACH
+    # -------------------------
 
-        if person:
-            facts = []
+    def _handle_exam_anxiety(self, text):
+        return "Sınav seni biraz zorlamış gibi. Nerede zorlandığını birlikte bulabiliriz."
 
-            name = person.get("name")
-            grade = person.get("grade_level")
-            school = person.get("school_name")
-            notes = person.get("notes")
+    def _handle_request_advice(self, text):
+        if "5" in text:
+            return (
+                "1. Derin nefes al.\n"
+                "2. Kısa bir mola ver.\n"
+                "3. Kolay sorulardan başla.\n"
+                "4. Kendine çok yüklenme.\n"
+                "5. Küçük hedefler koy."
+            )
 
-            if name:
-                facts.append(f"Adı: {name}")
-            if grade:
-                facts.append(f"Sınıf: {grade}")
-            if school:
-                facts.append(f"Okul: {school}")
-            if notes:
-                facts.append(f"Not: {notes}")
+        return "İstersen birlikte küçük bir plan yapabiliriz."
 
-            if facts:
-                person_block = "Tanem hakkında ilgili bilgiler:\n- " + "\n- ".join(facts)
+    def _handle_post_exam_reflection(self, text):
+        return (
+            "Bu çok normal. Bazen istediğimiz gibi gitmeyebilir.\n"
+            "İstersen birlikte neyin zor geldiğini analiz edelim."
+        )
 
-        topic_line = f"Konu: {topic}" if topic else "Konu: belirsiz"
+    # -------------------------
+    # TEMPLATE SYSTEM
+    # -------------------------
 
-        prompt = f"""
-{self.system_prompt}
+    def _template_or_fallback(self, intent):
+        template = self.memory.get_template(intent)
 
-{person_block}
+        if template:
+            return template
 
-Son konuşma bağlamı:
-{recent_turns}
+        return self._fallback()
 
-Intent: {intent}
-{topic_line}
-
-Kullanıcı:
-{cleaned}
-
-Kurallar:
-- Kullanıcının son cümlesine doğrudan cevap ver.
-- İngilizce kullanma.
-- 1-2 kısa cümle kullan.
-- Gereksiz giriş cümlesi kurma.
-- Tanem hakkında gereksiz profil bilgisi dökme.
-- Kullanıcı soru sorduysa önce soruya cevap ver.
-- Kullanıcı seni onu tanımaya davet ediyorsa, kısa ve doğal bir soru sor.
-- Eğitim veya endişe sorularında somut ve kısa öneriler ver.
-""".strip()
-
-        return prompt
+    def _fallback(self):
+        return "Seni tam anlayamadım. Biraz daha açık söyler misin?"
