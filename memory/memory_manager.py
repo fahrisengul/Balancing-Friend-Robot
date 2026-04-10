@@ -6,6 +6,9 @@ from .db import get_connection
 
 class MemoryManager:
 
+    # -------------------------------------------------
+    # TEMPLATE
+    # -------------------------------------------------
     def get_template(self, intent_name: str, lang: str = "tr") -> Optional[str]:
         with get_connection() as conn:
             rows = conn.execute(
@@ -23,7 +26,10 @@ class MemoryManager:
         if not rows:
             return None
 
-        templates = [r["template_text"] for r in rows]
+        templates = [r["template_text"] for r in rows if r["template_text"]]
+        if not templates:
+            return None
+
         return random.choice(templates)
 
     def get_all_templates(self, intent_name: str, lang: str = "tr"):
@@ -61,6 +67,86 @@ class MemoryManager:
             )
             conn.commit()
 
+    # -------------------------------------------------
+    # FOLLOWUP
+    # -------------------------------------------------
+    def get_followup(self, intent_name: str) -> Optional[str]:
+        with get_connection() as conn:
+            row = conn.execute(
+                """
+                SELECT followup_text
+                FROM intent_followups
+                WHERE intent_name = ?
+                ORDER BY priority DESC, id ASC
+                """,
+                (intent_name,),
+            ).fetchall()
+
+        if not row:
+            return None
+
+        options = [r["followup_text"] for r in row if r["followup_text"]]
+        if not options:
+            return None
+
+        return random.choice(options)
+
+    def add_followup(self, intent_name: str, followup_text: str, priority: int = 0):
+        with get_connection() as conn:
+            conn.execute(
+                """
+                INSERT INTO intent_followups
+                (intent_name, followup_text, priority)
+                VALUES (?, ?, ?)
+                """,
+                (intent_name, followup_text, priority),
+            )
+            conn.commit()
+
+    # -------------------------------------------------
+    # INTENT DEFINITIONS / PATTERNS
+    # -------------------------------------------------
+    def add_intent_definition(
+        self,
+        intent_name: str,
+        category: str = "general",
+        source_preference: str = "llm",
+        priority: int = 0,
+        is_active: int = 1,
+    ):
+        with get_connection() as conn:
+            conn.execute(
+                """
+                INSERT INTO intent_definitions
+                (intent_name, category, source_preference, priority, is_active)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (intent_name, category, source_preference, priority, is_active),
+            )
+            conn.commit()
+
+    def add_intent_pattern(
+        self,
+        intent_name: str,
+        pattern_text: str,
+        match_type: str = "contains",
+        lang: str = "tr",
+        priority: int = 0,
+    ):
+        with get_connection() as conn:
+            conn.execute(
+                """
+                INSERT INTO intent_patterns
+                (intent_name, pattern_text, match_type, lang, priority)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (intent_name, pattern_text, match_type, lang, priority),
+            )
+            conn.commit()
+
+    # -------------------------------------------------
+    # PERSON
+    # -------------------------------------------------
     def get_person_by_role(self, role: str):
         with get_connection() as conn:
             row = conn.execute(
@@ -98,6 +184,9 @@ class MemoryManager:
             )
             conn.commit()
 
+    # -------------------------------------------------
+    # EPISODIC MEMORY
+    # -------------------------------------------------
     def add_episodic_memory(
         self,
         memory_text,
@@ -118,17 +207,3 @@ class MemoryManager:
                 (person_id, memory_text, category, importance, tags_json),
             )
             conn.commit()
-
-def get_followup(self, intent_name: str):
-    with get_connection() as conn:
-        row = conn.execute("""
-            SELECT followup_text
-            FROM intent_followups
-            WHERE intent_name = ?
-            ORDER BY RANDOM()
-            LIMIT 1
-        """, (intent_name,)).fetchone()
-
-    if row:
-        return row["followup_text"]
-    return None
