@@ -99,14 +99,22 @@ class MemoryManager:
     # -------------------------------------------------
     # TEMPLATE ADD
     # -------------------------------------------------
-    def add_template(self, intent_name: str, template_text: str, lang: str = "tr"):
+    def add_template(
+        self,
+        intent_name: str,
+        template_text: str,
+        tone: str = "neutral",
+        lang: str = "tr",
+        priority: int = 0,
+        is_active: int = 1,
+    ):
         with get_connection() as conn:
             conn.execute(
                 """
                 INSERT INTO intent_templates
-                (intent_name, template_text, lang, is_active)
-                VALUES (?, ?, ?, 1)
+                (intent_name, template_text, tone, lang, priority, is_active)
+                VALUES (?, ?, ?, ?, ?, ?)
                 """,
-                (intent_name, template_text, lang),
+                (intent_name, template_text, tone, lang, priority, is_active),
             )
             conn.commit()
