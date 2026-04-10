@@ -20,12 +20,7 @@ def seed_profiles():
 
 
 def seed_intents():
-    mm = MemoryManager()
-
     intent_definitions = [
-        # -------------------------
-        # SOCIAL BASICS
-        # -------------------------
         ("greeting", "social", "template", 100),
         ("farewell", "social", "template", 100),
         ("ask_name", "social", "template", 95),
@@ -34,9 +29,6 @@ def seed_intents():
         ("thanks", "social", "template", 90),
         ("acknowledge", "social", "template", 80),
 
-        # -------------------------
-        # RELATIONSHIP / SOCIAL FLOW
-        # -------------------------
         ("conversation_start", "social", "template", 95),
         ("ask_question_back", "social", "template", 95),
         ("ask_topic", "social", "template", 92),
@@ -44,9 +36,6 @@ def seed_intents():
         ("ask_user_profile", "social", "llm", 90),
         ("share_preference", "social", "llm", 85),
 
-        # -------------------------
-        # EDUCATION COACH
-        # -------------------------
         ("education_help", "education", "llm", 100),
         ("study_planning", "education", "llm", 98),
         ("homework_help", "education", "llm", 96),
@@ -55,25 +44,16 @@ def seed_intents():
         ("focus_help", "education", "llm", 95),
         ("request_advice", "education", "llm", 97),
 
-        # -------------------------
-        # EMOTIONAL SUPPORT
-        # -------------------------
         ("emotional_support", "emotion", "llm", 95),
         ("sadness_support", "emotion", "llm", 94),
         ("frustration_support", "emotion", "llm", 94),
         ("reassurance_request", "emotion", "llm", 92),
 
-        # -------------------------
-        # GENERAL
-        # -------------------------
         ("question", "general", "llm", 70),
         ("statement", "general", "llm", 60),
         ("followup", "general", "template", 85),
         ("followup_repair", "general", "template", 85),
 
-        # -------------------------
-        # UTILITY
-        # -------------------------
         ("ask_time", "utility", "skill", 100),
         ("ask_day_date", "utility", "skill", 100),
         ("ask_age", "utility", "skill", 100),
@@ -83,9 +63,6 @@ def seed_intents():
     ]
 
     patterns = [
-        # -------------------------------------------------
-        # SOCIAL BASICS
-        # -------------------------------------------------
         ("greeting", "selam", "contains", "tr", 100),
         ("greeting", "merhaba", "contains", "tr", 100),
         ("greeting", "hey", "exact", "tr", 80),
@@ -94,7 +71,6 @@ def seed_intents():
         ("farewell", "görüşürüz", "contains", "tr", 100),
         ("farewell", "hosca kal", "contains", "tr", 100),
         ("farewell", "hoşça kal", "contains", "tr", 100),
-        ("farewell", "bay bay", "contains", "tr", 90),
 
         ("ask_name", "adin ne", "contains", "tr", 100),
         ("ask_name", "adın ne", "contains", "tr", 100),
@@ -102,8 +78,6 @@ def seed_intents():
         ("ask_identity", "kimsin", "contains", "tr", 100),
         ("ask_identity", "kendini tanimlar misin", "contains", "tr", 100),
         ("ask_identity", "kendini tanımlar mısın", "contains", "tr", 100),
-        ("ask_identity", "kendini anlatir misin", "contains", "tr", 90),
-        ("ask_identity", "kendini anlatır mısın", "contains", "tr", 90),
 
         ("ask_status", "nasilsin", "contains", "tr", 100),
         ("ask_status", "nasılsın", "contains", "tr", 100),
@@ -113,20 +87,13 @@ def seed_intents():
 
         ("thanks", "tesekkur", "contains", "tr", 100),
         ("thanks", "teşekkür", "contains", "tr", 100),
-        ("thanks", "sag ol", "contains", "tr", 90),
-        ("thanks", "sağ ol", "contains", "tr", 90),
 
         ("acknowledge", "tamam", "exact", "tr", 100),
         ("acknowledge", "peki", "exact", "tr", 95),
         ("acknowledge", "olur", "exact", "tr", 95),
 
-        # -------------------------------------------------
-        # RELATIONSHIP / SOCIAL FLOW
-        # -------------------------------------------------
         ("conversation_start", "beni tanimak ister misin", "contains", "tr", 100),
         ("conversation_start", "beni tanımak ister misin", "contains", "tr", 100),
-        ("conversation_start", "seninle tanismak istiyorum", "contains", "tr", 90),
-        ("conversation_start", "seninle tanışmak istiyorum", "contains", "tr", 90),
 
         ("ask_question_back", "bana soru sor", "contains", "tr", 100),
         ("ask_question_back", "bana soru sorar misin", "contains", "tr", 100),
@@ -138,8 +105,6 @@ def seed_intents():
 
         ("ask_topic", "ne konusalim", "contains", "tr", 100),
         ("ask_topic", "ne konuşalım", "contains", "tr", 100),
-        ("ask_topic", "hangi konuyu konusalim", "contains", "tr", 90),
-        ("ask_topic", "hangi konuyu konuşalım", "contains", "tr", 90),
 
         ("open_topic", "bana bir konu ac", "contains", "tr", 100),
         ("open_topic", "bana bir konu aç", "contains", "tr", 100),
@@ -152,14 +117,6 @@ def seed_intents():
         ("ask_user_profile", "benim hakkimda ne biliyorsun", "contains", "tr", 100),
         ("ask_user_profile", "benim hakkımda ne biliyorsun", "contains", "tr", 100),
 
-        ("share_preference", "ben sunu seviyorum", "contains", "tr", 80),
-        ("share_preference", "ben bunu seviyorum", "contains", "tr", 80),
-        ("share_preference", "en sevdigim sey", "contains", "tr", 80),
-        ("share_preference", "en sevdiğim şey", "contains", "tr", 80),
-
-        # -------------------------------------------------
-        # EDUCATION COACH
-        # -------------------------------------------------
         ("education_help", "ders", "contains", "tr", 85),
         ("education_help", "matematik", "contains", "tr", 85),
         ("education_help", "fen", "contains", "tr", 80),
@@ -173,13 +130,9 @@ def seed_intents():
         ("study_planning", "ders çalışma planı", "contains", "tr", 100),
         ("study_planning", "calisma plani yap", "contains", "tr", 95),
         ("study_planning", "çalışma planı yap", "contains", "tr", 95),
-        ("study_planning", "program yapalim", "contains", "tr", 90),
-        ("study_planning", "program yapalım", "contains", "tr", 90),
 
         ("homework_help", "odevime yardim eder misin", "contains", "tr", 100),
         ("homework_help", "ödevime yardım eder misin", "contains", "tr", 100),
-        ("homework_help", "odevde yardim", "contains", "tr", 90),
-        ("homework_help", "ödevde yardım", "contains", "tr", 90),
 
         ("exam_anxiety", "sinav icin endiseliyim", "contains", "tr", 100),
         ("exam_anxiety", "sınav için endişeliyim", "contains", "tr", 100),
@@ -207,9 +160,6 @@ def seed_intents():
         ("request_advice", "yontem soyler misin", "contains", "tr", 95),
         ("request_advice", "yöntem söyler misin", "contains", "tr", 95),
 
-        # -------------------------------------------------
-        # EMOTIONAL SUPPORT
-        # -------------------------------------------------
         ("emotional_support", "uzgunum", "contains", "tr", 100),
         ("emotional_support", "üzgünüm", "contains", "tr", 100),
         ("emotional_support", "kendimi kotu hissediyorum", "contains", "tr", 100),
@@ -229,9 +179,6 @@ def seed_intents():
         ("reassurance_request", "sence duzelir mi", "contains", "tr", 95),
         ("reassurance_request", "sence düzelir mi", "contains", "tr", 95),
 
-        # -------------------------------------------------
-        # FOLLOWUP / REPAIR
-        # -------------------------------------------------
         ("followup", "neden", "exact", "tr", 70),
         ("followup", "niye", "exact", "tr", 70),
         ("followup", "peki", "exact", "tr", 70),
@@ -241,16 +188,11 @@ def seed_intents():
         ("followup_repair", "bir daha soyler misin", "contains", "tr", 95),
         ("followup_repair", "bir daha söyler misin", "contains", "tr", 95),
 
-        # -------------------------------------------------
-        # UTILITY
-        # -------------------------------------------------
         ("ask_time", "saat kac", "contains", "tr", 100),
         ("ask_time", "saat kaç", "contains", "tr", 100),
 
         ("ask_day_date", "bugun gunlerden ne", "contains", "tr", 100),
         ("ask_day_date", "bugün günlerden ne", "contains", "tr", 100),
-        ("ask_day_date", "bugun ayin kaci", "contains", "tr", 90),
-        ("ask_day_date", "bugün ayın kaçı", "contains", "tr", 90),
 
         ("ask_age", "kac yasindayim", "contains", "tr", 100),
         ("ask_age", "kaç yaşındayım", "contains", "tr", 100),
@@ -269,9 +211,6 @@ def seed_intents():
     ]
 
     templates = {
-        # -------------------------------------------------
-        # SOCIAL BASICS
-        # -------------------------------------------------
         "greeting": [
             ("Selam.", "warm", 100),
             ("Merhaba.", "warm", 95),
@@ -313,9 +252,6 @@ def seed_intents():
             ("Bir kısmını kaçırdım. Tekrar eder misin?", "neutral", 95),
         ],
 
-        # -------------------------------------------------
-        # RELATIONSHIP / SOCIAL FLOW
-        # -------------------------------------------------
         "conversation_start": [
             ("Seni tanımak isterim. Neler yapmayı seversin?", "warm", 100),
             ("Biraz kendinden bahsetmek ister misin?", "warm", 95),
@@ -333,9 +269,6 @@ def seed_intents():
             ("Okulda neler yaptın?", "warm", 95),
         ],
 
-        # -------------------------------------------------
-        # EDUCATION / EMOTION
-        # -------------------------------------------------
         "education_help": [
             ("Neresi zor geldi?", "coach", 100),
             ("İstersen birlikte plan yapalım.", "coach", 95),
@@ -383,36 +316,41 @@ def seed_intents():
         ],
     }
 
+    # Sprint 6: education follow-up bank
     followups = {
-        "conversation_start": [
-            ("En sevdiğin oyun nedir?", 100),
-            ("Okulda en çok hangi dersi seviyorsun?", 95),
-            ("Bugün seni en çok ne güldürdü?", 90),
-        ],
-        "ask_question_back": [
-            ("Bugün seni en çok ne mutlu etti?", 100),
-            ("Şu sıralar en çok neyle ilgileniyorsun?", 95),
-            ("Arkadaşlarınla en çok ne yapmayı seversin?", 90),
-        ],
-        "ask_topic": [
-            ("İstersen önce sevdiğin şeylerden başlayalım.", 100),
-        ],
-        "open_topic": [
-            ("İstersen detayını anlat.", 100),
-        ],
         "education_help": [
             ("İstersen önce en zor kısmı seçelim.", 100),
             ("Birlikte sade bir plan yapabiliriz.", 95),
+            ("Hangi dersten başlamak istersin?", 90),
+        ],
+        "study_planning": [
+            ("Bugün kaç dakika ayırabilirsin?", 100),
+            ("Önce hangi dersi bitirmek istersin?", 95),
+            ("Kısa bir plan mı, ayrıntılı plan mı istersin?", 90),
+        ],
+        "homework_help": [
+            ("Önce hangi ödev daha kısa?", 100),
+            ("İstersen ilk sorudan başlayalım.", 95),
+            ("Seni en çok zorlayan yer hangisi?", 90),
         ],
         "exam_anxiety": [
             ("Şu an seni en çok ne geriyor?", 100),
             ("Önce bunu küçük parçalara bölelim mi?", 95),
+            ("En zor gelen ders hangisi?", 90),
         ],
         "motivation_help": [
-            ("Sadece 10 dakikalık bir başlangıç yapalım mı?", 100),
+            ("Sadece 5 dakikalık bir başlangıç yapalım mı?", 100),
+            ("En kolay yerden başlamak ister misin?", 95),
+            ("Önce küçük bir hedef seçelim mi?", 90),
         ],
         "focus_help": [
             ("Dikkatini en çok ne dağıtıyor?", 100),
+            ("Önce 10 dakikalık sessiz çalışma deneyelim mi?", 95),
+            ("Telefonu biraz uzağa koymak ister misin?", 90),
+        ],
+        "request_advice": [
+            ("İstersen bunu birlikte adım adım düşünelim.", 100),
+            ("Önce en yakın problemi seçelim mi?", 95),
         ],
         "emotional_support": [
             ("İstersen önce ne olduğunu anlat.", 100),
@@ -425,6 +363,20 @@ def seed_intents():
         ],
         "reassurance_request": [
             ("İstersen birlikte nasıl düzelebileceğine bakalım.", 100),
+        ],
+        "conversation_start": [
+            ("En sevdiğin oyun nedir?", 100),
+            ("Okulda en çok hangi dersi seviyorsun?", 95),
+        ],
+        "ask_question_back": [
+            ("Bugün seni en çok ne mutlu etti?", 100),
+            ("Şu sıralar en çok neyle ilgileniyorsun?", 95),
+        ],
+        "ask_topic": [
+            ("İstersen önce sevdiğin şeylerden başlayalım.", 100),
+        ],
+        "open_topic": [
+            ("İstersen detayını anlat.", 100),
         ],
     }
 
