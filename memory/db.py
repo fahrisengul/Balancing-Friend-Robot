@@ -35,3 +35,5 @@ def init_db(db_path: Optional[Path] = None, schema_path: Optional[Path] = None) 
     with sqlite3.connect(final_db_path) as conn:
         conn.executescript(schema_sql)
         conn.commit()
+        
+    print(">>> DB PATH:", DB_PATH)
