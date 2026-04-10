@@ -6,7 +6,10 @@ from .llm_client import LLMClient
 from .persona import build_system_prompt
 from .models import BrainResult
 from .education_engine import EducationEngine
+
 from memory.memory_manager import MemoryManager
+from memory.memory_writer import MemoryWriter
+from memory.memory_retriever import MemoryRetriever
 
 
 class PoodleBrain:
@@ -17,8 +20,11 @@ class PoodleBrain:
         self.policy = ResponsePolicy()
         self.llm = LLMClient()
         self.system_prompt = build_system_prompt()
+
         self.memory = MemoryManager()
         self.education = EducationEngine()
+        self.writer = MemoryWriter(self.memory)
+        self.retriever = MemoryRetriever(self.memory)
 
         self.template_first_intents = {
             "greeting",
@@ -36,19 +42,58 @@ class PoodleBrain:
             "open_topic",
         }
 
+        self.memory_worthy_intents = {
+            "education_help",
+            "study_planning",
+            "homework_help",
+            "exam_anxiety",
+            "motivation_help",
+            "focus_help",
+            "request_advice",
+            "emotional_support",
+            "sadness_support",
+            "frustration_support",
+            "reassurance_request",
+            "ask_user_profile",
+            "share_preference",
+            "statement",
+            "question",
+        }
+
     def handle_user_input(self, text: str) -> BrainResult:
         cleaned = (text or "").strip()
         context = self.dialogue.get_context()
 
+        if not cleaned:
+            reply = "Biraz daha açık söyler misin?"
+            self.dialogue.update(cleaned, reply, "clarification_needed")
+            return BrainResult(reply_text=reply, intent="clarification_needed")
+
         intent = self.intent.detect(cleaned, context)
 
         # -------------------------------------------------
-        # Sprint 6 - Education engine first
+        # Sprint 7 foundation: memory write
         # -------------------------------------------------
-        education_reply = self.education.handle(cleaned, intent)
+        if intent in self.memory_worthy_intents:
+            try:
+                self.writer.process(cleaned)
+            except Exception as e:
+                print(f">>> [MEMORY WRITER ERROR] {e}")
+
+        # -------------------------------------------------
+        # Sprint 6: education engine first
+        # -------------------------------------------------
+        try:
+            education_reply = self.education.handle(cleaned, intent)
+        except Exception as e:
+            education_reply = None
+            print(f">>> [EDUCATION ENGINE ERROR] {e}")
+
         if education_reply:
             followup = self._get_followup(intent)
             reply = self._merge_reply_and_followup(education_reply, followup)
+            reply = self.policy.apply(reply)
+
             self.dialogue.update(cleaned, reply, intent)
             return BrainResult(reply_text=reply, intent=intent)
 
@@ -57,14 +102,17 @@ class PoodleBrain:
         # -------------------------------------------------
         shortcut = self._direct_reply(cleaned, intent)
         if shortcut:
-            self.dialogue.update(cleaned, shortcut, intent)
-            return BrainResult(reply_text=shortcut, intent=intent)
+            reply = self.policy.apply(shortcut)
+            self.dialogue.update(cleaned, reply, intent)
+            return BrainResult(reply_text=reply, intent=intent)
 
         # -------------------------------------------------
         # Template-first intents
         # -------------------------------------------------
         if intent in self.template_first_intents:
             reply = self._reply_from_template_or_fallback(intent, cleaned)
+            reply = self.policy.apply(reply)
+
             self.dialogue.update(cleaned, reply, intent)
             return BrainResult(reply_text=reply, intent=intent)
 
@@ -81,18 +129,27 @@ class PoodleBrain:
         if decision.source == "skill":
             skill_result = self.skills.handle(intent, cleaned)
             if skill_result:
-                self.dialogue.update(cleaned, skill_result, intent)
-                return BrainResult(reply_text=skill_result, intent=intent)
+                reply = self.policy.apply(skill_result)
+                self.dialogue.update(cleaned, reply, intent)
+                return BrainResult(reply_text=reply, intent=intent)
 
         if decision.source == "template":
             reply = self._reply_from_template_or_fallback(intent, cleaned)
+            reply = self.policy.apply(reply)
+
             self.dialogue.update(cleaned, reply, intent)
             return BrainResult(reply_text=reply, intent=intent)
 
         # -------------------------------------------------
-        # LLM fallback
+        # Sprint 7 foundation: retrieval-aware LLM fallback
         # -------------------------------------------------
-        prompt = self._build_prompt(cleaned, intent)
+        try:
+            memory_context = self.retriever.get_context(cleaned)
+        except Exception as e:
+            memory_context = ""
+            print(f">>> [MEMORY RETRIEVER ERROR] {e}")
+
+        prompt = self._build_prompt(cleaned, intent, memory_context)
         raw = self.llm.generate(prompt)
         answer = self.policy.apply(raw)
 
@@ -136,13 +193,13 @@ class PoodleBrain:
     # -------------------------------------------------
     # PROMPT
     # -------------------------------------------------
-    def _build_prompt(self, cleaned: str, intent: str) -> str:
+    def _build_prompt(self, cleaned: str, intent: str, memory_context: str = "") -> str:
         context_text = self.dialogue.get_recent_turns_as_text(limit=3)
         topic = self.dialogue.get_current_topic()
 
         tanem = self.memory.get_person_by_role("tanem")
 
-        memory_block = ""
+        profile_block = ""
         if tanem:
             safe_bits = []
 
@@ -158,14 +215,19 @@ class PoodleBrain:
                 safe_bits.append(f"Okul: {school}")
 
             if safe_bits:
-                memory_block = "Tanem hakkında ilgili bilgiler:\n- " + "\n- ".join(safe_bits)
+                profile_block = "Tanem hakkında ilgili bilgiler:\n- " + "\n- ".join(safe_bits)
+
+        memory_block = memory_context.strip() if memory_context else "Yok"
 
         return f"""
 {self.system_prompt}
 
+{profile_block}
+
+Hafıza:
 {memory_block}
 
-Bağlam:
+Son konuşma bağlamı:
 {context_text}
 
 Konu: {topic}
@@ -184,6 +246,7 @@ Kurallar:
 - Eğitim ve kaygı konularında somut ve kısa öneriler ver.
 - Çocuk dostu, sakin ve destekleyici ol.
 - Eğitim cevaplarında en fazla 2-3 kısa cümle kullan.
+- Hafızayı kullanırken doğal ol; ürkütücü veya aşırı detaylı konuşma.
 """.strip()
 
     # -------------------------------------------------
@@ -213,10 +276,11 @@ Kurallar:
         if not followup:
             return reply
 
-        # Liste cevabıysa follow-up'ı ayrı satıra ekleme; kısa eğitim cevabına ekle
+        # Liste cevabıysa follow-up ekleme
         if "\n" in reply:
             return reply
 
+        # Zaten uzunsa follow-up ekleme
         if len(reply.split()) > 22:
             return reply
 
@@ -248,6 +312,9 @@ Kurallar:
 
         return "Bunu biraz daha açık söyler misin?"
 
+    # -------------------------------------------------
+    # NORMALIZE
+    # -------------------------------------------------
     def _normalize(self, text: str) -> str:
         t = (text or "").lower().strip()
         t = (
