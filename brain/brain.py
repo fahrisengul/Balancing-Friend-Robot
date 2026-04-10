@@ -43,7 +43,7 @@ class PoodleBrain:
             if skill_result:
                 self.dialogue.update(cleaned, skill_result, intent)
                 return BrainResult(reply_text=skill_result, intent=intent)
-            decision.source = "llm"
+            decision = type(decision)(source="llm")
 
         # -----------------------------------
         # TEMPLATE
@@ -52,12 +52,10 @@ class PoodleBrain:
             template = self.memory.get_template(intent_name=intent)
 
             if template:
-                # 🎯 varyasyon
                 reply = random.choice(template) if isinstance(template, list) else template
                 self.dialogue.update(cleaned, reply, intent)
                 return BrainResult(reply_text=reply, intent=intent)
 
-            # fallback
             reply = self._template_fallback(intent, cleaned)
             self.dialogue.update(cleaned, reply, intent)
             return BrainResult(reply_text=reply, intent=intent)
@@ -72,9 +70,6 @@ class PoodleBrain:
         self.dialogue.update(cleaned, answer, intent)
         return BrainResult(reply_text=answer, intent=intent)
 
-    # -------------------------------------------------
-    # PROMPT
-    # -------------------------------------------------
     def _build_prompt(self, cleaned: str) -> str:
         context_text = self.dialogue.get_recent_turns_as_text()
         topic = self.dialogue.get_current_topic()
@@ -83,7 +78,21 @@ class PoodleBrain:
 
         memory_block = ""
         if tanem:
-            memory_block = f"Tanem hakkında: {tanem}"
+            safe_bits = []
+
+            name = tanem.get("name")
+            grade = tanem.get("grade_level")
+            school = tanem.get("school_name")
+
+            if name:
+                safe_bits.append(f"Adı: {name}")
+            if grade:
+                safe_bits.append(f"Sınıf: {grade}")
+            if school:
+                safe_bits.append(f"Okul: {school}")
+
+            if safe_bits:
+                memory_block = "Tanem hakkında ilgili bilgiler:\n- " + "\n- ".join(safe_bits)
 
         return f"""
 {self.system_prompt}
@@ -97,25 +106,29 @@ Konu: {topic}
 
 Kullanıcı:
 {cleaned}
+
+Kurallar:
+- Türkçe cevap ver.
+- Kısa ve doğal konuş.
+- Gereksiz kendini tekrar etme.
+- Kullanıcı soru soruyorsa doğrudan cevap ver.
+- Kullanıcı seni onu tanımaya davet ediyorsa kısa ve doğal bir soru sor.
+- Konu önerisi istiyorsa 2-3 uygun seçenek sun.
+- Eğitim veya endişe sorularında somut ve kısa öneriler ver.
 """.strip()
 
-    # -------------------------------------------------
-    # TEMPLATE FALLBACK (SMART)
-    # -------------------------------------------------
     def _template_fallback(self, intent: str, text: str) -> str:
-        t = (text or "").lower()
-
         if intent == "conversation_start":
             return "Seni tanımak isterim. Bana biraz kendinden bahseder misin?"
 
         if intent == "ask_question_back":
-            return "Sana bir soru sorayım: bugün seni en çok ne zorladı?"
+            return "Sana bir soru sorayım: bugün seni en çok ne mutlu etti?"
 
         if intent == "ask_topic":
             return "İstersen oyunlar, okul ya da arkadaşlar hakkında konuşabiliriz."
 
         if intent == "open_topic":
-            return "Bugün okulda nasıldı? İlginç bir şey oldu mu?"
+            return "Bugün nasıl geçti? İstersen oradan başlayabiliriz."
 
         if intent == "statement":
             return "Anladım. Devam etmek ister misin?"
@@ -123,4 +136,4 @@ Kullanıcı:
         if intent == "farewell":
             return "Görüşürüz."
 
-        return "Anladım."
+        return "Bunu biraz daha açık söyler misin?"
