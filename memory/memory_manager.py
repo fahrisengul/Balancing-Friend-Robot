@@ -5,9 +5,6 @@ from .db import get_connection
 
 class MemoryManager:
 
-    # -------------------------------------------------
-    # TEMPLATE GET
-    # -------------------------------------------------
     def get_template(self, intent_name: str, lang: str = "tr") -> Optional[str]:
         with get_connection() as conn:
             rows = conn.execute(
@@ -29,9 +26,6 @@ class MemoryManager:
 
         return random.choice(templates)
 
-    # -------------------------------------------------
-    # PERSON GET
-    # -------------------------------------------------
     def get_person_by_role(self, role: str):
         with get_connection() as conn:
             row = conn.execute(
@@ -52,9 +46,6 @@ class MemoryManager:
             "data": row["data"]
         }
 
-    # -------------------------------------------------
-    # TEMPLATE ADD (seed için)
-    # -------------------------------------------------
     def add_template(self, intent_name: str, template_text: str, lang: str = "tr"):
         with get_connection() as conn:
             conn.execute(
