@@ -24,8 +24,6 @@ class MemoryManager:
 
         templates = [r["template_text"] for r in rows]
 
-        return random.choice(templates)
-
     def get_person_by_role(self, role: str):
         with get_connection() as conn:
             row = conn.execute(
