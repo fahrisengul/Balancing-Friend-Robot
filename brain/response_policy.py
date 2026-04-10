@@ -23,6 +23,17 @@ class ResponsePolicy:
         if not t:
             return Decision("clarify", "Seni tam anlayamadım. Tekrar söyler misin?")
 
+        # 🚨 CRITICAL FIX: conversational intents
+        conversational_intents = {
+            "conversation_start",
+            "ask_question_back",
+            "ask_topic",
+            "open_topic",
+        }
+
+        if intent in conversational_intents:
+            return Decision("template")
+
         if intent in {"low_confidence", "clarification_needed"}:
             return Decision("clarify", "Galiba tam duyamadım. Daha net söyler misin?")
 
@@ -49,70 +60,39 @@ class ResponsePolicy:
         }:
             return Decision("skill")
 
-        if intent in {
-            "question",
-            "ask_activity",
-            "education_help",
-            "emotional_support",
-            "general",
-            "statement",
-        }:
-            return Decision("llm")
-
-        return Decision("clarify", "Bunu tam anlayamadım. Biraz daha açık söyler misin?")
+        # 🎯 geri kalan → LLM
+        return Decision("llm")
 
     def apply(self, raw: str) -> str:
         if not raw:
-            return "Bunu biraz daha açık söyler misin?"
+            return "Biraz daha açık söyler misin?"
 
         text = " ".join(raw.strip().split())
         lowered = text.lower()
 
-        hard_reject_patterns = [
-            "ahaha",
-            "hehe",
-            "ooh",
-            "oh dear",
-            "hello",
-            "how are you",
-            "nice to meet you",
-            "i'm doing well",
-            "i am",
-            "kullanıcı:",
-            "system prompt",
-            "robotun adı poodle",
-            "robotun adi poodle",
-            "kısa doğal diyalog",
+        # ❌ prompt leak filtre
+        bad_patterns = [
             "kisa dogal diyalog",
+            "robotun adı poodle",
+            "system prompt",
         ]
-        if any(p in lowered for p in hard_reject_patterns):
-            return "Bunu daha sade söyleyeyim: biraz daha açık anlatır mısın?"
 
-        leak_fragments = [
-            "2013 yılında doğduğu",
-            "ana kullanıcı profili",
-            "okul çağındadır",
-            "tanem ile konuşmaya hazırım",
-            "tanem'le konuşmaya hazırım",
-            "tanem ile çok keyifli sohbet etmek isterim",
-            "tanem'le birlikte sohbet etmeye hazırım",
-        ]
-        for frag in leak_fragments:
-            text = text.replace(frag, "").replace(frag.capitalize(), "")
+        if any(p in lowered for p in bad_patterns):
+            return "Seni duydum. Biraz daha net anlatır mısın?"
 
-        text = " ".join(text.split())
+        # ❌ İngilizce kaçak
+        if any(word in lowered for word in ["hello", "hi ", "how are you", "i am"]):
+            return "Türkçe devam edelim. Ne demek istediğini biraz açar mısın?"
 
-        english_markers = ["hello", "how are you", "nice to meet you", "what's new", "today?"]
-        if any(m in lowered for m in english_markers):
-            return "Türkçe devam edelim. Ne demek istediğini biraz daha açık söyler misin?"
-
-        sentences = [s.strip() for s in text.split(".") if s.strip()]
-        if len(sentences) > 2:
-            text = ". ".join(sentences[:2]).strip()
+        # ❌ çok uzun kes
+        parts = [p.strip() for p in text.split(".") if p.strip()]
+        if len(parts) > 2:
+            text = ". ".join(parts[:2]).strip()
             if not text.endswith("."):
                 text += "."
 
+        # ❌ çok kısa
         if len(text) < 3:
-            return "Bunu biraz daha açık söyler misin?"
+            return "Biraz daha açık söyler misin?"
 
         return text
