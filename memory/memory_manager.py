@@ -207,3 +207,47 @@ class MemoryManager:
                 (person_id, memory_text, category, importance, tags_json),
             )
             conn.commit()
+    # memory_manager.py içine ekle
+
+def add_episodic_memory(self, content, tag, importance, timestamp):
+    with self._connect() as conn:
+        conn.execute("""
+            INSERT INTO episodic_memories (content, tag, importance, timestamp)
+            VALUES (?, ?, ?, ?)
+        """, (content, tag, importance, timestamp))
+
+
+def get_recent_memories(self, limit=5):
+    with self._connect() as conn:
+        cursor = conn.execute("""
+            SELECT content FROM episodic_memories
+            ORDER BY timestamp DESC
+            LIMIT ?
+        """, (limit,))
+        return [{"content": row[0]} for row in cursor.fetchall()]
+
+
+def search_memories_by_keyword(self, keyword, limit=5):
+    with self._connect() as conn:
+        cursor = conn.execute("""
+            SELECT content FROM episodic_memories
+            WHERE content LIKE ?
+            ORDER BY importance DESC
+            LIMIT ?
+        """, (f"%{keyword}%", limit))
+        return [{"content": row[0]} for row in cursor.fetchall()]
+
+
+def get_person_profile(self):
+    with self._connect() as conn:
+        cursor = conn.execute("SELECT key, value FROM person_profiles")
+        return {row[0]: row[1] for row in cursor.fetchall()}
+
+
+def update_person_profile(self, key, value):
+    with self._connect() as conn:
+        conn.execute("""
+            INSERT INTO person_profiles (key, value)
+            VALUES (?, ?)
+            ON CONFLICT(key) DO UPDATE SET value=excluded.value
+        """, (key, value))
