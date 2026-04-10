@@ -10,7 +10,7 @@ from memory.memory_manager import MemoryManager
 
 class PoodleBrain:
     def __init__(self):
-        self.intent = IntentRouter()
+        self.intent_router = IntentRouter()
         self.dialogue = DialogueManager()
         self.skills = SkillHandlers()
         self.policy = ResponsePolicy()
@@ -20,40 +20,58 @@ class PoodleBrain:
 
     def handle_user_input(self, text: str) -> BrainResult:
         cleaned = (text or "").strip()
-        context = self.dialogue.get_context()
 
-        intent = self.intent.detect(cleaned, context)
+        if not cleaned:
+            reply = "Seni tam anlayamadım. Tekrar söyler misin?"
+            self.dialogue.update(cleaned, reply, "clarification_needed")
+            return BrainResult(reply_text=reply, intent="clarification_needed")
+
+        # 1) intent
+        intent = self.intent_router.detect(cleaned)
+
+        # 2) policy
         decision = self.policy.choose_source(cleaned, intent)
 
+        # 3) clarify
         if decision.source == "clarify":
             reply = decision.clarify_text or "Bunu biraz daha açık söyler misin?"
             self.dialogue.update(cleaned, reply, intent)
             return BrainResult(reply_text=reply, intent=intent)
 
+        # 4) deterministic skill
         if decision.source == "skill":
             skill_result = self.skills.handle(intent, cleaned)
             if skill_result:
                 self.dialogue.update(cleaned, skill_result, intent)
                 return BrainResult(reply_text=skill_result, intent=intent)
+
+            # skill başarısızsa LLM fallback
             decision.source = "llm"
 
+        # 5) template + optional followup
         if decision.source == "template":
             template = self.memory.get_template(intent_name=intent)
 
             if template:
-                self.dialogue.update(cleaned, template, intent)
-                return BrainResult(reply_text=template, intent=intent)
+                followup = self.memory.get_followup(intent_name=intent)
+                reply = f"{template} {followup}".strip() if followup else template
+                reply = self.policy.apply(reply)
 
+                self.dialogue.update(cleaned, reply, intent)
+                return BrainResult(reply_text=reply, intent=intent)
+
+            # template yoksa LLM'e düş
             decision.source = "llm"
 
-        prompt = self._build_prompt(cleaned)
+        # 6) LLM
+        prompt = self._build_prompt(cleaned, intent)
         raw = self.llm.generate(prompt)
         answer = self.policy.apply(raw)
 
         self.dialogue.update(cleaned, answer, intent)
         return BrainResult(reply_text=answer, intent=intent)
 
-    def _build_prompt(self, cleaned: str) -> str:
+    def _build_prompt(self, cleaned: str, intent: str) -> str:
         recent_turns = self.dialogue.get_recent_turns_as_text(limit=3)
         topic = self.dialogue.get_current_topic()
 
@@ -62,6 +80,7 @@ class PoodleBrain:
 
         if person:
             facts = []
+
             name = person.get("name")
             grade = person.get("grade_level")
             school = person.get("school_name")
@@ -89,18 +108,21 @@ class PoodleBrain:
 Son konuşma bağlamı:
 {recent_turns}
 
+Intent: {intent}
 {topic_line}
 
 Kullanıcı:
 {cleaned}
 
 Kurallar:
-- Doğrudan son kullanıcı cümlesine cevap ver.
-- Gereksiz giriş cümlesi kurma.
+- Kullanıcının son cümlesine doğrudan cevap ver.
 - İngilizce kullanma.
 - 1-2 kısa cümle kullan.
+- Gereksiz giriş cümlesi kurma.
 - Tanem hakkında gereksiz profil bilgisi dökme.
-- Soru sorulduysa önce soruya cevap ver.
+- Kullanıcı soru sorduysa önce soruya cevap ver.
+- Kullanıcı seni onu tanımaya davet ediyorsa, kısa ve doğal bir soru sor.
+- Eğitim veya endişe sorularında somut ve kısa öneriler ver.
 """.strip()
 
         return prompt
