@@ -118,3 +118,17 @@ class MemoryManager:
                 (person_id, memory_text, category, importance, tags_json),
             )
             conn.commit()
+
+def get_followup(self, intent_name: str):
+    with get_connection() as conn:
+        row = conn.execute("""
+            SELECT followup_text
+            FROM intent_followups
+            WHERE intent_name = ?
+            ORDER BY RANDOM()
+            LIMIT 1
+        """, (intent_name,)).fetchone()
+
+    if row:
+        return row["followup_text"]
+    return None
