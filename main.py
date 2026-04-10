@@ -1,5 +1,6 @@
 import pygame
 import sys
+import time
 
 from speech_engine import PoodleSpeech
 from brain.brain import PoodleBrain
@@ -12,10 +13,9 @@ def main():
     pygame.display.set_caption("Poodle Robot")
     clock = pygame.time.Clock()
 
-    # --- MİKROFON AYARI ---
-    # USB Mikrofonu taktığında terminalde çıkan index numarasını buraya yaz.
-    # Genelde MacBook=0, Sanal=1, USB Mikrofon=2 olur.
-    USB_MIC_INDEX = 1 
+    # --- DONANIM AYARI ---
+    # USB Mikrofonu taktığında terminalde çıkan indexi buraya yaz (Örn: 2)
+    USB_MIC_INDEX = 2 
     
     speech = PoodleSpeech(input_device_index=USB_MIC_INDEX)
     brain = PoodleBrain()
@@ -24,7 +24,6 @@ def main():
 
     orch = Orchestrator(brain, speech, face)
 
-    # Cihaz listesini teyit için yazdır
     speech.debug_list_input_devices()
     speech.start_auto_listener()
 
@@ -45,11 +44,11 @@ def main():
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                     running = False
 
-            # Olayları kuyruktan al ve orkestratöre ilet
+            # Orkestrasyon ve Etkinlik Yönetimi
             evt = speech.get_pending_event()
             orch.handle_event(evt)
 
-            # UI Güncelleme
+            # Ekran ve Karakter Güncelleme
             face.update(dt)
             face.draw(screen)
 
@@ -57,7 +56,7 @@ def main():
             clock.tick(60)
 
     finally:
-        print("\n>>> [SHUTDOWN] Poodle uykuya dalıyor...")
+        print("\n>>> [SHUTDOWN] Sistem kapatılıyor...")
         try:
             orch.stop()
         except: pass
