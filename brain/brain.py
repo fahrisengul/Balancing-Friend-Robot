@@ -56,8 +56,7 @@ class PoodleBrain:
             template = self.memory.get_template(intent)
 
             if template:
-                self.dialogue.update(cleaned, template, intent)
-                return BrainResult(reply_text=template, intent=intent)
+            return template
 
             # fallback template
             reply = self._template_fallback(intent, cleaned)
