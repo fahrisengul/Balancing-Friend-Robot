@@ -1,103 +1,33 @@
+from memory.db import get_connection
+
+
 class IntentRouter:
+    def __init__(self):
+        self.patterns = []
+        self._load_patterns()
 
-    def detect(self, text: str, context=None) -> str:
-        raw = (text or "").strip()
-        t = raw.lower()
-        normalized = self._normalize(raw)
-        context = context or {}
+    def _load_patterns(self):
+        with get_connection() as conn:
+            rows = conn.execute("""
+                SELECT intent_name, pattern_text
+                FROM intent_patterns
+            """).fetchall()
 
-        if not normalized:
-            return "clarification_needed"
+        self.patterns = [
+            (r["intent_name"], r["pattern_text"].lower())
+            for r in rows
+        ]
 
-        # FOLLOW-UP
-        followup_phrases = {
-            "neden",
-            "nasil",
-            "peki",
-            "yani",
-            "ee",
-            "ne anladin",
-            "ne demek istedin",
-            "sonra",
-        }
+        print(f">>> [INTENT ROUTER] {len(self.patterns)} pattern yüklendi.")
 
-        if normalized in followup_phrases:
-            return "followup"
+    def detect(self, text: str):
+        if not text:
+            return "fallback"
 
-        if context.get("current_topic") and len(normalized.split()) <= 2:
-            if normalized in {"peki", "tamam", "yani"}:
-                return "followup"
+        text = text.lower()
 
-        # FAREWELL
-        if any(x in normalized for x in ["gorusuruz", "görüşürüz", "bay bay", "bye"]):
-            return "farewell"
+        for intent, pattern in self.patterns:
+            if pattern in text:
+                return intent
 
-        # GREETING / STATUS
-        if ("selam" in normalized or "merhaba" in normalized) and "nasilsin" in normalized:
-            return "ask_status"
-
-        if "nasilsin" in normalized:
-            return "ask_status"
-
-        if "selam" in normalized or "merhaba" in normalized:
-            return "greeting"
-
-        # BASIC QUESTIONS
-        if "adin ne" in normalized:
-            return "ask_name"
-
-        if "kimsin" in normalized:
-            return "ask_identity"
-
-        if "ne yapiyorsun" in normalized or "neler yapiyorsun" in normalized:
-            return "ask_activity"
-
-        if "beni duyabiliyor musun" in normalized or "beni duyuyor musun" in normalized:
-            return "question"
-
-        # THANKS
-        if "tesekkur" in normalized:
-            return "thanks"
-
-        # COMMANDS
-        if any(x in normalized for x in ["sus", "dur", "sessiz ol"]):
-            return "mute"
-
-        if normalized.startswith("hey"):
-            return "wake"
-
-        # EDUCATION
-        if any(x in normalized for x in ["sinav", "ders", "matematik", "lgs"]):
-            return "education_help"
-
-        # EMOTION
-        if any(x in normalized for x in ["uzgun", "moralim bozuk", "kotu hissediyorum"]):
-            return "emotional_support"
-
-        # SHORT BUT VALID
-        words = normalized.split()
-
-        if len(words) <= 3:
-            if "nasilsin" in normalized:
-                return "ask_status"
-            if "adin ne" in normalized:
-                return "ask_name"
-            if "kimsin" in normalized:
-                return "ask_identity"
-            if normalized in {"tamam", "peki", "olur"}:
-                return "acknowledge"
-            return "general"
-
-        return "general"
-
-    def _normalize(self, text: str) -> str:
-        t = (text or "").lower().strip()
-        t = (
-            t.replace("ı", "i")
-             .replace("ğ", "g")
-             .replace("ş", "s")
-             .replace("ç", "c")
-             .replace("ö", "o")
-             .replace("ü", "u")
-        )
-        return " ".join(t.split())
+        return "fallback"
