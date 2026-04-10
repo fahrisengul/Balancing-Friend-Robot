@@ -42,33 +42,35 @@ class PoodleBrain:
 
         intent = self.intent.detect(cleaned, context)
 
-        # -----------------------------------
-        # Sprint 6: deterministic education layer
-        # -----------------------------------
+        # -------------------------------------------------
+        # Sprint 6 - Education engine first
+        # -------------------------------------------------
         education_reply = self.education.handle(cleaned, intent)
         if education_reply:
-            self.dialogue.update(cleaned, education_reply, intent)
-            return BrainResult(reply_text=education_reply, intent=intent)
+            followup = self._get_followup(intent)
+            reply = self._merge_reply_and_followup(education_reply, followup)
+            self.dialogue.update(cleaned, reply, intent)
+            return BrainResult(reply_text=reply, intent=intent)
 
-        # -----------------------------------
-        # Deterministic shortcut replies
-        # -----------------------------------
+        # -------------------------------------------------
+        # Deterministic direct replies
+        # -------------------------------------------------
         shortcut = self._direct_reply(cleaned, intent)
         if shortcut:
             self.dialogue.update(cleaned, shortcut, intent)
             return BrainResult(reply_text=shortcut, intent=intent)
 
-        # -----------------------------------
+        # -------------------------------------------------
         # Template-first intents
-        # -----------------------------------
+        # -------------------------------------------------
         if intent in self.template_first_intents:
             reply = self._reply_from_template_or_fallback(intent, cleaned)
             self.dialogue.update(cleaned, reply, intent)
             return BrainResult(reply_text=reply, intent=intent)
 
-        # -----------------------------------
+        # -------------------------------------------------
         # Policy-driven path
-        # -----------------------------------
+        # -------------------------------------------------
         decision = self.policy.choose_source(cleaned, intent)
 
         if decision.source == "clarify":
@@ -87,9 +89,9 @@ class PoodleBrain:
             self.dialogue.update(cleaned, reply, intent)
             return BrainResult(reply_text=reply, intent=intent)
 
-        # -----------------------------------
+        # -------------------------------------------------
         # LLM fallback
-        # -----------------------------------
+        # -------------------------------------------------
         prompt = self._build_prompt(cleaned, intent)
         raw = self.llm.generate(prompt)
         answer = self.policy.apply(raw)
@@ -108,7 +110,7 @@ class PoodleBrain:
 
         if intent == "ask_status":
             if "her sey yolunda" in normalized or "her şey yolunda" in cleaned.lower():
-                return "Evet, şimdilik yolunda görünüyor. Sende durum nasıl?"
+                return "Evet, genel olarak yolunda. Sende durum nasıl?"
             if "iyi misin" in normalized:
                 return "İyiyim. Sen nasılsın?"
             if "nasilsin" in normalized or "nasılsın" in cleaned.lower():
@@ -181,6 +183,7 @@ Kurallar:
 - Kullanıcı soru sorduysa önce soruya cevap ver.
 - Eğitim ve kaygı konularında somut ve kısa öneriler ver.
 - Çocuk dostu, sakin ve destekleyici ol.
+- Eğitim cevaplarında en fazla 2-3 kısa cümle kullan.
 """.strip()
 
     # -------------------------------------------------
@@ -188,7 +191,6 @@ Kurallar:
     # -------------------------------------------------
     def _reply_from_template_or_fallback(self, intent: str, text: str) -> str:
         template = self.memory.get_template(intent_name=intent)
-
         if template:
             return template
 
@@ -201,8 +203,26 @@ Kurallar:
     def _get_followup(self, intent: str):
         getter = getattr(self.memory, "get_followup", None)
         if callable(getter):
-            return getter(intent_name=intent)
+            try:
+                return getter(intent_name=intent)
+            except TypeError:
+                return getter(intent)
         return None
+
+    def _merge_reply_and_followup(self, reply: str, followup: str):
+        if not followup:
+            return reply
+
+        # Liste cevabıysa follow-up'ı ayrı satıra ekleme; kısa eğitim cevabına ekle
+        if "\n" in reply:
+            return reply
+
+        if len(reply.split()) > 22:
+            return reply
+
+        if reply.endswith((".", "!", "?")):
+            return f"{reply} {followup}"
+        return f"{reply}. {followup}"
 
     def _template_fallback(self, intent: str, text: str) -> str:
         if intent == "conversation_start":
