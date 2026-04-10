@@ -108,6 +108,69 @@ def run_all():
     seed_profiles()
     seed_templates()
 
+def seed_intents():
+    intents = [
+        ("greeting", "social", "template"),
+        ("ask_identity", "social", "template"),
+        ("ask_user_profile", "social", "hybrid"),
+        ("request_questioning", "social", "template"),
+        ("topic_suggestion", "social", "template"),
+    ]
+
+    patterns = {
+        "greeting": ["selam", "merhaba", "hey"],
+        "ask_identity": ["kimsin", "kendini tanımlar mısın"],
+        "ask_user_profile": ["benimle ilgili ne biliyorsun"],
+        "request_questioning": ["bana soru sor", "beni tanımak ister misin"],
+        "topic_suggestion": ["ne konuşalım", "konu aç"],
+    }
+
+    templates = {
+        "greeting": [
+            "Selam!",
+            "Merhaba, buradayım."
+        ],
+        "ask_identity": [
+            "Ben Poodle. Seninle konuşmak için buradayım."
+        ],
+        "request_questioning": [
+            "Seni tanımak isterim. En sevdiğin şey nedir?"
+        ],
+        "topic_suggestion": [
+            "İstersen okuldan, oyunlardan ya da hayallerinden konuşabiliriz."
+        ]
+    }
+
+    from memory.db import get_connection
+
+    with get_connection() as conn:
+        # intents
+        for name, cat, src in intents:
+            conn.execute("""
+                INSERT OR IGNORE INTO intent_definitions
+                (intent_name, category, source_preference)
+                VALUES (?, ?, ?)
+            """, (name, cat, src))
+
+        # patterns
+        for intent, plist in patterns.items():
+            for p in plist:
+                conn.execute("""
+                    INSERT INTO intent_patterns (intent_name, pattern_text)
+                    VALUES (?, ?)
+                """, (intent, p))
+
+        # templates
+        for intent, tlist in templates.items():
+            for t in tlist:
+                conn.execute("""
+                    INSERT INTO intent_templates (intent_name, template_text)
+                    VALUES (?, ?)
+                """, (intent, t))
+
+        conn.commit()
+        
+
 
 if __name__ == "__main__":
     run_all()
