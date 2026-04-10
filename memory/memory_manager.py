@@ -1,10 +1,14 @@
 import random
+import json
 from typing import Optional
 from .db import get_connection
 
 
 class MemoryManager:
 
+    # -------------------------------------------------
+    # TEMPLATE GET
+    # -------------------------------------------------
     def get_template(self, intent_name: str, lang: str = "tr") -> Optional[str]:
         with get_connection() as conn:
             rows = conn.execute(
@@ -23,10 +27,12 @@ class MemoryManager:
             return None
 
         templates = [r["template_text"] for r in rows]
-
         return random.choice(templates)
 
-       def get_person_by_role(self, role: str):
+    # -------------------------------------------------
+    # PERSON GET
+    # -------------------------------------------------
+    def get_person_by_role(self, role: str):
         with get_connection() as conn:
             row = conn.execute(
                 """
@@ -37,45 +43,70 @@ class MemoryManager:
                 """,
                 (role,),
             ).fetchone()
-    
+
         if not row:
             return None
-    
+
         return dict(row)
 
-    def add_template(self, intent_name: str, template_text: str, lang: str = "tr"):
+    # -------------------------------------------------
+    # PERSON CREATE
+    # -------------------------------------------------
+    def create_person_profile(
+        self,
+        name,
+        role,
+        birth_date=None,
+        school_name=None,
+        grade_level=None,
+        notes=None,
+    ):
         with get_connection() as conn:
             conn.execute(
                 """
-                INSERT INTO intent_templates (intent_name, template_text, lang, is_active)
-                VALUES (?, ?, ?, 1)
-                """,
-                (intent_name, template_text, lang),
-            )
-            conn.commit()
-
-    def create_person_profile(self, name, role, birth_date=None, school_name=None, grade_level=None, notes=None):
-        with get_connection() as conn:
-            conn.execute(
-                """
-                INSERT INTO person_profiles (name, role, birth_date, school_name, grade_level, notes)
+                INSERT INTO person_profiles
+                (name, role, birth_date, school_name, grade_level, notes)
                 VALUES (?, ?, ?, ?, ?, ?)
                 """,
                 (name, role, birth_date, school_name, grade_level, notes),
             )
             conn.commit()
 
-    import json
-    
-    def add_episodic_memory(self, memory_text, person_id=None, category="general", importance=1, tags=None):
+    # -------------------------------------------------
+    # MEMORY ADD
+    # -------------------------------------------------
+    def add_episodic_memory(
+        self,
+        memory_text,
+        person_id=None,
+        category="general",
+        importance=1,
+        tags=None,
+    ):
         tags_json = json.dumps(tags or [])
-    
+
         with get_connection() as conn:
             conn.execute(
                 """
-                INSERT INTO episodic_memories (person_id, memory_text, category, importance, tags_json)
+                INSERT INTO episodic_memories
+                (person_id, memory_text, category, importance, tags_json)
                 VALUES (?, ?, ?, ?, ?)
                 """,
                 (person_id, memory_text, category, importance, tags_json),
+            )
+            conn.commit()
+
+    # -------------------------------------------------
+    # TEMPLATE ADD
+    # -------------------------------------------------
+    def add_template(self, intent_name: str, template_text: str, lang: str = "tr"):
+        with get_connection() as conn:
+            conn.execute(
+                """
+                INSERT INTO intent_templates
+                (intent_name, template_text, lang, is_active)
+                VALUES (?, ?, ?, 1)
+                """,
+                (intent_name, template_text, lang),
             )
             conn.commit()
