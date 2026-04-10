@@ -53,7 +53,7 @@ LLM merkezli değil,
 
 ## ⚙️ Donanım Hedefi
 
-- Raspberry Pi 5 (8GB önerilir)
+- Raspberry Pi 5 (16 GB)
 - Hailo AI Accelerator (13 TOPS)
 - Pi Camera
 - USB Mikrofon + Hoparlör
@@ -108,8 +108,6 @@ LLM merkezli değil,
 - Basic conversational loop çalışıyor
 - Quality gate aktif
 - Brain refactor süreci başladı
-
----
 
 ## 📎 Not
 
