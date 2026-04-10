@@ -22,100 +22,85 @@ class PoodleBrain:
         cleaned = (text or "").strip()
         context = self.dialogue.get_context()
 
-        # 1. intent
         intent = self.intent.detect(cleaned, context)
-
-        # 2. decision
         decision = self.policy.choose_source(cleaned, intent)
 
-        # -------------------------------------------------
-        # CLARIFY
-        # -------------------------------------------------
         if decision.source == "clarify":
-            reply = decision.clarify_text
+            reply = decision.clarify_text or "Bunu biraz daha açık söyler misin?"
             self.dialogue.update(cleaned, reply, intent)
             return BrainResult(reply_text=reply, intent=intent)
 
-        # -------------------------------------------------
-        # SKILL
-        # -------------------------------------------------
         if decision.source == "skill":
             skill_result = self.skills.handle(intent, cleaned)
             if skill_result:
                 self.dialogue.update(cleaned, skill_result, intent)
                 return BrainResult(reply_text=skill_result, intent=intent)
+            decision.source = "llm"
 
-        # -------------------------------------------------
-        # TEMPLATE
-        # -------------------------------------------------
         if decision.source == "template":
-            template = self.memory.get_template(intent)
+            template = self.memory.get_template(intent_name=intent)
 
             if template:
                 self.dialogue.update(cleaned, template, intent)
                 return BrainResult(reply_text=template, intent=intent)
 
-            # fallback
-            reply = self._template_fallback(intent, cleaned)
-            self.dialogue.update(cleaned, reply, intent)
-            return BrainResult(reply_text=reply, intent=intent)
+            decision.source = "llm"
 
-        # -------------------------------------------------
-        # LLM
-        # -------------------------------------------------
         prompt = self._build_prompt(cleaned)
-
         raw = self.llm.generate(prompt)
         answer = self.policy.apply(raw)
 
         self.dialogue.update(cleaned, answer, intent)
         return BrainResult(reply_text=answer, intent=intent)
 
-    # -------------------------------------------------
-    # PROMPT
-    # -------------------------------------------------
     def _build_prompt(self, cleaned: str) -> str:
-        context_text = self.dialogue.get_recent_turns_as_text()
+        recent_turns = self.dialogue.get_recent_turns_as_text(limit=3)
         topic = self.dialogue.get_current_topic()
 
-        memory_block = ""
-        tanem = self.memory.get_person_by_role("tanem")
+        person = self.memory.get_person_by_role("tanem")
+        person_block = ""
 
-        if tanem:
-            memory_block = f"Tanem hakkında bildiklerin: {tanem}"
+        if person:
+            facts = []
+            name = person.get("name")
+            grade = person.get("grade_level")
+            school = person.get("school_name")
+            notes = person.get("notes")
+
+            if name:
+                facts.append(f"Adı: {name}")
+            if grade:
+                facts.append(f"Sınıf: {grade}")
+            if school:
+                facts.append(f"Okul: {school}")
+            if notes:
+                facts.append(f"Not: {notes}")
+
+            if facts:
+                person_block = "Tanem hakkında ilgili bilgiler:\n- " + "\n- ".join(facts)
+
+        topic_line = f"Konu: {topic}" if topic else "Konu: belirsiz"
 
         prompt = f"""
 {self.system_prompt}
 
-{memory_block}
+{person_block}
 
-Konuşma bağlamı:
-{context_text}
+Son konuşma bağlamı:
+{recent_turns}
 
-Konu: {topic}
+{topic_line}
 
 Kullanıcı:
 {cleaned}
+
+Kurallar:
+- Doğrudan son kullanıcı cümlesine cevap ver.
+- Gereksiz giriş cümlesi kurma.
+- İngilizce kullanma.
+- 1-2 kısa cümle kullan.
+- Tanem hakkında gereksiz profil bilgisi dökme.
+- Soru sorulduysa önce soruya cevap ver.
 """.strip()
 
         return prompt
-
-    # -------------------------------------------------
-    # TEMPLATE FALLBACK
-    # -------------------------------------------------
-    def _template_fallback(self, intent: str, text: str) -> str:
-        t = (text or "").lower()
-
-        if intent == "acknowledge":
-            return "Tamam."
-
-        if intent == "followup":
-            return "Bunu biraz daha açar mısın?"
-
-        if intent == "statement":
-            return "Anladım. Devam etmek ister misin?"
-
-        if intent == "farewell":
-            return "Görüşürüz."
-
-        return "Anladım."
