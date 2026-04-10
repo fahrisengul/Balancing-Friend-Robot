@@ -9,9 +9,7 @@ class IntentRouter:
         if not normalized:
             return "clarification_needed"
 
-        # -----------------------------------------------------
-        # FOLLOW-UP (çok kritik fix)
-        # -----------------------------------------------------
+        # FOLLOW-UP
         followup_phrases = {
             "neden",
             "nasil",
@@ -30,15 +28,11 @@ class IntentRouter:
             if normalized in {"peki", "tamam", "yani"}:
                 return "followup"
 
-        # -----------------------------------------------------
-        # FAREWELL (eksikti → kritik)
-        # -----------------------------------------------------
+        # FAREWELL
         if any(x in normalized for x in ["gorusuruz", "görüşürüz", "bay bay", "bye"]):
             return "farewell"
 
-        # -----------------------------------------------------
         # GREETING / STATUS
-        # -----------------------------------------------------
         if ("selam" in normalized or "merhaba" in normalized) and "nasilsin" in normalized:
             return "ask_status"
 
@@ -48,9 +42,7 @@ class IntentRouter:
         if "selam" in normalized or "merhaba" in normalized:
             return "greeting"
 
-        # -----------------------------------------------------
         # BASIC QUESTIONS
-        # -----------------------------------------------------
         if "adin ne" in normalized:
             return "ask_name"
 
@@ -60,36 +52,29 @@ class IntentRouter:
         if "ne yapiyorsun" in normalized or "neler yapiyorsun" in normalized:
             return "ask_activity"
 
-        # -----------------------------------------------------
+        if "beni duyabiliyor musun" in normalized or "beni duyuyor musun" in normalized:
+            return "question"
+
         # THANKS
-        # -----------------------------------------------------
         if "tesekkur" in normalized:
             return "thanks"
 
-        # -----------------------------------------------------
         # COMMANDS
-        # -----------------------------------------------------
         if any(x in normalized for x in ["sus", "dur", "sessiz ol"]):
             return "mute"
 
         if normalized.startswith("hey"):
             return "wake"
 
-        # -----------------------------------------------------
         # EDUCATION
-        # -----------------------------------------------------
         if any(x in normalized for x in ["sinav", "ders", "matematik", "lgs"]):
             return "education_help"
 
-        # -----------------------------------------------------
         # EMOTION
-        # -----------------------------------------------------
         if any(x in normalized for x in ["uzgun", "moralim bozuk", "kotu hissediyorum"]):
             return "emotional_support"
 
-        # -----------------------------------------------------
-        # SHORT BUT VALID (kritik fix)
-        # -----------------------------------------------------
+        # SHORT BUT VALID
         words = normalized.split()
 
         if len(words) <= 3:
@@ -101,8 +86,6 @@ class IntentRouter:
                 return "ask_identity"
             if normalized in {"tamam", "peki", "olur"}:
                 return "acknowledge"
-
-            # artık direkt low_confidence demiyoruz
             return "general"
 
         return "general"
