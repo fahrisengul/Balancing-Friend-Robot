@@ -54,11 +54,12 @@ class PoodleBrain:
         # -------------------------------------------------
         if decision.source == "template":
             template = self.memory.get_template(intent)
-
+        
             if template:
-            return template
-
-            # fallback template
+                self.dialogue.update(cleaned, template, intent)
+                return BrainResult(reply_text=template, intent=intent)
+        
+            # fallback
             reply = self._template_fallback(intent, cleaned)
             self.dialogue.update(cleaned, reply, intent)
             return BrainResult(reply_text=reply, intent=intent)
