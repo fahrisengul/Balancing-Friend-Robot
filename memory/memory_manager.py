@@ -26,25 +26,22 @@ class MemoryManager:
 
         return random.choice(templates)
 
-    def get_person_by_role(self, role: str):
+       def get_person_by_role(self, role: str):
         with get_connection() as conn:
             row = conn.execute(
                 """
-                SELECT name, data
-                FROM persons
+                SELECT id, name, role, birth_date, school_name, grade_level, notes
+                FROM person_profiles
                 WHERE role = ?
                 LIMIT 1
                 """,
                 (role,),
             ).fetchone()
-
+    
         if not row:
             return None
-
-        return {
-            "name": row["name"],
-            "data": row["data"]
-        }
+    
+        return dict(row)
 
     def add_template(self, intent_name: str, template_text: str, lang: str = "tr"):
         with get_connection() as conn:
