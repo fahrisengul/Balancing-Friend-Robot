@@ -14,7 +14,7 @@ def main():
     clock = pygame.time.Clock()
 
     # Jabra SPEAK 510 USB = #0
-    speech = PoodleSpeech(input_device_index=0)
+    speech = PoodleSpeech(input_device_index=1)
     brain = PoodleBrain()
     face = PoodleCharacter(1024, 600)
     face.bind_audio_source(speech)
