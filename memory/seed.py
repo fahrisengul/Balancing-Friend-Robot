@@ -106,6 +106,7 @@ def _insert_template_if_missing(
 def run_all():
     init_db()
     seed_profiles()
+    seed_intents()
     seed_templates()
 
 def seed_intents():
