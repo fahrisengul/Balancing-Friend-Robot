@@ -6,25 +6,29 @@ from brain.brain import PoodleBrain
 from character_ui import PoodleCharacter
 from orchestrator import Orchestrator
 
-
 def main():
     pygame.init()
     screen = pygame.display.set_mode((1024, 600))
     pygame.display.set_caption("Poodle Robot")
     clock = pygame.time.Clock()
 
-    # Jabra SPEAK 510 USB = #0
-    speech = PoodleSpeech(input_device_index=1)
+    # --- MİKROFON AYARI ---
+    # USB Mikrofonu taktığında terminalde çıkan index numarasını buraya yaz.
+    # Genelde MacBook=0, Sanal=1, USB Mikrofon=2 olur.
+    USB_MIC_INDEX = 1 
+    
+    speech = PoodleSpeech(input_device_index=USB_MIC_INDEX)
     brain = PoodleBrain()
     face = PoodleCharacter(1024, 600)
     face.bind_audio_source(speech)
 
     orch = Orchestrator(brain, speech, face)
 
+    # Cihaz listesini teyit için yazdır
     speech.debug_list_input_devices()
     speech.start_auto_listener()
 
-    print("\n--- Poodle Aktif ---\n")
+    print("\n--- Poodle Aktif (USB Mode) ---\n")
 
     running = True
     last_ticks = pygame.time.get_ticks()
@@ -38,13 +42,14 @@ def main():
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
-
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                     running = False
 
+            # Olayları kuyruktan al ve orkestratöre ilet
             evt = speech.get_pending_event()
             orch.handle_event(evt)
 
+            # UI Güncelleme
             face.update(dt)
             face.draw(screen)
 
@@ -52,21 +57,17 @@ def main():
             clock.tick(60)
 
     finally:
-        print(">>> [SHUTDOWN] Sistem kapatılıyor...")
-
+        print("\n>>> [SHUTDOWN] Poodle uykuya dalıyor...")
         try:
             orch.stop()
-        except Exception:
-            pass
-
+        except: pass
+        
         try:
             speech.stop_auto_listener()
-        except Exception as e:
-            print(f">>> [SHUTDOWN ERROR - SPEECH] {e}")
+        except: pass
 
         pygame.quit()
         sys.exit()
-
 
 if __name__ == "__main__":
     main()
