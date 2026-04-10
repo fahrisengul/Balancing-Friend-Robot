@@ -53,3 +53,29 @@ class MemoryManager:
                 (intent_name, template_text, lang),
             )
             conn.commit()
+
+    def create_person_profile(self, name, role, birth_date=None, school_name=None, grade_level=None, notes=None):
+        with get_connection() as conn:
+            conn.execute(
+                """
+                INSERT INTO person_profiles (name, role, birth_date, school_name, grade_level, notes)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (name, role, birth_date, school_name, grade_level, notes),
+            )
+            conn.commit()
+
+    import json
+    
+    def add_episodic_memory(self, memory_text, person_id=None, category="general", importance=1, tags=None):
+        tags_json = json.dumps(tags or [])
+    
+        with get_connection() as conn:
+            conn.execute(
+                """
+                INSERT INTO episodic_memories (person_id, memory_text, category, importance, tags_json)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (person_id, memory_text, category, importance, tags_json),
+            )
+            conn.commit()
