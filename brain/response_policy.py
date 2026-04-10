@@ -1,34 +1,34 @@
-from dataclasses import dataclass
-from typing import Optional
+import random
 
 
-@dataclass
-class Decision:
-    source: str
-    clarify_text: Optional[str] = None
+class PolicyDecision:
+    def __init__(self, source: str, clarify_text: str = None):
+        self.source = source  # "template" | "skill" | "llm" | "clarify"
+        self.clarify_text = clarify_text
 
 
 class ResponsePolicy:
+    def __init__(self):
+        self.last_reply = None
 
-    def choose_source(self, text: str, intent: str) -> Decision:
-        t = (text or "").strip().lower()
+    # -------------------------------------------------
+    # SOURCE SELECTION
+    # -------------------------------------------------
+    def choose_source(self, text: str, intent: str) -> PolicyDecision:
+        t = (text or "").lower().strip()
 
-        if not t:
-            return Decision("clarify", "Seni tam anlayamadım. Tekrar söyler misin?")
+        # -----------------------------------
+        # 1. CRITICAL: boş / anlamsız giriş
+        # -----------------------------------
+        if not t or len(t) < 2:
+            return PolicyDecision(
+                "clarify",
+                "Biraz daha açık söyler misin?"
+            )
 
-        conversational_intents = {
-            "conversation_start",
-            "ask_question_back",
-            "ask_topic",
-            "open_topic",
-        }
-
-        if intent in conversational_intents:
-            return Decision("template")
-
-        if intent in {"low_confidence", "clarification_needed"}:
-            return Decision("clarify", "Tam duyamadım. Bir daha söyler misin?")
-
+        # -----------------------------------
+        # 2. SOCIAL / FAST PATH (template)
+        # -----------------------------------
         if intent in {
             "greeting",
             "farewell",
@@ -37,69 +37,112 @@ class ResponsePolicy:
             "ask_status",
             "thanks",
             "acknowledge",
-            "followup",
+            "conversation_start",
+            "ask_question_back",
+            "ask_topic",
+            "open_topic",
         }:
-            return Decision("template")
+            return PolicyDecision("template")
 
+        # -----------------------------------
+        # 3. EDUCATION / SKILL
+        # -----------------------------------
         if intent in {
-            "ask_birthdate",
-            "ask_age",
-            "ask_day_date",
-            "ask_time",
+            "exam_anxiety",
+            "request_advice",
         }:
-            return Decision("skill")
+            return PolicyDecision("skill")
 
-        return Decision("llm")
+        # -----------------------------------
+        # 4. CONFUSION / REPAIR
+        # -----------------------------------
+        if intent in {
+            "clarification_needed",
+            "followup_repair",
+        }:
+            return PolicyDecision(
+                "clarify",
+                self._repair_phrase()
+            )
+
+        # -----------------------------------
+        # 5. DEFAULT → LLM
+        # -----------------------------------
+        return PolicyDecision("llm")
 
     # -------------------------------------------------
-    # 🔥 DOĞALLIK MOTORU
+    # FINAL RESPONSE POST-PROCESS
     # -------------------------------------------------
     def apply(self, raw: str) -> str:
         if not raw:
-            return "Biraz daha açık söyler misin?"
+            return self._repair_phrase()
 
-        text = " ".join(raw.strip().split())
+        text = raw.strip()
 
-        # ❌ İngilizce temizle
-        bad_english = ["hello", "hi ", "how are you", "i am"]
-        if any(b in text.lower() for b in bad_english):
-            return "Türkçe devam edelim. Ne demek istedin?"
+        # -----------------------------------
+        # 1. LENGTH CONTROL (çok uzunsa kes)
+        # -----------------------------------
+        sentences = self._split_sentences(text)
 
-        # ❌ gereksiz girişleri sil
-        starters = [
-            "selam!",
-            "merhaba!",
-            "selam",
-            "merhaba",
-            "ben poodle",
-            "ben de",
-        ]
+        if len(sentences) > 3:
+            sentences = sentences[:3]
 
-        lower = text.lower()
-        for s in starters:
-            if lower.startswith(s):
-                text = text[len(s):].strip().capitalize()
+        text = " ".join(sentences).strip()
 
-        # ❌ robotik ifadeleri temizle
-        replacements = {
-            "gibi görünüyor": "",
-            "gibi hissediyorum": "",
-            "şu an": "",
-        }
+        # -----------------------------------
+        # 2. REPETITION GUARD
+        # -----------------------------------
+        if self.last_reply and self._is_similar(text, self.last_reply):
+            text = self._diversify(text)
 
-        for k, v in replacements.items():
-            text = text.replace(k, v)
-
-        # ❌ fazla uzun cevap kır
-        parts = [p.strip() for p in text.split(".") if p.strip()]
-        if len(parts) > 2:
-            text = ". ".join(parts[:2])
-
-        # ❌ boşluk düzelt
-        text = text.strip()
-
-        # ❌ çok kısa fallback
-        if len(text) < 3:
-            return "Biraz açar mısın?"
+        self.last_reply = text
 
         return text
+
+    # -------------------------------------------------
+    # CHILD-SAFE PHRASES
+    # -------------------------------------------------
+    def _repair_phrase(self):
+        return random.choice([
+            "Tam anlayamadım. Biraz daha açık söyler misin?",
+            "Bunu biraz daha net anlatabilir misin?",
+            "Biraz daha açarsan daha iyi yardımcı olabilirim."
+        ])
+
+    def _diversify(self, text):
+        return random.choice([
+            "Bunu farklı bir şekilde söyleyeyim.",
+            "Şöyle düşünebiliriz.",
+            "Başka bir açıdan bakalım."
+        ])
+
+    # -------------------------------------------------
+    # HELPERS
+    # -------------------------------------------------
+    def _split_sentences(self, text):
+        parts = []
+        current = ""
+
+        for ch in text:
+            current += ch
+            if ch in ".!?":
+                parts.append(current.strip())
+                current = ""
+
+        if current:
+            parts.append(current.strip())
+
+        return parts
+
+    def _is_similar(self, a: str, b: str) -> bool:
+        a = a.lower()
+        b = b.lower()
+
+        if a == b:
+            return True
+
+        # basit similarity
+        common = set(a.split()) & set(b.split())
+        ratio = len(common) / max(len(a.split()), 1)
+
+        return ratio > 0.7
