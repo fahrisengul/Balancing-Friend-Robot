@@ -23,11 +23,11 @@ class ResponsePolicy:
         if not t:
             return Decision("clarify", "Seni tam anlayamadım. Tekrar söyler misin?")
 
-        # düşük güvenli / bozuk / anlamsız giriş
+        # düşük kalite
         if intent in {"low_confidence", "clarification_needed"}:
             return Decision("clarify", "Galiba tam duyamadım. Daha net söyler misin?")
 
-        # kısa deterministic sosyal cevaplar
+        # deterministic sosyal cevaplar
         if intent in {
             "greeting",
             "farewell",
@@ -36,11 +36,12 @@ class ResponsePolicy:
             "ask_status",
             "thanks",
             "acknowledge",
+            "followup",
             "followup_repair",
         }:
             return Decision("template")
 
-        # saat / tarih / yaş / doğum günü gibi deterministic skill'ler
+        # deterministic skill
         if intent in {
             "ask_birthdate",
             "ask_age",
@@ -51,15 +52,21 @@ class ResponsePolicy:
         }:
             return Decision("skill")
 
-        # gerçek soru → LLM
-        if intent in {"question", "ask_activity", "education_help", "emotional_support", "general"}:
+        # gerçek soru
+        if intent in {
+            "question",
+            "ask_activity",
+            "education_help",
+            "emotional_support",
+            "general",
+        }:
             return Decision("llm")
 
-        # statement'lar için kısa template
+        # statement → kısa ama daha akıllı template
         if intent == "statement":
             return Decision("template")
 
-        return Decision("clarify", "Bunu tam çıkaramadım. Biraz daha açık söyler misin?")
+        return Decision("clarify", "Bunu tam anlayamadım. Biraz daha açık söyler misin?")
 
     def apply(self, raw: str) -> str:
         if not raw:
@@ -67,27 +74,34 @@ class ResponsePolicy:
 
         text = " ".join(raw.strip().split())
 
-        # prompt leakage / persona drift temizliği
-        bad_markers = [
-            "ahaha", "hehe", "ooh", "oh dear", "hello",
+        lowered = text.lower()
+
+        # ❌ persona drift temizliği
+        bad_patterns = [
+            "ahaha", "hehe", "ooh", "oh dear",
+            "hello", "i am",
             "ben poodle", "masaustu robot", "masaüstü robot",
             "kullanici:", "kullanıcı:", "system prompt",
-            "robotun adi poodle", "robotun adı poodle",
+            "robotun adi", "robotun adı",
             "kisa dogal diyalog", "kısa doğal diyalog"
         ]
-        lowered = text.lower()
-        if any(m in lowered for m in bad_markers):
-            return "Bunu daha sade söyleyeyim: seni duydum. Biraz daha açık anlatır mısın?"
 
-        # çok uzun cevapları kısalt
+        if any(p in lowered for p in bad_patterns):
+            return "Seni duydum. Biraz daha net anlatır mısın?"
+
+        # ❌ İngilizce kaçakları kes
+        if any(word in lowered for word in ["hello", "hi ", "how are you", "i am"]):
+            return "Türkçe devam edelim. Ne demek istediğini biraz açar mısın?"
+
+        # ❌ aşırı uzunluk kes
         parts = [p.strip() for p in text.split(".") if p.strip()]
         if len(parts) > 2:
             text = ". ".join(parts[:2]).strip()
             if not text.endswith("."):
                 text += "."
 
-        # son güvenlik
-        if len(text) < 2:
+        # ❌ anlamsız kısa
+        if len(text) < 3:
             return "Biraz daha açık söyler misin?"
 
         return text
