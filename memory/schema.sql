@@ -89,3 +89,41 @@ ON conversation_logs(intent);
 
 CREATE INDEX IF NOT EXISTS idx_conversation_logs_response_source
 ON conversation_logs(response_source);
+
+-- INTENT DEFINITIONS
+CREATE TABLE IF NOT EXISTS intent_definitions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    intent_name TEXT UNIQUE,
+    category TEXT,
+    source_preference TEXT, -- template / llm / hybrid
+    priority INTEGER DEFAULT 0,
+    is_active INTEGER DEFAULT 1
+);
+
+-- INTENT PATTERNS
+CREATE TABLE IF NOT EXISTS intent_patterns (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    intent_name TEXT,
+    pattern_text TEXT,
+    match_type TEXT DEFAULT 'contains', -- contains / exact
+    lang TEXT DEFAULT 'tr',
+    priority INTEGER DEFAULT 0
+);
+
+-- INTENT TEMPLATES (senin mevcut tabloya uyumlu)
+CREATE TABLE IF NOT EXISTS intent_templates (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    intent_name TEXT,
+    template_text TEXT,
+    lang TEXT DEFAULT 'tr',
+    priority INTEGER DEFAULT 0,
+    is_active INTEGER DEFAULT 1
+);
+
+-- FOLLOW-UP SUGGESTIONS
+CREATE TABLE IF NOT EXISTS intent_followups (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    intent_name TEXT,
+    followup_text TEXT,
+    priority INTEGER DEFAULT 0
+);
