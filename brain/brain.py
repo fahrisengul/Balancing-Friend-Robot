@@ -18,18 +18,14 @@ class PoodleBrain:
         self.system_prompt = build_system_prompt()
         self.memory = MemoryManager()
 
-    # -------------------------------------------------
-    # MAIN ENTRY
-    # -------------------------------------------------
     def handle_user_input(self, text: str) -> BrainResult:
         cleaned = (text or "").strip()
-
         context = self.dialogue.get_context()
 
         # 1. intent
         intent = self.intent.detect(cleaned, context)
 
-        # 2. policy
+        # 2. decision
         decision = self.policy.choose_source(cleaned, intent)
 
         # -------------------------------------------------
@@ -54,11 +50,11 @@ class PoodleBrain:
         # -------------------------------------------------
         if decision.source == "template":
             template = self.memory.get_template(intent)
-        
+
             if template:
                 self.dialogue.update(cleaned, template, intent)
                 return BrainResult(reply_text=template, intent=intent)
-        
+
             # fallback
             reply = self._template_fallback(intent, cleaned)
             self.dialogue.update(cleaned, reply, intent)
@@ -73,7 +69,6 @@ class PoodleBrain:
         answer = self.policy.apply(raw)
 
         self.dialogue.update(cleaned, answer, intent)
-
         return BrainResult(reply_text=answer, intent=intent)
 
     # -------------------------------------------------
@@ -84,9 +79,8 @@ class PoodleBrain:
         topic = self.dialogue.get_current_topic()
 
         memory_block = ""
-
-        # Sprint 5 → Tanem sabit context (RAG değil, soft injection)
         tanem = self.memory.get_person_by_role("tanem")
+
         if tanem:
             memory_block = f"Tanem hakkında bildiklerin: {tanem}"
 
