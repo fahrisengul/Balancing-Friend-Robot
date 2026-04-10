@@ -282,24 +282,37 @@ class MemoryManager:
             conn.commit()
             return cursor.lastrowid
 
-    def get_template(self, intent_name: str, lang: str = "tr") -> Optional[str]:
-        with get_connection() as conn:
-            row = conn.execute(
-                """
-                SELECT template_text
-                FROM intent_templates
-                WHERE intent_name = ?
-                  AND lang = ?
-                  AND is_active = 1
-                ORDER BY priority DESC, id ASC
-                LIMIT 1
-                """,
-                (intent_name, lang),
-            ).fetchone()
-
-        if not row:
-            return None
-        return row["template_text"]
+        import random
+        from typing import Optional
+        
+        
+        def get_template(self, intent_name: str, lang: str = "tr") -> Optional[str]:
+            with get_connection() as conn:
+                rows = conn.execute(
+                    """
+                    SELECT template_text
+                    FROM intent_templates
+                    WHERE intent_name = ?
+                      AND lang = ?
+                      AND is_active = 1
+                    ORDER BY priority DESC, id ASC
+                    """,
+                    (intent_name, lang),
+                ).fetchall()
+        
+            if not rows:
+                return None
+        
+            templates = [r["template_text"] for r in rows]
+        
+            # son kullanılanı çıkar (varsa)
+            if hasattr(self, "_last_template") and self._last_template in templates:
+                templates.remove(self._last_template)
+        
+            choice = random.choice(templates)
+            self._last_template = choice
+        
+            return choice
 
     # =========================================================
     # CONVERSATION LOGS
