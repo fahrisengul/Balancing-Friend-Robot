@@ -1,5 +1,5 @@
 import re
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 from memory.db import get_connection
 
@@ -48,7 +48,7 @@ class IntentRouter:
             return "clarification_needed"
 
         # -----------------------------------
-        # Follow-up / kısa bağlam taşıma
+        # Kısa follow-up taşıma
         # -----------------------------------
         short_followups = {
             "neden",
@@ -59,43 +59,19 @@ class IntentRouter:
             "yani",
             "sonra",
         }
-
         if normalized in short_followups and context.get("current_topic"):
             return "followup"
 
         # -----------------------------------
-        # Önce DB-backed pattern matching
-        # -----------------------------------
-        for rule in self.patterns:
-            intent_name = rule["intent_name"]
-            pattern_text = rule["pattern_text"]
-            match_type = rule["match_type"]
-
-            pattern_norm = self._normalize(pattern_text)
-
-            if match_type == "exact":
-                if normalized == pattern_norm:
-                    return intent_name
-
-            elif match_type == "starts_with":
-                if normalized.startswith(pattern_norm):
-                    return intent_name
-
-            else:
-                # default: contains
-                if pattern_norm in normalized:
-                    return intent_name
-
-        # -----------------------------------
-        # Kod kontrollü ek sosyal intentler
+        # Kod kontrollü yüksek değerli sosyal intentler
         # -----------------------------------
         if self._contains_any(
             normalized,
             [
                 "beni tanimak ister misin",
                 "beni tanımak ister misin",
-                "sen beni tanimak ister misin",
-                "sen beni tanımak ister misin",
+                "beni tanir misin",
+                "beni tanır mısın",
             ],
         ):
             return "conversation_start"
@@ -106,10 +82,10 @@ class IntentRouter:
                 "bana soru sor",
                 "bana soru sorar misin",
                 "bana soru sorar mısın",
-                "beni tanimak icin sorular sorar misin",
-                "beni tanımak için sorular sorar mısın",
                 "beni tanimak icin soru sor",
                 "beni tanımak için soru sor",
+                "beni tanimak icin sorular sorar misin",
+                "beni tanımak için sorular sorar mısın",
             ],
         ):
             return "ask_question_back"
@@ -137,36 +113,83 @@ class IntentRouter:
             return "open_topic"
 
         # -----------------------------------
-        # Eğitim / tavsiye / çok parçalı soru
+        # Daha doğal status / relation yorumları
         # -----------------------------------
         if self._contains_any(
             normalized,
             [
-                "endiseli",
-                "endişeli",
-                "endise",
-                "endişe",
-                "kaygili",
-                "kaygılı",
-                "stresliyim",
-                "sinav icin endiseliyim",
-                "sınav için endişeliyim",
+                "her sey yolunda mi",
+                "her şey yolunda mı",
+                "iyi misin",
+                "durum nasil",
+                "durum nasıl",
             ],
         ):
-            return "education_help"
+            return "ask_status"
 
         if self._contains_any(
             normalized,
             [
-                "onerir misin",
-                "önerir misin",
+                "neler biliyorsun",
+                "benimle ilgili ne biliyorsun",
+                "benim hakkimda ne biliyorsun",
+                "benim hakkımda ne biliyorsun",
+            ],
+        ):
+            return "ask_user_profile"
+
+        # -----------------------------------
+        # Eğitim / tavsiye / endişe
+        # -----------------------------------
+        if self._contains_any(
+            normalized,
+            [
+                "sinav icin endiseliyim",
+                "sınav için endişeliyim",
+                "sinav stresi",
+                "sınav stresi",
+                "endiseliyim",
+                "endişeliyim",
+                "kaygiliyim",
+                "kaygılıyım",
+            ],
+        ):
+            return "exam_anxiety"
+
+        if self._contains_any(
+            normalized,
+            [
+                "ne onerirsin",
+                "ne önerirsin",
                 "yontem soyler misin",
                 "yöntem söyler misin",
                 "ne yapmaliyim",
                 "ne yapmalıyım",
             ],
         ):
-            return "education_help"
+            return "request_advice"
+
+        # -----------------------------------
+        # DB-backed pattern matching
+        # -----------------------------------
+        for rule in self.patterns:
+            intent_name = rule["intent_name"]
+            pattern_text = rule["pattern_text"]
+            match_type = rule["match_type"]
+
+            pattern_norm = self._normalize(pattern_text)
+
+            if match_type == "exact":
+                if normalized == pattern_norm:
+                    return intent_name
+
+            elif match_type == "starts_with":
+                if normalized.startswith(pattern_norm):
+                    return intent_name
+
+            else:
+                if pattern_norm in normalized:
+                    return intent_name
 
         # -----------------------------------
         # Genel soru fallback
@@ -185,15 +208,16 @@ class IntentRouter:
             "kac",
             "kaç",
             "nerede",
+            "mi",
+            "mı",
+            "mu",
+            "mü",
         }
 
         tokens = normalized.split()
         if any(tok in question_words for tok in tokens):
             return "question"
 
-        # -----------------------------------
-        # Statement fallback
-        # -----------------------------------
         if len(tokens) > 0:
             return "statement"
 
