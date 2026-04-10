@@ -26,28 +26,15 @@ class DialogueManager:
         self.last_intent = intent
         self.last_time = now
 
-        # -------------------------------------------------
-        # TOPIC DETECTION (basit ama etkili)
-        # -------------------------------------------------
-        if intent in {"education_help"}:
+        if intent == "education_help":
             self.current_topic = "education"
-
-        elif intent in {"emotional_support"}:
+        elif intent == "emotional_support":
             self.current_topic = "emotion"
-
-        elif intent in {"ask_activity", "question"}:
+        elif intent in {"ask_activity", "question", "general"}:
             self.current_topic = "general"
-
-        elif intent == "followup":
-            # topic korunur
-            pass
-
         elif intent == "farewell":
             self.current_topic = None
 
-    # -------------------------------------------------
-    # CONTEXT
-    # -------------------------------------------------
     def get_context(self):
         return {
             "last_user": self.last_user,
