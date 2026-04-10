@@ -1,86 +1,73 @@
-from memory.memory_manager import MemoryManager
+from .memory_manager import MemoryManager
 
 
-def run_all():
+def seed_templates():
     mm = MemoryManager()
 
-    seed_intents(mm)
-    seed_patterns(mm)
-    seed_templates(mm)
+    templates = {
 
-    print(">>> Seed tamamlandı.")
+        # -------------------------
+        # BASIC
+        # -------------------------
+        "greeting": [
+            "Selam, buradayım.",
+            "Merhaba, nasılsın?",
+        ],
 
+        "farewell": [
+            "Görüşürüz.",
+            "Sonra konuşuruz.",
+        ],
 
-# -------------------------
-# INTENTS
-# -------------------------
+        "ask_status": [
+            "İyiyim. Sen nasılsın?",
+        ],
 
-def seed_intents(mm):
-    intents = [
-        "greeting",
-        "identity",
-        "ask_name",
-        "smalltalk_howareyou",
-        "request_questioning",
-        "topic_suggestion",
-        "exam_anxiety",
-        "request_advice",
-        "post_exam_reflection",
-        "fallback",
-    ]
+        "ask_name": [
+            "Benim adım Poodle.",
+        ],
 
-    for intent in intents:
-        mm.add_intent_if_missing(intent)
+        "ask_identity": [
+            "Ben Poodle. Senin robot arkadaşınım.",
+        ],
 
+        # -------------------------
+        # 🚀 NEW CRITICAL INTENTS
+        # -------------------------
+        "conversation_start": [
+            "Seni tanımak isterim. Bana biraz kendinden bahseder misin?",
+            "Seninle tanışmak güzel. Neler yapmayı seversin?",
+        ],
 
-# -------------------------
-# PATTERNS
-# -------------------------
+        "ask_question_back": [
+            "Sana bir soru sorayım: bugün seni en çok ne zorladı?",
+            "Bugün seni mutlu eden bir şey oldu mu?",
+        ],
 
-def seed_patterns(mm):
-    patterns = [
-        # greeting
-        ("greeting", r"\b(selam|merhaba|hey)\b"),
+        "ask_topic": [
+            "İstersen oyunlar, okul ya da arkadaşlar hakkında konuşabiliriz.",
+            "Hangi konuyu seçmek istersin?",
+        ],
 
-        # identity
-        ("identity", r"\b(kimsin|kendini tanıt)\b"),
+        "open_topic": [
+            "Bugün okulda nasıldı?",
+            "Bugün ilginç bir şey yaşadın mı?",
+        ],
 
-        # ask name
-        ("ask_name", r"\b(adın ne)\b"),
+        # -------------------------
+        # COACHING
+        # -------------------------
+        "education_help": [
+            "Hangi kısmı zor geldi?",
+            "Birlikte küçük bir plan yapalım mı?",
+        ],
 
-        # how are you
-        ("smalltalk_howareyou", r"\b(nasılsın)\b"),
+        "emotional_support": [
+            "Bu zor hissettirmiş olabilir.",
+            "Yanındayım, anlatabilirsin.",
+        ]
+    }
 
-        # questioning
-        ("request_questioning", r"\b(bana soru sor|beni tanımak)\b"),
-
-        # topic suggestion
-        ("topic_suggestion", r"\b(ne konuşalım|konu aç|hakkında konuşalım)\b"),
-
-        # anxiety
-        ("exam_anxiety", r"\b(sınav.*endişe|stresliyim)\b"),
-
-        # advice
-        ("request_advice", r"\b(öner|yöntem)\b"),
-
-        # reflection
-        ("post_exam_reflection", r"\b(iyi geçmedi|neden böyle)\b"),
-    ]
-
-    for intent, pattern in patterns:
-        mm.add_pattern_if_missing(intent, pattern)
-
-
-# -------------------------
-# TEMPLATES
-# -------------------------
-
-def seed_templates(mm):
-    templates = [
-        ("greeting", "Selam."),
-        ("smalltalk_howareyou", "İyiyim. Sen nasılsın?"),
-        ("fallback", "Seni tam anlayamadım. Biraz daha açık söyler misin?"),
-    ]
-
-    for intent, text in templates:
-        mm.add_template_if_missing(intent, text)
+    for intent, responses in templates.items():
+        for r in responses:
+            mm.add_template(intent, r)
