@@ -5,8 +5,9 @@ from .response_policy import ResponsePolicy
 from .llm_client import LLMClient
 from .persona import build_system_prompt
 from .models import BrainResult
-from memory.memory_manager import MemoryManager
 from .education_engine import EducationEngine
+from memory.memory_manager import MemoryManager
+
 
 class PoodleBrain:
     def __init__(self):
@@ -40,14 +41,17 @@ class PoodleBrain:
         context = self.dialogue.get_context()
 
         intent = self.intent.detect(cleaned, context)
-        
+
+        # -----------------------------------
+        # Sprint 6: deterministic education layer
+        # -----------------------------------
         education_reply = self.education.handle(cleaned, intent)
         if education_reply:
             self.dialogue.update(cleaned, education_reply, intent)
             return BrainResult(reply_text=education_reply, intent=intent)
 
         # -----------------------------------
-        # Önce deterministic shortcut
+        # Deterministic shortcut replies
         # -----------------------------------
         shortcut = self._direct_reply(cleaned, intent)
         if shortcut:
@@ -55,7 +59,7 @@ class PoodleBrain:
             return BrainResult(reply_text=shortcut, intent=intent)
 
         # -----------------------------------
-        # Template-first intentler
+        # Template-first intents
         # -----------------------------------
         if intent in self.template_first_intents:
             reply = self._reply_from_template_or_fallback(intent, cleaned)
@@ -63,7 +67,7 @@ class PoodleBrain:
             return BrainResult(reply_text=reply, intent=intent)
 
         # -----------------------------------
-        # Policy
+        # Policy-driven path
         # -----------------------------------
         decision = self.policy.choose_source(cleaned, intent)
 
@@ -84,7 +88,7 @@ class PoodleBrain:
             return BrainResult(reply_text=reply, intent=intent)
 
         # -----------------------------------
-        # LLM
+        # LLM fallback
         # -----------------------------------
         prompt = self._build_prompt(cleaned, intent)
         raw = self.llm.generate(prompt)
@@ -124,20 +128,6 @@ class PoodleBrain:
 
         if intent == "open_topic":
             return "Tamam. Bugün nasıl geçti?"
-
-        if intent == "exam_anxiety":
-            return "Bu his çok normal. İstersen önce seni en çok geren kısmı bulalım."
-
-        if intent == "request_advice":
-            if "5" in normalized or "bes" in normalized:
-                return (
-                    "1. Derin nefes al.\n"
-                    "2. Kısa bir mola ver.\n"
-                    "3. Yapacağın şeyi küçük parçalara böl.\n"
-                    "4. Önce kolay yerden başla.\n"
-                    "5. Kendine sert davranma."
-                )
-            return "İstersen buna uygun birkaç kısa öneri söyleyebilirim."
 
         return None
 
@@ -189,7 +179,8 @@ Kurallar:
 - Kullanıcının son cümlesine doğrudan cevap ver.
 - Aynı cümleyi tekrar etme.
 - Kullanıcı soru sorduysa önce soruya cevap ver.
-- Eğitim ve endişe konularında somut öneri ver.
+- Eğitim ve kaygı konularında somut ve kısa öneriler ver.
+- Çocuk dostu, sakin ve destekleyici ol.
 """.strip()
 
     # -------------------------------------------------
