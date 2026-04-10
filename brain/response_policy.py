@@ -1,35 +1,24 @@
-import random
+from dataclasses import dataclass
+from typing import Optional
 
 
-class PolicyDecision:
-    def __init__(self, source: str, clarify_text: str = None):
-        self.source = source  # "template" | "skill" | "llm" | "clarify"
-        self.clarify_text = clarify_text
+@dataclass
+class Decision:
+    source: str
+    clarify_text: Optional[str] = None
 
 
 class ResponsePolicy:
     def __init__(self):
         self.last_reply = None
 
-    # -------------------------------------------------
-    # SOURCE SELECTION
-    # -------------------------------------------------
-    def choose_source(self, text: str, intent: str) -> PolicyDecision:
-        t = (text or "").lower().strip()
+    def choose_source(self, text: str, intent: str) -> Decision:
+        t = (text or "").strip().lower()
 
-        # -----------------------------------
-        # 1. CRITICAL: boş / anlamsız giriş
-        # -----------------------------------
-        if not t or len(t) < 2:
-            return PolicyDecision(
-                "clarify",
-                "Biraz daha açık söyler misin?"
-            )
+        if not t:
+            return Decision("clarify", "Biraz daha açık söyler misin?")
 
-        # -----------------------------------
-        # 2. SOCIAL / FAST PATH (template)
-        # -----------------------------------
-        if intent in {
+        template_intents = {
             "greeting",
             "farewell",
             "ask_name",
@@ -37,89 +26,120 @@ class ResponsePolicy:
             "ask_status",
             "thanks",
             "acknowledge",
+            "followup",
             "conversation_start",
             "ask_question_back",
             "ask_topic",
             "open_topic",
-        }:
-            return PolicyDecision("template")
+        }
 
-        # -----------------------------------
-        # 3. EDUCATION / SKILL
-        # -----------------------------------
-        if intent in {
-            "exam_anxiety",
-            "request_advice",
-        }:
-            return PolicyDecision("skill")
+        if intent in template_intents:
+            return Decision("template")
 
-        # -----------------------------------
-        # 4. CONFUSION / REPAIR
-        # -----------------------------------
-        if intent in {
-            "clarification_needed",
-            "followup_repair",
-        }:
-            return PolicyDecision(
-                "clarify",
-                self._repair_phrase()
-            )
+        skill_intents = {
+            "ask_birthdate",
+            "ask_age",
+            "ask_day_date",
+            "ask_time",
+            "mute",
+            "wake",
+        }
 
-        # -----------------------------------
-        # 5. DEFAULT → LLM
-        # -----------------------------------
-        return PolicyDecision("llm")
+        if intent in skill_intents:
+            return Decision("skill")
 
-    # -------------------------------------------------
-    # FINAL RESPONSE POST-PROCESS
-    # -------------------------------------------------
+        if intent in {"clarification_needed", "followup_repair", "low_confidence"}:
+            return Decision("clarify", "Tam anlayamadım. Bir daha söyler misin?")
+
+        # Sprint 6: education intentleri LLM'e bırak ama çıktı çok sıkı kontrol edilecek
+        return Decision("llm")
+
     def apply(self, raw: str) -> str:
         if not raw:
-            return self._repair_phrase()
+            return "Biraz daha açık söyler misin?"
 
-        text = raw.strip()
+        text = " ".join(raw.strip().split())
+        lower = text.lower()
 
-        # -----------------------------------
-        # 1. LENGTH CONTROL (çok uzunsa kes)
-        # -----------------------------------
-        sentences = self._split_sentences(text)
+        # İngilizce ve prompt leak temizliği
+        banned = [
+            "hello",
+            "hi ",
+            "how are you",
+            "i am",
+            "system prompt",
+            "robotun adı poodle",
+            "kisa dogal diyalog",
+        ]
+        if any(b in lower for b in banned):
+            return "Bunu daha sade söyleyeyim. Ne demek istediğini biraz açar mısın?"
 
-        if len(sentences) > 3:
-            sentences = sentences[:3]
+        # Gereksiz girişler
+        starters = [
+            "selam!",
+            "merhaba!",
+            "selam",
+            "merhaba",
+            "ben poodle",
+            "ben de",
+            "şu an",
+        ]
+        for s in starters:
+            if lower.startswith(s):
+                text = text[len(s):].strip()
+                lower = text.lower()
 
-        text = " ".join(sentences).strip()
+        replacements = {
+            "gibi görünüyor": "",
+            "gibi hissediyorum": "",
+            "şimdilik": "",
+        }
+        for k, v in replacements.items():
+            text = text.replace(k, v)
 
-        # -----------------------------------
-        # 2. REPETITION GUARD
-        # -----------------------------------
+        text = " ".join(text.split()).strip()
+
+        # Sprint 6: education cevapları için ekstra sınır
+        text = self._tighten_education_style(text)
+
+        # maksimum 3 cümle
+        parts = self._split_sentences(text)
+        if len(parts) > 3:
+            text = " ".join(parts[:3]).strip()
+
+        if len(text) < 3:
+            return "Biraz açar mısın?"
+
+        # tekrar kırıcı
         if self.last_reply and self._is_similar(text, self.last_reply):
             text = self._diversify(text)
 
         self.last_reply = text
-
         return text
 
-    # -------------------------------------------------
-    # CHILD-SAFE PHRASES
-    # -------------------------------------------------
-    def _repair_phrase(self):
-        return random.choice([
-            "Tam anlayamadım. Biraz daha açık söyler misin?",
-            "Bunu biraz daha net anlatabilir misin?",
-            "Biraz daha açarsan daha iyi yardımcı olabilirim."
-        ])
+    def _tighten_education_style(self, text: str) -> str:
+        t = text.strip()
 
-    def _diversify(self, text):
-        return random.choice([
-            "Bunu farklı bir şekilde söyleyeyim.",
-            "Şöyle düşünebiliriz.",
-            "Başka bir açıdan bakalım."
-        ])
+        # çok uzun paragrafı sadeleştir
+        words = t.split()
+        if len(words) > 40:
+            t = " ".join(words[:40]).strip()
+            if not t.endswith("."):
+                t += "."
 
-    # -------------------------------------------------
-    # HELPERS
-    # -------------------------------------------------
-    def _split_sentences(self, text):
+        # buyurgan dili azalt
+        replacements = {
+            "yapmalısın": "yapabilirsin",
+            "zorundasın": "istersen deneyebilirsin",
+            "hemen bunu yap": "önce bunu deneyebilirsin",
+            "başarısızsın": "zorlanıyor olabilirsin",
+        }
+        for old, new in replacements.items():
+            t = t.replace(old, new).replace(old.capitalize(), new.capitalize())
+
+        return " ".join(t.split()).strip()
+
+    def _split_sentences(self, text: str):
         parts = []
         current = ""
 
@@ -135,14 +155,18 @@ class ResponsePolicy:
         return parts
 
     def _is_similar(self, a: str, b: str) -> bool:
-        a = a.lower()
-        b = b.lower()
+        a_tokens = set(a.lower().split())
+        b_tokens = set(b.lower().split())
+        if not a_tokens or not b_tokens:
+            return False
 
-        if a == b:
-            return True
+        overlap = len(a_tokens & b_tokens) / max(len(a_tokens), 1)
+        return overlap > 0.7
 
-        # basit similarity
-        common = set(a.split()) & set(b.split())
-        ratio = len(common) / max(len(a.split()), 1)
-
-        return ratio > 0.7
+    def _diversify(self, text: str) -> str:
+        fallback_variants = [
+            "Bunu başka bir şekilde söyleyeyim.",
+            "Şöyle düşünelim.",
+            "Buna başka taraftan bakalım.",
+        ]
+        return fallback_variants[0]
