@@ -78,13 +78,34 @@ class MemoryWriter:
         except Exception as e:
             print(f"[MEMORY WRITER ERROR - PROFILE] {e}")
 
+from memory.embedder import Embedder
+from memory.vector_index import VectorIndex
+
+class MemoryWriter:
+    def __init__(self, memory_manager):
+        self.mm = memory_manager
+        self.embedder = Embedder()
+        self.vector = VectorIndex()
+
     def _save_memory(self, tag, text, importance=1):
         try:
+            timestamp = int(time.time())
+
             self.mm.add_episodic_memory(
                 content=text,
                 tag=tag,
                 importance=importance,
-                timestamp=int(time.time())
+                timestamp=timestamp
             )
+
+            vec = self.embedder.embed(text)
+
+            self.vector.add(vec, {
+                "content": text,
+                "tag": tag,
+                "importance": importance,
+                "timestamp": timestamp
+            })
+
         except Exception as e:
-            print(f"[MEMORY WRITER ERROR - MEMORY] {e}")
+            print(f"[MEMORY WRITER ERROR] {e}")
