@@ -25,6 +25,9 @@ class Orchestrator:
         if not self.running:
             return
 
+        if getattr(self.speech, "_busy", False):
+            return
+
         etype = event.get("type", "none")
         if etype == "none":
             return
