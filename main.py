@@ -52,6 +52,7 @@ def main():
 
     finally:
         print(">>> [SHUTDOWN] Sistem kapatılıyor...")
+
         try:
             orch.stop()
         except Exception:
