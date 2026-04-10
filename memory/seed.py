@@ -7,63 +7,97 @@ def seed_templates():
     templates = {
 
         # -------------------------
-        # BASIC
+        # GREETING (DOĞAL)
         # -------------------------
         "greeting": [
-            "Selam, buradayım.",
-            "Merhaba, nasılsın?",
+            "Selam.",
+            "Merhaba.",
+            "Buradayım.",
         ],
 
+        # -------------------------
+        # STATUS
+        # -------------------------
+        "ask_status": [
+            "İyiyim. Sen nasılsın?",
+            "Fena değil. Sende durum nasıl?",
+            "İdare eder. Sen nasılsın?",
+        ],
+
+        # -------------------------
+        # IDENTITY
+        # -------------------------
+        "ask_name": [
+            "Poodle.",
+            "Ben Poodle.",
+        ],
+
+        "ask_identity": [
+            "Poodle. Seninle konuşan robot.",
+            "Poodle. Sana eşlik ediyorum.",
+        ],
+
+        # -------------------------
+        # FAREWELL
+        # -------------------------
         "farewell": [
             "Görüşürüz.",
             "Sonra konuşuruz.",
         ],
 
-        "ask_status": [
-            "İyiyim. Sen nasılsın?",
-        ],
-
-        "ask_name": [
-            "Benim adım Poodle.",
-        ],
-
-        "ask_identity": [
-            "Ben Poodle. Senin robot arkadaşınım.",
-        ],
-
         # -------------------------
-        # 🚀 NEW CRITICAL INTENTS
+        # CONVERSATION START
         # -------------------------
         "conversation_start": [
-            "Seni tanımak isterim. Bana biraz kendinden bahseder misin?",
-            "Seninle tanışmak güzel. Neler yapmayı seversin?",
-        ],
-
-        "ask_question_back": [
-            "Sana bir soru sorayım: bugün seni en çok ne zorladı?",
-            "Bugün seni mutlu eden bir şey oldu mu?",
-        ],
-
-        "ask_topic": [
-            "İstersen oyunlar, okul ya da arkadaşlar hakkında konuşabiliriz.",
-            "Hangi konuyu seçmek istersin?",
-        ],
-
-        "open_topic": [
-            "Bugün okulda nasıldı?",
-            "Bugün ilginç bir şey yaşadın mı?",
+            "Seni tanımak isterim. Neler yapmayı seversin?",
+            "Biraz kendinden bahsetmek ister misin?",
         ],
 
         # -------------------------
-        # COACHING
+        # ASK QUESTION BACK
+        # -------------------------
+        "ask_question_back": [
+            "Sana bir şey sorayım: bugün nasıldı?",
+            "Bir soru sorayım: en çok neyi seversin?",
+        ],
+
+        # -------------------------
+        # ASK TOPIC
+        # -------------------------
+        "ask_topic": [
+            "Oyunlar, okul ya da arkadaşlar... hangisi?",
+            "Bir konu seçelim mi? Oyun, okul, arkadaşlar?",
+        ],
+
+        # -------------------------
+        # OPEN TOPIC
+        # -------------------------
+        "open_topic": [
+            "Bugün nasıl geçti?",
+            "Okulda neler yaptın?",
+        ],
+
+        # -------------------------
+        # STATEMENT RESPONSE
+        # -------------------------
+        "statement": [
+            "Anladım.",
+            "Tamam.",
+            "Peki.",
+        ],
+
+        # -------------------------
+        # EDUCATION / COACHING
         # -------------------------
         "education_help": [
-            "Hangi kısmı zor geldi?",
-            "Birlikte küçük bir plan yapalım mı?",
+            "Neresi zor geldi?",
+            "İstersen birlikte plan yapalım.",
+            "Küçük küçük ilerleyelim mi?",
         ],
 
         "emotional_support": [
-            "Bu zor hissettirmiş olabilir.",
+            "Bu zor olabilir.",
+            "Normal hisler bunlar.",
             "Yanındayım, anlatabilirsin.",
         ]
     }
