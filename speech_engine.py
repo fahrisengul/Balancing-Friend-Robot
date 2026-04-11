@@ -102,7 +102,7 @@ class PoodleSpeech:
             p = preferred.lower()
             for i, name, lowered in lowered_devices:
                 if p in lowered:
-                    self.device_index = 0
+                    self.device_index = i
                     self.device_name = name
                     log_time(f">>> [MIC ACTIVE] Otomatik seçim: #{i} {name}")
                     return
