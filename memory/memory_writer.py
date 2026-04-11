@@ -1,111 +1,62 @@
 # memory/memory_writer.py
 
-import time
-import re
+from datetime import datetime
+from .embedder import Embedder
+from .vector_index import VectorIndex
 
 
 class MemoryWriter:
     def __init__(self, memory_manager):
-        self.mm = memory_manager
+        self.memory = memory_manager
+        self.embedder = Embedder()
+        self.index = VectorIndex()
 
-    # -----------------------------
-    # MAIN ENTRY
-    # -----------------------------
     def process(self, text: str):
-        text = text.lower().strip()
-
-        if not text or len(text) < 3:
+        text = (text or "").strip()
+        if not text:
             return
 
-        self._extract_preferences(text)
-        self._extract_difficulties(text)
-        self._extract_events(text)
+        # isim yakala
+        name = self._extract_name(text)
+        if name:
+            self._save_name(name)
 
-    # -----------------------------
-    # PREFERENCE EXTRACTION
-    # -----------------------------
-    def _extract_preferences(self, text):
-        patterns = [
-            r"en sevdiğim (.*)",
-            r"(.*) seviyorum",
-            r"(.*) hoşuma gidiyor"
-        ]
+        # meaningful memory
+        if self._is_meaningful(text):
+            self._save_memory(text)
 
-        for p in patterns:
-            match = re.search(p, text)
-            if match:
-                value = match.group(1).strip()
-                self._save_profile("likes", value)
-                return
-
-    # -----------------------------
-    # DIFFICULTY EXTRACTION
-    # -----------------------------
-    def _extract_difficulties(self, text):
-        patterns = [
-            r"(.*) zor geliyor",
-            r"(.*) anlamıyorum",
-            r"(.*) yapamıyorum",
-            r"(.*) zorlanıyorum"
-        ]
-
-        for p in patterns:
-            match = re.search(p, text)
-            if match:
-                value = match.group(1).strip()
-                self._save_profile("difficulties", value)
-                return
-
-    # -----------------------------
-    # EVENT EXTRACTION
-    # -----------------------------
-    def _extract_events(self, text):
-        if "sınav" in text:
-            self._save_memory("event", text, importance=3)
-
-        elif "mutluyum" in text or "çok iyi" in text:
-            self._save_memory("emotion_positive", text, importance=2)
-
-        elif "üzgünüm" in text or "kötü" in text:
-            self._save_memory("emotion_negative", text, importance=4)
-
-    # -----------------------------
-    # SAVE HELPERS
-    # -----------------------------
-    def _save_profile(self, key, value):
+    # -----------------------
+    def _save_memory(self, text):
         try:
-            self.mm.update_person_profile(key, value)
-        except Exception as e:
-            print(f"[MEMORY WRITER ERROR - PROFILE] {e}")
+            vector = self.embedder.embed(text)
 
-from memory.embedder import Embedder
-from memory.vector_index import VectorIndex
-
-class MemoryWriter:
-    def __init__(self, memory_manager):
-        self.mm = memory_manager
-        self.embedder = Embedder()
-        self.vector = VectorIndex()
-
-    def _save_memory(self, tag, text, importance=1):
-        try:
-            timestamp = int(time.time())
-
-            self.mm.add_episodic_memory(
+            # DB insert → ID al
+            memory_id = self.memory.add_episodic_memory(
                 content=text,
-                tag=tag,
-                importance=importance,
-                timestamp=timestamp
+                timestamp=datetime.utcnow().isoformat()
             )
 
-            vec = self.embedder.embed(text)
-
-            self.vector.add(vec, {
-                "content": text,
-                "tag": tag,
-                "importance": importance,
-                "timestamp": timestamp
-            })
+            # vector index
+            self.index.add(vector)
 
         except Exception as e:
-            print(f"[MEMORY WRITER ERROR] {e}")
+            print(f">>> [VECTOR SAVE ERROR] {e}")
+
+    # -----------------------
+    def _extract_name(self, text):
+        t = text.lower()
+
+        if "bana " in t and " diyebilirsin" in t:
+            start = t.find("bana ") + 5
+            end = t.find(" diyebilirsin")
+
+            return text[start:end].strip().title()
+
+        return None
+
+    def _save_name(self, name):
+        if hasattr(self.memory, "upsert_person_profile"):
+            self.memory.upsert_person_profile("tanem", name)
+
+    def _is_meaningful(self, text):
+        return len(text.split()) >= 3
