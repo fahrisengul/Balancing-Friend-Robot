@@ -361,3 +361,38 @@ Kurallar:
 
     except Exception as e:
         print(f">>> [MAINTENANCE ERROR] {e}")
+
+def _log_and_return(
+    self,
+    cleaned: str,
+    intent: str,
+    response_source: str,
+    reply: str,
+    session_id: str = None,
+    model_name: str = None,
+    latency_ms: int = None,
+    memory_context_used: bool = False,
+    status: str = "ok",
+    error_text: str = None,
+):
+    normalized_text = self._normalize(cleaned)
+
+    try:
+        self.memory.log_conversation(
+            raw_text=cleaned,
+            normalized_text=normalized_text,
+            intent=intent,
+            response_source=response_source,
+            reply_text=reply,
+            session_id=session_id,
+            model_name=model_name,
+            latency_ms=latency_ms,
+            memory_context_used=memory_context_used,
+            status=status,
+            error_text=error_text,
+        )
+    except Exception as e:
+        print(f">>> [LOG CONVERSATION ERROR] {e}")
+
+    self.dialogue.update(cleaned, reply, intent)
+    return BrainResult(reply_text=reply, intent=intent)
