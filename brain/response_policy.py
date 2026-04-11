@@ -124,20 +124,21 @@ class ResponsePolicy:
         return " ".join(result.split()).strip()
 
     def _strip_garbage_terms(self, text: str) -> str:
-        bad_terms = [
-            "hız nav stressi",
-            "naw stressi",
-            "now see to see",
-            "sinov",
-            "hıznav",
-            "naw",
-        ]
+    bad_terms = [
+        "hız nav stressi",
+        "naw stressi",
+        "now see to see",
+        "sinov",
+        "hıznav",
+        "naw",
+    ]
 
-        lowered = text.lower()
-        if any(b in lowered for b in bad_terms):
-            return "Bunu tam net duyamadım. İstersen bir kez daha söyle."
+    lowered = text.lower()
 
-        return text
+    if any(b in lowered for b in bad_terms):
+        return ""
+
+    return text
 
     def _limit_length(self, text: str) -> str:
         parts = self._split_sentences(text)
