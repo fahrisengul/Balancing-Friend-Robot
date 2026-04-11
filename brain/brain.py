@@ -96,9 +96,12 @@ class PoodleBrain:
             reply = self._merge_reply_and_followup(education_reply, followup)
             reply = self.policy.apply(reply)
 
-            self.dialogue.update(cleaned, reply, intent)
-            return BrainResult(reply_text=reply, intent=intent)
-
+           return self._log_and_return(
+            cleaned=cleaned,
+            intent=intent,
+            response_source="clarify",
+            reply=reply,
+            )
         # -------------------------------------------------
         # Deterministic direct replies
         # -------------------------------------------------
