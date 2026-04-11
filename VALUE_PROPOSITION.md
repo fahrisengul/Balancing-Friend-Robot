@@ -9,5 +9,15 @@ Piyasadaki çoğu hobi robotu CPU üzerinden görüntü işlerken, Poodle tüm y
 - Nesne tanıma yaparken konuşma sentezi veya LLM yanıtı gecikmez.
 - Düşük güç tüketimi ile yüksek performanslı Edge AI sergilenir.
 
-### 3. Vektörel Uzun Süreli Hafıza
-Çoğu robot "anlık" yaşar. Poodle ise **ChromaDB** kullanarak aylar önceki bir konuşmayı bugünkü diyaloglarına dahil edebilir. Bu, "kişiselleştirilmiş eğitim robotu" konseptinin temel taşıdır.
+### 3. Vektörel Uzun Süreli Hafıza - Hybrid Memory Intelligence
+Poodle:
+- SQLite + semantic layer
+- episodic memory
+- context-aware recall
+
+kullanır.
+
+Bu yapı:
+- edge-friendly
+- düşük maliyetli
+- uzun süreli öğrenmeye uygun
