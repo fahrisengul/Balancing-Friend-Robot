@@ -5,7 +5,9 @@ DB_PATH = "memory/poodle.db"
 
 
 def get_connection():
-    return sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
 
 
 class MemoryManager:
@@ -21,21 +23,115 @@ class MemoryManager:
         return str(txt)[:max_len]
 
     # =========================================================
-    # OLD CONVERSATION LOG
-    # conversation_logs -> eski sade yapı
+    # PERSON
+    # =========================================================
+    def get_person_by_role(self, role):
+        with get_connection() as conn:
+            row = conn.execute(
+                "SELECT * FROM person_profiles WHERE role = ? LIMIT 1",
+                (role,),
+            ).fetchone()
+        return dict(row) if row else None
+
+    def upsert_person_profile(self, role, name):
+        existing = self.get_person_by_role(role)
+
+        with get_connection() as conn:
+            if existing:
+                conn.execute(
+                    "UPDATE person_profiles SET name = ? WHERE role = ?",
+                    (name, role),
+                )
+            else:
+                conn.execute(
+                    """
+                    INSERT INTO person_profiles (name, role, birth_date, created_at)
+                    VALUES (?, ?, ?, ?)
+                    """,
+                    (name, role, None, self._now()),
+                )
+            conn.commit()
+
+    # =========================================================
+    # MEMORY
+    # episodic_memories beklenen kolonlar:
+    # id, person_id, memory_text, category, importance, created_at
+    # =========================================================
+    def add_episodic_memory(self, content, timestamp=None, category="general", importance=1, person_id=None):
+        ts = timestamp or self._now()
+
+        with get_connection() as conn:
+            cursor = conn.execute(
+                """
+                INSERT INTO episodic_memories
+                (person_id, memory_text, category, importance, created_at)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (person_id, content, category, importance, ts),
+            )
+            conn.commit()
+            memory_id = cursor.lastrowid
+
+        print(f">>> [MEMORY] memory_id={memory_id} kaydedildi")
+        return memory_id
+
+    def get_memory_by_id(self, memory_id):
+        with get_connection() as conn:
+            row = conn.execute(
+                """
+                SELECT memory_text
+                FROM episodic_memories
+                WHERE id = ?
+                """,
+                (memory_id,),
+            ).fetchone()
+
+        return row["memory_text"] if row else None
+
+    def search_memories(self, text, limit=3):
+        """
+        Basit fallback retrieval.
+        Vector search çalışmazsa en son kayıtları döndürür.
+        """
+        with get_connection() as conn:
+            rows = conn.execute(
+                """
+                SELECT memory_text
+                FROM episodic_memories
+                ORDER BY id DESC
+                LIMIT ?
+                """,
+                (limit,),
+            ).fetchall()
+
+        return [r["memory_text"] for r in rows]
+
+    # =========================================================
+    # TEMPLATE
+    # =========================================================
+    def get_template(self, intent_name=None):
+        if not intent_name:
+            return None
+
+        with get_connection() as conn:
+            row = conn.execute(
+                """
+                SELECT template_text
+                FROM intent_templates
+                WHERE intent_name = ?
+                  AND is_active = 1
+                ORDER BY priority DESC, id ASC
+                LIMIT 1
+                """,
+                (intent_name,),
+            ).fetchone()
+
+        return row["template_text"] if row else None
+
+    # =========================================================
+    # LOGS
     # =========================================================
     def log_conversation(self, **kwargs):
-        """
-        conversation_logs tablosuna yazar.
-        Beklenen kolonlar:
-            id
-            raw_text
-            normalized_text
-            intent
-            response_source
-            reply_text
-            created_at
-        """
         with get_connection() as conn:
             conn.execute(
                 """
@@ -54,25 +150,7 @@ class MemoryManager:
             )
             conn.commit()
 
-    # =========================================================
-    # NEW TELEMETRY LOG
-    # conversation_telemetry -> yeni telemetry yapısı
-    # =========================================================
     def log_conversation_telemetry(self, **kwargs):
-        """
-        conversation_telemetry tablosuna yazar.
-        Beklenen kolonlar:
-            id
-            session_id
-            intent
-            response_source
-            model_name
-            latency_ms
-            memory_context_used
-            status
-            error_text
-            created_at
-        """
         with get_connection() as conn:
             conn.execute(
                 """
@@ -95,9 +173,6 @@ class MemoryManager:
             )
             conn.commit()
 
-    # =========================================================
-    # LLM TELEMETRY
-    # =========================================================
     def log_llm_call(self, **kwargs):
         with get_connection() as conn:
             conn.execute(
@@ -122,9 +197,6 @@ class MemoryManager:
             )
             conn.commit()
 
-    # =========================================================
-    # SYSTEM EVENTS
-    # =========================================================
     def log_system_event(self, event_type, detail_text=None):
         with get_connection() as conn:
             conn.execute(
@@ -133,20 +205,12 @@ class MemoryManager:
                 (event_type, detail_text, created_at)
                 VALUES (?, ?, ?)
                 """,
-                (
-                    event_type,
-                    self._tr(detail_text, max_len=1000),
-                    self._now(),
-                ),
+                (event_type, self._tr(detail_text, 1000), self._now()),
             )
             conn.commit()
 
     # =========================================================
-    # CLEANUP
-    # conversation_logs -> ürün geçmişi gibi de kullanılabilir, silmiyoruz
-    # conversation_telemetry -> 30 gün
-    # llm_calls -> 90 gün
-    # system_events -> 60 gün
+    # MAINTENANCE
     # =========================================================
     def cleanup_logs(self):
         now = datetime.utcnow()
@@ -156,29 +220,11 @@ class MemoryManager:
         sys_cut = (now - timedelta(days=60)).isoformat()
 
         with get_connection() as conn:
-            conn.execute(
-                "DELETE FROM conversation_telemetry WHERE created_at < ?",
-                (telemetry_cut,),
-            )
-            conn.execute(
-                "DELETE FROM llm_calls WHERE created_at < ?",
-                (llm_cut,),
-            )
-            conn.execute(
-                "DELETE FROM system_events WHERE created_at < ?",
-                (sys_cut,),
-            )
+            conn.execute("DELETE FROM conversation_telemetry WHERE created_at < ?", (telemetry_cut,))
+            conn.execute("DELETE FROM llm_calls WHERE created_at < ?", (llm_cut,))
+            conn.execute("DELETE FROM system_events WHERE created_at < ?", (sys_cut,))
             conn.commit()
 
-        self.log_system_event(
-            "cleanup",
-            "conversation_telemetry=30d, llm_calls=90d, system_events=60d retention uygulandı",
-        )
-
-    # =========================================================
-    # DAILY METRICS
-    # daily_metrics -> conversation_telemetry üzerinden rebuild edilir
-    # =========================================================
     def rebuild_daily_metrics(self):
         today = datetime.utcnow().strftime("%Y-%m-%d")
 
@@ -209,148 +255,13 @@ class MemoryManager:
                     """,
                     (
                         today,
-                        r[0],
-                        r[1],
-                        r[2],
-                        r[3],
-                        r[4],
-                        r[5],
+                        r["intent"],
+                        r["response_source"],
+                        r["total_count"],
+                        r["avg_latency_ms"],
+                        r["llm_count"],
+                        r["error_count"],
                     ),
                 )
 
             conn.commit()
-
-    # =========================================================
-    # REVIEW EXPORT
-    # =========================================================
-    def export_review_bundle(self, session_id=None, limit=200):
-        with get_connection() as conn:
-            if session_id:
-                conv_rows = conn.execute(
-                    """
-                    SELECT raw_text, normalized_text, intent, response_source, reply_text, created_at
-                    FROM conversation_logs
-                    ORDER BY id DESC
-                    LIMIT ?
-                    """,
-                    (limit,),
-                ).fetchall()
-
-                telem_rows = conn.execute(
-                    """
-                    SELECT session_id, intent, response_source, model_name,
-                           latency_ms, memory_context_used, status, error_text, created_at
-                    FROM conversation_telemetry
-                    WHERE session_id = ?
-                    ORDER BY id DESC
-                    LIMIT ?
-                    """,
-                    (session_id, limit),
-                ).fetchall()
-
-                llm_rows = conn.execute(
-                    """
-                    SELECT session_id, intent, model_name, prompt_chars, response_chars,
-                           latency_ms, status, error_text, created_at
-                    FROM llm_calls
-                    WHERE session_id = ?
-                    ORDER BY id DESC
-                    LIMIT ?
-                    """,
-                    (session_id, limit),
-                ).fetchall()
-            else:
-                conv_rows = conn.execute(
-                    """
-                    SELECT raw_text, normalized_text, intent, response_source, reply_text, created_at
-                    FROM conversation_logs
-                    ORDER BY id DESC
-                    LIMIT ?
-                    """,
-                    (limit,),
-                ).fetchall()
-
-                telem_rows = conn.execute(
-                    """
-                    SELECT session_id, intent, response_source, model_name,
-                           latency_ms, memory_context_used, status, error_text, created_at
-                    FROM conversation_telemetry
-                    ORDER BY id DESC
-                    LIMIT ?
-                    """,
-                    (limit,),
-                ).fetchall()
-
-                llm_rows = conn.execute(
-                    """
-                    SELECT session_id, intent, model_name, prompt_chars, response_chars,
-                           latency_ms, status, error_text, created_at
-                    FROM llm_calls
-                    ORDER BY id DESC
-                    LIMIT ?
-                    """,
-                    (limit,),
-                ).fetchall()
-
-        conversations = [
-            {
-                "raw_text": r[0],
-                "normalized_text": r[1],
-                "intent": r[2],
-                "response_source": r[3],
-                "reply_text": r[4],
-                "created_at": r[5],
-            }
-            for r in conv_rows
-        ]
-
-        telemetry = [
-            {
-                "session_id": r[0],
-                "intent": r[1],
-                "response_source": r[2],
-                "model_name": r[3],
-                "latency_ms": r[4],
-                "memory_context_used": r[5],
-                "status": r[6],
-                "error_text": r[7],
-                "created_at": r[8],
-            }
-            for r in telem_rows
-        ]
-
-        llm_calls = [
-            {
-                "session_id": r[0],
-                "intent": r[1],
-                "model_name": r[2],
-                "prompt_chars": r[3],
-                "response_chars": r[4],
-                "latency_ms": r[5],
-                "status": r[6],
-                "error_text": r[7],
-                "created_at": r[8],
-            }
-            for r in llm_rows
-        ]
-
-        return {
-            "generated_at": self._now(),
-            "session_id": session_id,
-            "conversation_logs": conversations,
-            "conversation_telemetry": telemetry,
-            "llm_calls": llm_calls,
-            "summary": {
-                "conversation_count": len(conversations),
-                "telemetry_count": len(telemetry),
-                "llm_call_count": len(llm_calls),
-            },
-        }
-
-def get_memory_by_id(self, memory_id):
-    with get_connection() as conn:
-        row = conn.execute("""
-        SELECT content FROM episodic_memories WHERE id=?
-        """, (memory_id,)).fetchone()
-
-    return row[0] if row else None
