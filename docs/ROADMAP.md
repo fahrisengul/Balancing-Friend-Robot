@@ -1,4 +1,4 @@
-# 🤖 Balancing Friend Robot — Product Roadmap
+# 🤖 Balancing Friend Robot — main/docs Product Roadmap
 
 Bu doküman robotun teknik evrimini ve ürünleşme yol haritasını sprint bazlı olarak tanımlar.
 
