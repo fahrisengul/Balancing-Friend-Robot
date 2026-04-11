@@ -25,33 +25,20 @@ class ResponsePolicy:
             "ask_identity",
             "ask_status",
             "thanks",
-            "acknowledge",
-            "followup",
             "conversation_start",
             "ask_question_back",
             "ask_topic",
             "open_topic",
+            "ask_user_name",
+            "user_name_define",
         }
 
         if intent in template_intents:
             return Decision("template")
 
-        skill_intents = {
-            "ask_birthdate",
-            "ask_age",
-            "ask_day_date",
-            "ask_time",
-            "mute",
-            "wake",
-        }
+        if len(t) <= 1:
+            return Decision("clarify", "Biraz daha açık söyler misin?")
 
-        if intent in skill_intents:
-            return Decision("skill")
-
-        if intent in {"clarification_needed", "followup_repair", "low_confidence"}:
-            return Decision("clarify", "Tam anlayamadım. Bir daha söyler misin?")
-
-        # Sprint 6: education intentleri LLM'e bırak ama çıktı çok sıkı kontrol edilecek
         return Decision("llm")
 
     def apply(self, raw: str) -> str:
@@ -61,83 +48,113 @@ class ResponsePolicy:
         text = " ".join(raw.strip().split())
         lower = text.lower()
 
-        # İngilizce ve prompt leak temizliği
-        banned = [
-            "hello",
-            "hi ",
-            "how are you",
-            "i am",
-            "system prompt",
-            "robotun adı poodle",
-            "kisa dogal diyalog",
-        ]
-        if any(b in lower for b in banned):
-            return "Bunu daha sade söyleyeyim. Ne demek istediğini biraz açar mısın?"
+        if self._looks_like_persona_break(lower):
+            return "Tamam. Bunu daha doğal söyleyeyim. Devam edelim mi?"
 
-        # Gereksiz girişler
-        starters = [
-            "selam!",
-            "merhaba!",
-            "selam",
-            "merhaba",
-            "ben poodle",
-            "ben de",
-            "şu an",
-        ]
-        for s in starters:
-            if lower.startswith(s):
-                text = text[len(s):].strip()
-                lower = text.lower()
+        text = self._strip_bad_openings(text)
+        text = self._strip_meta_robotic(text)
+        text = self._limit_length(text)
+        text = self._soften_style(text)
+        text = self._ensure_turkish_friend_style(text)
 
-        replacements = {
-            "gibi görünüyor": "",
-            "gibi hissediyorum": "",
-            "şimdilik": "",
-        }
-        for k, v in replacements.items():
-            text = text.replace(k, v)
+        if len(text.strip()) < 3:
+            return "Biraz daha açık söyler misin?"
 
-        text = " ".join(text.split()).strip()
-
-        # Sprint 6: education cevapları için ekstra sınır
-        text = self._tighten_education_style(text)
-
-        # maksimum 3 cümle
-        parts = self._split_sentences(text)
-        if len(parts) > 3:
-            text = " ".join(parts[:3]).strip()
-
-        if len(text) < 3:
-            return "Biraz açar mısın?"
-
-        # tekrar kırıcı
         if self.last_reply and self._is_similar(text, self.last_reply):
             text = self._diversify(text)
 
         self.last_reply = text
+        return text.strip()
+
+    def _looks_like_persona_break(self, lower: str) -> bool:
+        banned = [
+            "ben bir ai",
+            "yapay zeka",
+            "artificial intelligence",
+            "i am an ai",
+            "language model",
+            "llm",
+            "ai system",
+            "ben bir sistemim",
+            "as an ai",
+        ]
+        return any(b in lower for b in banned)
+
+    def _strip_bad_openings(self, text: str) -> str:
+        bad_starts = [
+            "Merhaba! ",
+            "Merhaba. ",
+            "Selam! ",
+            "Selam. ",
+            "Ben Poodle, ",
+            "Ben bir AI sistemiyim, ",
+            "Ben bir yapay zeka sistemiyim, ",
+        ]
+
+        result = text
+        for bad in bad_starts:
+            if result.startswith(bad):
+                result = result[len(bad):].strip()
+
+        return result
+
+    def _strip_meta_robotic(self, text: str) -> str:
+        replacements = {
+            "Ben bir AI sistemiyim": "",
+            "Ben bir yapay zeka sistemiyim": "",
+            "Artificial Intelligence": "",
+            "Size yardımcı olmaktan memnuniyet duyarım": "Yardımcı olmaya çalışırım",
+            "Lütfen sorularınızı bildirin": "İstersen sorabilirsin",
+            "gerçekten mi": "",
+            "neden mi": "",
+        }
+
+        result = text
+        for old, new in replacements.items():
+            result = result.replace(old, new)
+            result = result.replace(old.lower(), new)
+
+        return " ".join(result.split()).strip()
+
+    def _limit_length(self, text: str) -> str:
+        parts = self._split_sentences(text)
+        if len(parts) > 2:
+            text = " ".join(parts[:2]).strip()
+
+        words = text.split()
+        if len(words) > 28:
+            text = " ".join(words[:28]).strip()
+            if not text.endswith((".", "!", "?")):
+                text += "."
+
         return text
 
-    def _tighten_education_style(self, text: str) -> str:
-        t = text.strip()
-
-        # çok uzun paragrafı sadeleştir
-        words = t.split()
-        if len(words) > 40:
-            t = " ".join(words[:40]).strip()
-            if not t.endswith("."):
-                t += "."
-
-        # buyurgan dili azalt
+    def _soften_style(self, text: str) -> str:
         replacements = {
-            "yapmalısın": "yapabilirsin",
             "zorundasın": "istersen deneyebilirsin",
-            "hemen bunu yap": "önce bunu deneyebilirsin",
-            "başarısızsın": "zorlanıyor olabilirsin",
+            "yapmalısın": "yapabilirsin",
+            "hemen yap": "önce bunu deneyebilirsin",
+            "başarısız": "zorlanıyor",
         }
-        for old, new in replacements.items():
-            t = t.replace(old, new).replace(old.capitalize(), new.capitalize())
 
-        return " ".join(t.split()).strip()
+        result = text
+        for old, new in replacements.items():
+            result = result.replace(old, new)
+            result = result.replace(old.capitalize(), new.capitalize())
+
+        return result
+
+    def _ensure_turkish_friend_style(self, text: str) -> str:
+        result = text.strip()
+
+        # Çok kuru kalırsa hafif yumuşat
+        if result in {"Tamam", "Peki"}:
+            result += "."
+
+        # Sonda gereksiz çift soru işaretlerini sadeleştir
+        result = result.replace("??", "?").replace("!!", "!")
+
+        return result
 
     def _split_sentences(self, text: str):
         parts = []
@@ -149,7 +166,7 @@ class ResponsePolicy:
                 parts.append(current.strip())
                 current = ""
 
-        if current:
+        if current.strip():
             parts.append(current.strip())
 
         return parts
@@ -157,16 +174,17 @@ class ResponsePolicy:
     def _is_similar(self, a: str, b: str) -> bool:
         a_tokens = set(a.lower().split())
         b_tokens = set(b.lower().split())
+
         if not a_tokens or not b_tokens:
             return False
 
         overlap = len(a_tokens & b_tokens) / max(len(a_tokens), 1)
-        return overlap > 0.7
+        return overlap > 0.70
 
     def _diversify(self, text: str) -> str:
-        fallback_variants = [
-            "Bunu başka bir şekilde söyleyeyim.",
-            "Şöyle düşünelim.",
-            "Buna başka taraftan bakalım.",
+        fallbacks = [
+            "Bunu daha kısa söyleyeyim.",
+            "Şöyle diyeyim.",
+            "Daha sade anlatayım.",
         ]
-        return fallback_variants[0]
+        return fallbacks[0]
