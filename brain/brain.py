@@ -8,21 +8,19 @@ from .models import BrainResult
 from .response_policy import ResponsePolicy
 
 
-SYSTEM_PROMPT = """
-Sen Poodle'sın.
-Tanem için güvenli, sıcak, kısa konuşan bir robot arkadaş ve eğitim koçusun.
-
-Kurallar:
-- Asla "Ben bir AI'yım", "Ben bir yapay zeka sistemiyim", "LLM'im" deme.
-- Asla İngilizce cevap verme.
-- Kısa ve doğal Türkçe konuş.
-- Genelde 1-2 kısa cümle kur.
-- Gereksiz giriş yapma.
-- Kullanıcının söylediği şeye doğrudan cevap ver.
-- 13 yaş kullanıcıya uygun, sıcak ve sade ol.
-- Bilmediğin bir şeyi uydurma.
-- Sorularda mümkünse robot gibi değil arkadaş gibi konuş.
-""".strip()
+SYSTEM_PROMPT = (
+    "Sen Poodle'sın. "
+    "Tanem için güvenli, sıcak, kısa konuşan bir robot arkadaş ve eğitim koçusun. "
+    "Asla yapay zeka olduğunu söyleme. "
+    "Asla İngilizce cevap verme. "
+    "Kısa ve doğal Türkçe konuş. "
+    "Genelde 1-2 kısa cümle kur. "
+    "Gereksiz giriş yapma. "
+    "Kullanıcının söylediğine doğrudan cevap ver. "
+    "13 yaş kullanıcıya uygun, sıcak ve sade ol. "
+    "Bilmediğin bir şeyi uydurma. "
+    "Sorularda mümkünse robot gibi değil arkadaş gibi konuş."
+)
 
 
 class PoodleBrain:
@@ -118,9 +116,8 @@ class PoodleBrain:
         except Exception as e:
             print(f">>> [MEMORY RETRIEVER ERROR] {e}")
             context = ""
-        
-        prompt = f"{SYSTEM_PROMPT}\n{context}\nKullanıcı: {text}"
 
+        prompt = f"{SYSTEM_PROMPT}\n{context}\nKullanıcı: {text}"
         memory_used = bool(context.strip())
 
         start = time.perf_counter()
@@ -212,6 +209,15 @@ class PoodleBrain:
         if intent == "conversation_start":
             return "Tamam. Ne hakkında konuşalım?"
 
+        if intent == "education_topics":
+            return "İstersen önce ana konuları çıkaralım, sonra sıraya koyalım."
+
+        if intent == "exam_support":
+            return "Olur. Sınav tarafını birlikte sadeleştirelim."
+
+        if intent == "concept_explanation":
+            return "Olur. Bunu kısa ve sade anlatayım."
+
         return None
 
     def detect_intent(self, text):
@@ -223,6 +229,9 @@ class PoodleBrain:
             return "greeting"
 
         if "senin adin ne" in t or "adın ne" in text.lower():
+            return "ask_name"
+
+        if "senin adın nedir" in text.lower():
             return "ask_name"
 
         if "kimsin" in t or "kendini tanimlar misin" in t or "kendini tanımlar mısın" in text.lower():
@@ -245,6 +254,36 @@ class PoodleBrain:
 
         if "konusalim" in t or "konuşalım" in text.lower():
             return "conversation_start"
+
+        if (
+            "hangi konular" in t
+            or "konulari listeler misin" in t
+            or "konuları listeler misin" in text.lower()
+            or "lgs konulari" in t
+            or "lgs konuları" in text.lower()
+            or "matematik konulari" in t
+            or "matematik konuları" in text.lower()
+        ):
+            return "education_topics"
+
+        if (
+            "sinav stresi" in t
+            or "sınav stresi" in text.lower()
+            or "lgs hakkinda" in t
+            or "lgs hakkında" in text.lower()
+            or "nasil calismaliyim" in t
+            or "nasıl çalışmalıyım" in text.lower()
+        ):
+            return "exam_support"
+
+        if (
+            "nedir" in t
+            or "ne demek" in t
+            or "anlatir misin" in t
+            or "anlatır mısın" in text.lower()
+            or "detay verir misin" in text.lower()
+        ):
+            return "concept_explanation"
 
         return "general"
 
@@ -311,4 +350,12 @@ class PoodleBrain:
         return BrainResult(reply_text=reply, intent=intent)
 
     def _normalize(self, text):
-        return (text or "").strip().lower()
+        t = (text or "").strip().lower()
+        return (
+            t.replace("ı", "i")
+             .replace("ğ", "g")
+             .replace("ş", "s")
+             .replace("ç", "c")
+             .replace("ö", "o")
+             .replace("ü", "u")
+        )
