@@ -1,75 +1,58 @@
 # memory/memory_retriever.py
 
-from memory.embedder import Embedder
-from memory.vector_index import VectorIndex
+from .embedder import Embedder
+from .vector_index import VectorIndex
 
 
 class MemoryRetriever:
     def __init__(self, memory_manager):
-        self.mm = memory_manager
+        self.memory = memory_manager
         self.embedder = Embedder()
-        self.vector = VectorIndex()
+        self.index = VectorIndex()
 
-    def get_context(self, query: str):
-        query = query.lower()
+    def get_context(self, text: str) -> str:
+        parts = []
 
-        recent = self._get_recent()
-        keyword = self._get_keyword(query)
-        semantic = self._get_vector(query)
-        profile = self._get_profile()
+        # name
+        name = self._get_name()
+        if name:
+            parts.append(f"Kullanıcının adı {name}.")
 
-        return self._build(recent, keyword, semantic, profile)
+        # vector search
+        memories = self._vector_search(text)
 
-    def _get_recent(self):
+        if memories:
+            parts.append("İlgili geçmiş bilgiler:")
+            for m in memories:
+                parts.append(f"- {m}")
+
+        return "\n".join(parts)
+
+    # -----------------------
+    def _vector_search(self, text):
         try:
-            rows = self.mm.get_recent_memories(3)
-            return [r["content"] for r in rows]
-        except:
+            vec = self.embedder.embed(text)
+            ids, scores = self.index.search(vec, k=3)
+
+            results = []
+            for i in ids:
+                if i == -1:
+                    continue
+
+                m = self.memory.get_memory_by_id(i)
+                if m:
+                    results.append(m)
+
+            return results
+
+        except Exception as e:
+            print(f">>> [VECTOR SEARCH ERROR] {e}")
             return []
 
-    def _get_keyword(self, query):
-        try:
-            rows = self.mm.search_memories_by_keyword(query, 3)
-            return [r["content"] for r in rows]
-        except:
-            return []
-
-    def _get_vector(self, query):
-        try:
-            vec = self.embedder.embed(query)
-            results = self.vector.search(vec, 3)
-            return [r["content"] for r in results]
-        except:
-            return []
-
-    def _get_profile(self):
-        try:
-            profile = self.mm.get_person_profile()
-            parts = []
-
-            if profile.get("likes"):
-                parts.append(f"Sevdiği şeyler: {profile['likes']}")
-
-            if profile.get("difficulties"):
-                parts.append(f"Zorlandığı konular: {profile['difficulties']}")
-
-            return parts
-        except:
-            return []
-
-    def _build(self, recent, keyword, semantic, profile):
-        context_parts = []
-
-        if profile:
-            context_parts.append("Kullanıcı:\n- " + "\n- ".join(profile))
-
-        if recent:
-            context_parts.append("Son:\n- " + "\n- ".join(recent))
-
-        if keyword:
-            context_parts.append("Anahtar eşleşme:\n- " + "\n- ".join(keyword))
-
-        if semantic:
-            context_parts.append("Benzer geçmiş:\n- " + "\n- ".join(semantic))
-
-        return "\n\n".join(context_parts)
+    # -----------------------
+    def _get_name(self):
+        if hasattr(self.memory, "get_person_by_role"):
+            p = self.memory.get_person_by_role("tanem")
+            if p and p.get("name"):
+                return p["name"]
+        return None
