@@ -13,46 +13,56 @@ class MemoryRetriever:
     def get_context(self, text: str) -> str:
         parts = []
 
-        # name
         name = self._get_name()
         if name:
             parts.append(f"Kullanıcının adı {name}.")
 
-        # vector search
         memories = self._vector_search(text)
+
+        if not memories:
+            memories = self._fallback_search(text)
 
         if memories:
             parts.append("İlgili geçmiş bilgiler:")
-            for m in memories:
+            for m in memories[:3]:
                 parts.append(f"- {m}")
 
-        return "\n".join(parts)
+        context = "\n".join(parts).strip()
+        print(f">>> [RAG CONTEXT] {context if context else 'YOK'}")
+        return context
 
-    # -----------------------
+    def _get_name(self):
+        try:
+            p = self.memory.get_person_by_role("tanem")
+            if p and p.get("name"):
+                return p["name"]
+        except Exception:
+            pass
+        return None
+
     def _vector_search(self, text):
         try:
+            if self.index.total() == 0:
+                return []
+
             vec = self.embedder.embed(text)
-            ids, scores = self.index.search(vec, k=3)
+            results = self.index.search(vec, k=3)
 
-            results = []
-            for i in ids:
-                if i == -1:
-                    continue
+            memories = []
+            for item in results:
+                memory_id = item["memory_id"]
+                memory_text = self.memory.get_memory_by_id(memory_id)
+                if memory_text:
+                    memories.append(memory_text)
 
-                m = self.memory.get_memory_by_id(i)
-                if m:
-                    results.append(m)
-
-            return results
+            return memories
 
         except Exception as e:
             print(f">>> [VECTOR SEARCH ERROR] {e}")
             return []
 
-    # -----------------------
-    def _get_name(self):
-        if hasattr(self.memory, "get_person_by_role"):
-            p = self.memory.get_person_by_role("tanem")
-            if p and p.get("name"):
-                return p["name"]
-        return None
+    def _fallback_search(self, text):
+        try:
+            return self.memory.search_memories(text, limit=3)
+        except Exception:
+            return []
