@@ -1,100 +1,60 @@
-# 🧠 Poodle Robot main/docs Architecture
+# 📄 docs/ARCHITECTURE.md (FINAL)
+
+# 🧠 Sistem Mimarisi (Canonical)
 
 ---
 
 ## 🎯 Amaç
 
-Poodle, multi-modal bir child companion AI sistemidir.
+Robotu:
+- anlayan
+- düşünen
+- hatırlayan
+- kişiselleşen
 
-Amaç:
-- Tanem’i tanımak
-- Onunla doğal etkileşim kurmak
-- Uzun vadeli hafıza oluşturmak
-- Eğitim ve duygusal destek sağlamak
-
----
-
-## 🧱 Katmanlı Mimari
-
-### 1. Perception Layer
-
-Girdi sistemleri:
-
-- Speech (Whisper + VAD)
-- Vision (kamera + Hailo)
-- OCR (doküman okuma)
+bir yapıya dönüştürmek.
 
 ---
 
-### 2. Identity Layer
+## 🧩 Katmanlar
 
-Robot “kimi görüyorum?” sorusunu cevaplar.
-
-Bileşenler:
-- Face embedding
-- Voice pattern (opsiyonel)
-- Relationship graph
+### 1. Perception
+- Audio (STT)
+- Vision (future)
 
 ---
 
-### 3. Memory Layer
+### 2. Decision Layer
 
-Türler:
-
-- Profile memory
-- Episodic memory
-- Educational memory
-- Relationship memory
-
----
-
-### 4. Decision Layer (Brain)
-
-Alt modüller:
-
-- intent_router
-- dialogue_manager
-- response_policy
-- skill_handlers
-- support_policy
+- intent_router → ne istiyor?
+- dialogue_manager → bağlam
+- response_policy → nasıl cevap?
+- education_engine → öğretim
+- skill_handlers → deterministic logic
 
 ---
 
-### 5. Expression Layer
+### 3. Memory Layer (Sprint 7)
 
-- Piper TTS
-- Face UI
-- Behavior state machine
+#### Bileşenler
+- memory_writer → kayıt
+- memory_retriever → çağırma
+- memory_manager → DB yönetimi
 
----
-
-## 🔄 Veri Akışı
-
-- Mic → VAD → STT → Intent → Skill / LLM → Response → TTS
-- Camera → Detection → Identity → Memory → Behavior
-
-## ⚠️ Kritik Tasarım Kararı
-
-LLM:
-- karar verici değil
-- sadece üretici
-
-Karar:
-- policy + state machine tarafından verilir
+#### Veri tipleri
+- profile
+- episodic
+- preference
+- emotional
 
 ---
 
-## 📌 Edge-first yaklaşım
+### 4. Expression
 
-- Offline çalışabilmeli
-- Minimum latency
-- Veri güvenliği
+- TTS
+- UI
+- state machine
 
 ---
 
-## 🚀 Gelecek genişleme
-
-- Vision tracking
-- Multi-person awareness
-- Education engine
-- Emotion-aware interaction
+## 🔁 Akış
