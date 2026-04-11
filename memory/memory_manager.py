@@ -346,3 +346,11 @@ class MemoryManager:
                 "llm_call_count": len(llm_calls),
             },
         }
+
+def get_memory_by_id(self, memory_id):
+    with get_connection() as conn:
+        row = conn.execute("""
+        SELECT content FROM episodic_memories WHERE id=?
+        """, (memory_id,)).fetchone()
+
+    return row[0] if row else None
