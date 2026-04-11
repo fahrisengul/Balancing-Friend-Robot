@@ -59,3 +59,12 @@ Bu doküman; robotun dış gövde (kasa), iç yerleşim ve teknik port çıkış
 1. Önceki versiyonlardaki 8 inç ekran ve HDMI kablo yerleşimi iptal edilmiştir.
 2. Güncel tasarım **7 inç DSI (C)** ekran ve **DIY Pil Paketi** üzerine kurgulanmıştır.
 3. Kasa içindeki tüm bileşenlerin (özellikle SSD kutusu ve pil yuvası) sarsılmaması için sabitleyici tırnaklar/kanallar eklenmelidir.
+
+## 🧠 Software Alignment
+
+Bu donanım:
+- multi-service AI system
+- memory + retrieval
+- continuous interaction
+
+için optimize edilmiştir.
