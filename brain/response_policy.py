@@ -36,8 +36,9 @@ class ResponsePolicy:
         if intent in template_intents:
             return Decision("template")
 
-        if len(t) <= 1:
-            return Decision("clarify", "Biraz daha açık söyler misin?")
+        # bozuk kısa STT girişi
+        if len(t.split()) <= 2 and intent == "general":
+            return Decision("clarify", "Son kısmı tam anlayamadım. Bir kez daha söyler misin?")
 
         return Decision("llm")
 
@@ -49,13 +50,14 @@ class ResponsePolicy:
         lower = text.lower()
 
         if self._looks_like_persona_break(lower):
-            return "Tamam. Bunu daha doğal söyleyeyim. Devam edelim mi?"
+            return "Tamam. Bunu daha sade söyleyeyim. Devam edelim mi?"
 
         text = self._strip_bad_openings(text)
         text = self._strip_meta_robotic(text)
+        text = self._strip_garbage_terms(text)
         text = self._limit_length(text)
         text = self._soften_style(text)
-        text = self._ensure_turkish_friend_style(text)
+        text = self._force_child_friendly_style(text)
 
         if len(text.strip()) < 3:
             return "Biraz daha açık söyler misin?"
@@ -77,18 +79,21 @@ class ResponsePolicy:
             "ai system",
             "ben bir sistemim",
             "as an ai",
+            "sen poodle'sın",
+            "sen poodlesin",
         ]
         return any(b in lower for b in banned)
 
     def _strip_bad_openings(self, text: str) -> str:
         bad_starts = [
+            "Merhaba Tanem! ",
             "Merhaba! ",
             "Merhaba. ",
+            "Selam Tanem! ",
             "Selam! ",
             "Selam. ",
-            "Ben Poodle, ",
-            "Ben bir AI sistemiyim, ",
-            "Ben bir yapay zeka sistemiyim, ",
+            "Hey, ",
+            "Tanem! ",
         ]
 
         result = text
@@ -107,6 +112,8 @@ class ResponsePolicy:
             "Lütfen sorularınızı bildirin": "İstersen sorabilirsin",
             "gerçekten mi": "",
             "neden mi": "",
+            "robot arkadaşın ve eğitim koçuymuşum": "robot arkadaşınım",
+            "olacam": "olurum",
         }
 
         result = text
@@ -116,14 +123,30 @@ class ResponsePolicy:
 
         return " ".join(result.split()).strip()
 
+    def _strip_garbage_terms(self, text: str) -> str:
+        bad_terms = [
+            "hız nav stressi",
+            "naw stressi",
+            "now see to see",
+            "sinov",
+            "hıznav",
+            "naw",
+        ]
+
+        lowered = text.lower()
+        if any(b in lowered for b in bad_terms):
+            return "Bunu tam net duyamadım. İstersen bir kez daha söyle."
+
+        return text
+
     def _limit_length(self, text: str) -> str:
         parts = self._split_sentences(text)
         if len(parts) > 2:
             text = " ".join(parts[:2]).strip()
 
         words = text.split()
-        if len(words) > 28:
-            text = " ".join(words[:28]).strip()
+        if len(words) > 22:
+            text = " ".join(words[:22]).strip()
             if not text.endswith((".", "!", "?")):
                 text += "."
 
@@ -135,6 +158,7 @@ class ResponsePolicy:
             "yapmalısın": "yapabilirsin",
             "hemen yap": "önce bunu deneyebilirsin",
             "başarısız": "zorlanıyor",
+            "çok yaygın bir durum": "olabilir",
         }
 
         result = text
@@ -144,15 +168,18 @@ class ResponsePolicy:
 
         return result
 
-    def _ensure_turkish_friend_style(self, text: str) -> str:
+    def _force_child_friendly_style(self, text: str) -> str:
         result = text.strip()
 
-        # Çok kuru kalırsa hafif yumuşat
+        # çok kuru kalırsa yumuşat
         if result in {"Tamam", "Peki"}:
             result += "."
 
-        # Sonda gereksiz çift soru işaretlerini sadeleştir
         result = result.replace("??", "?").replace("!!", "!")
+        result = result.replace("Hayır, hayır!", "Yok, şöyle diyeyim.")
+        result = result.replace("Hayır,", "")
+        result = result.replace("O zaman sana biraz bilgi vereyim.", "İstersen kısa anlatayım.")
+        result = " ".join(result.split())
 
         return result
 
