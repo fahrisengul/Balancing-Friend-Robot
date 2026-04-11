@@ -47,7 +47,7 @@ Bu proje:
 - 7” ekran
 - USB mikrofon + hoparlör
 - Raspberry Pi Camera
-- (opsiyonel) Hailo AI Accelerator (13 TOPS)
+- Hailo AI Accelerator (13 TOPS) ( Görüntü işleme teknolojisi ile görsel iletişim, Tanem'i ve çevresini tanıma, aile üyelerini ve arkadaşlarını tanımak, sınav sonuçları ve diğer görsel işlemler için zorunlu.)
 
 ---
 
