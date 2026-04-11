@@ -16,47 +16,60 @@ class MemoryWriter:
         if not text:
             return
 
-        # isim yakala
         name = self._extract_name(text)
         if name:
             self._save_name(name)
 
-        # meaningful memory
         if self._is_meaningful(text):
             self._save_memory(text)
 
-    # -----------------------
+    def _extract_name(self, text):
+        t = text.lower()
+
+        if "bana " in t and " diyebilirsin" in t:
+            start = t.find("bana ") + len("bana ")
+            end = t.find(" diyebilirsin")
+            if end > start:
+                return text[start:end].strip().title()
+
+        if "ben " in t and " tanem" in t:
+            return "Tanem"
+
+        return None
+
+    def _save_name(self, name):
+        try:
+            self.memory.upsert_person_profile("tanem", name)
+            print(f">>> [MEMORY NAME] {name}")
+        except Exception as e:
+            print(f">>> [MEMORY NAME ERROR] {e}")
+
+    def _is_meaningful(self, text):
+        if len(text.split()) < 3:
+            return False
+
+        t = text.lower()
+        ignore = [
+            "merhaba",
+            "selam",
+            "nasılsın",
+            "tesekkür",
+            "teşekkür",
+            "görüşürüz",
+        ]
+
+        return not any(x in t for x in ignore)
+
     def _save_memory(self, text):
         try:
             vector = self.embedder.embed(text)
 
-            # DB insert → ID al
             memory_id = self.memory.add_episodic_memory(
                 content=text,
                 timestamp=datetime.utcnow().isoformat()
             )
 
-            # vector index
-            self.index.add(vector)
+            self.index.add(vector, memory_id)
 
         except Exception as e:
             print(f">>> [VECTOR SAVE ERROR] {e}")
-
-    # -----------------------
-    def _extract_name(self, text):
-        t = text.lower()
-
-        if "bana " in t and " diyebilirsin" in t:
-            start = t.find("bana ") + 5
-            end = t.find(" diyebilirsin")
-
-            return text[start:end].strip().title()
-
-        return None
-
-    def _save_name(self, name):
-        if hasattr(self.memory, "upsert_person_profile"):
-            self.memory.upsert_person_profile("tanem", name)
-
-    def _is_meaningful(self, text):
-        return len(text.split()) >= 3
