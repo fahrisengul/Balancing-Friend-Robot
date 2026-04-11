@@ -2,10 +2,10 @@ import time
 from datetime import date
 
 from memory.memory_manager import MemoryManager
-from .models import BrainResult
-from .response_policy import ResponsePolicy
 from memory.memory_writer import MemoryWriter
 from memory.memory_retriever import MemoryRetriever
+from .models import BrainResult
+from .response_policy import ResponsePolicy
 
 
 SYSTEM_PROMPT = """
@@ -30,10 +30,10 @@ class PoodleBrain:
     def __init__(self, llm):
         self.llm = llm
         self.memory = MemoryManager()
-        self.policy = ResponsePolicy()
-        self._run_daily_maintenance_if_needed()
         self.writer = MemoryWriter(self.memory)
         self.retriever = MemoryRetriever(self.memory)
+        self.policy = ResponsePolicy()
+        self._run_daily_maintenance_if_needed()
 
     # =========================
     # DAILY MAINTENANCE
@@ -74,7 +74,6 @@ class PoodleBrain:
     # MAIN ENTRY
     # =========================
     def handle(self, text, session_id=None):
-        self.writer.process(text)
         text = (text or "").strip()
 
         if not text:
@@ -85,6 +84,12 @@ class PoodleBrain:
                 reply="Biraz daha açık söyler misin?",
                 session_id=session_id,
             )
+
+        # RAG v1 / Vector memory write
+        try:
+            self.writer.process(text)
+        except Exception as e:
+            print(f">>> [MEMORY WRITER ERROR] {e}")
 
         intent = self.detect_intent(text)
         source_decision = self.policy.choose_source(text, intent)
@@ -99,7 +104,7 @@ class PoodleBrain:
                 session_id=session_id,
             )
 
-        # 2) direct deterministic shortcuts
+        # 2) deterministic direct replies
         direct = self._direct_reply(text, intent)
         if direct:
             return self._log_and_return(
@@ -110,7 +115,7 @@ class PoodleBrain:
                 session_id=session_id,
             )
 
-        # 3) template from DB if possible
+        # 3) DB template
         template = self._get_template(intent)
         if template and source_decision.source == "template":
             reply = self.policy.apply(template)
@@ -122,9 +127,22 @@ class PoodleBrain:
                 session_id=session_id,
             )
 
-        # 4) LLM
-        memory_context = self._get_memory_context(text)
-        prompt = self._build_prompt(text, intent, memory_context)
+        # 4) LLM + RAG CONTEXT
+        try:
+            context = self.retriever.get_context(text)
+        except Exception as e:
+            print(f">>> [MEMORY RETRIEVER ERROR] {e}")
+            context = ""
+
+        prompt = f"""
+{SYSTEM_PROMPT}
+
+{context}
+
+Kullanıcı: {text}
+""".strip()
+
+        memory_used = bool(context.strip())
 
         start = time.perf_counter()
         raw = None
@@ -162,7 +180,7 @@ class PoodleBrain:
                 session_id=session_id,
                 model=model,
                 latency=latency,
-                memory_used=bool(memory_context),
+                memory_used=memory_used,
                 status="error",
                 error=error,
             )
@@ -180,7 +198,7 @@ class PoodleBrain:
             session_id=session_id,
             model=model,
             latency=latency,
-            memory_used=bool(memory_context),
+            memory_used=memory_used,
         )
 
     # =========================
@@ -208,7 +226,6 @@ class PoodleBrain:
             return "Görüşürüz."
 
         if intent == "user_name_define":
-            # "Bana Tanem diyebilirsin"
             name = self._extract_user_name(text)
             if name:
                 return f"Tamam. Sana {name} diyeyim."
@@ -294,7 +311,7 @@ class PoodleBrain:
         return None
 
     # =========================
-    # MEMORY
+    # MEMORY HELPERS
     # =========================
     def _remembered_name(self):
         if hasattr(self.memory, "get_person_by_role"):
@@ -318,45 +335,6 @@ class PoodleBrain:
             if candidate:
                 return candidate.title()
         return None
-
-    def _get_memory_context(self, text):
-        chunks = []
-
-        remembered_name = self._remembered_name()
-        if remembered_name:
-            chunks.append(f"Kullanıcının adı {remembered_name}.")
-
-        extracted = self._extract_user_name(text)
-        if extracted:
-            chunks.append(f"Kullanıcı kendisine {extracted} denmesini istedi.")
-
-        if hasattr(self.memory, "search_memories"):
-            try:
-                memories = self.memory.search_memories(text, limit=3)
-                if memories:
-                    chunks.append("İlgili geçmiş bilgiler:")
-                    for m in memories[:3]:
-                        chunks.append(f"- {m}")
-            except Exception:
-                pass
-
-        return "\n".join(chunks).strip()
-
-    # =========================
-    # PROMPT
-    # =========================
-    def _build_prompt(self, text, intent, memory_context):
-        parts = [SYSTEM_PROMPT]
-
-        if memory_context:
-            parts.append("İlgili hafıza bilgileri:")
-            parts.append(memory_context)
-
-        parts.append(f"Intent: {intent}")
-        parts.append(f"Kullanıcı: {text}")
-        parts.append("Cevap:")
-
-        return "\n\n".join(parts)
 
     # =========================
     # LOGGER
