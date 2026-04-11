@@ -9,8 +9,8 @@ class MemoryRetriever:
         self.index = VectorIndex()
 
         # cosine benzeri normalized IP skor eşiği
-        self.min_score = 0.42
-        self.max_memories = 2
+        self.min_score = 0.48
+        self.max_memories = 1
 
     def get_context(self, text: str) -> str:
         parts = []
