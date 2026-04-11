@@ -21,7 +21,6 @@ Kurallar:
 - Kullanıcının söylediği şeye doğrudan cevap ver.
 - 13 yaş kullanıcıya uygun, sıcak ve sade ol.
 - Bilmediğin bir şeyi uydurma.
-- Kullanıcı adını söylüyorsa bunu kabul et ve doğal cevap ver.
 - Sorularda mümkünse robot gibi değil arkadaş gibi konuş.
 """.strip()
 
@@ -35,9 +34,6 @@ class PoodleBrain:
         self.policy = ResponsePolicy()
         self._run_daily_maintenance_if_needed()
 
-    # =========================
-    # DAILY MAINTENANCE
-    # =========================
     def _run_daily_maintenance_if_needed(self):
         marker = ".last_maintenance"
 
@@ -52,10 +48,8 @@ class PoodleBrain:
             return
 
         try:
-            if hasattr(self.memory, "cleanup_logs"):
-                self.memory.cleanup_logs()
-            if hasattr(self.memory, "rebuild_daily_metrics"):
-                self.memory.rebuild_daily_metrics()
+            self.memory.cleanup_logs()
+            self.memory.rebuild_daily_metrics()
 
             with open(marker, "w", encoding="utf-8") as f:
                 f.write(today)
@@ -64,15 +58,9 @@ class PoodleBrain:
         except Exception as e:
             print(f">>> [MAINTENANCE ERROR] {e}")
 
-    # =========================
-    # ORCHESTRATOR API
-    # =========================
     def handle_user_input(self, text, session_id=None):
         return self.handle(text, session_id=session_id)
 
-    # =========================
-    # MAIN ENTRY
-    # =========================
     def handle(self, text, session_id=None):
         text = (text or "").strip()
 
@@ -85,7 +73,7 @@ class PoodleBrain:
                 session_id=session_id,
             )
 
-        # RAG v1 / Vector memory write
+        # RAG WRITE
         try:
             self.writer.process(text)
         except Exception as e:
@@ -94,7 +82,6 @@ class PoodleBrain:
         intent = self.detect_intent(text)
         source_decision = self.policy.choose_source(text, intent)
 
-        # 1) clarify
         if source_decision.source == "clarify":
             return self._log_and_return(
                 text=text,
@@ -104,7 +91,6 @@ class PoodleBrain:
                 session_id=session_id,
             )
 
-        # 2) deterministic direct replies
         direct = self._direct_reply(text, intent)
         if direct:
             return self._log_and_return(
@@ -115,7 +101,6 @@ class PoodleBrain:
                 session_id=session_id,
             )
 
-        # 3) DB template
         template = self._get_template(intent)
         if template and source_decision.source == "template":
             reply = self.policy.apply(template)
@@ -127,7 +112,7 @@ class PoodleBrain:
                 session_id=session_id,
             )
 
-        # 4) LLM + RAG CONTEXT
+        # RAG READ
         try:
             context = self.retriever.get_context(text)
         except Exception as e:
@@ -157,17 +142,16 @@ Kullanıcı: {text}
         model = getattr(self.llm, "model_name", None) or getattr(self.llm, "model", "unknown")
 
         try:
-            if hasattr(self.memory, "log_llm_call"):
-                self.memory.log_llm_call(
-                    session_id=session_id,
-                    intent=intent,
-                    model_name=model,
-                    prompt_chars=len(prompt),
-                    response_chars=len(raw) if raw else 0,
-                    latency_ms=latency,
-                    status="error" if error else "ok",
-                    error_text=error,
-                )
+            self.memory.log_llm_call(
+                session_id=session_id,
+                intent=intent,
+                model_name=model,
+                prompt_chars=len(prompt),
+                response_chars=len(raw) if raw else 0,
+                latency_ms=latency,
+                status="error" if error else "ok",
+                error_text=error,
+            )
         except Exception as e:
             print(f">>> [LOG LLM ERROR] {e}")
 
@@ -186,7 +170,6 @@ Kullanıcı: {text}
             )
 
         reply = self.policy.apply(raw)
-
         if not reply:
             reply = "Bunu daha sade sorar mısın?"
 
@@ -201,12 +184,7 @@ Kullanıcı: {text}
             memory_used=memory_used,
         )
 
-    # =========================
-    # DIRECT REPLIES
-    # =========================
     def _direct_reply(self, text, intent):
-        t = self._normalize(text)
-
         if intent == "greeting":
             return "Selam!"
 
@@ -226,10 +204,10 @@ Kullanıcı: {text}
             return "Görüşürüz."
 
         if intent == "user_name_define":
-            name = self._extract_user_name(text)
-            if name:
-                return f"Tamam. Sana {name} diyeyim."
-            return "Tamam. Nasıl istersen öyle diyeyim."
+            remembered = self._remembered_name()
+            if remembered:
+                return f"Tamam. Sana {remembered} diyeyim."
+            return "Tamam. Öyle diyeyim."
 
         if intent == "ask_user_name":
             remembered = self._remembered_name()
@@ -240,25 +218,13 @@ Kullanıcı: {text}
         if intent == "conversation_start":
             return "Tamam. Ne hakkında konuşalım?"
 
-        if intent == "ask_question_back":
-            return "Tabii. Bugün nasıl geçti?"
-
-        if intent == "ask_topic":
-            return "İstersen okul, oyunlar ya da arkadaşlar hakkında konuşabiliriz."
-
-        if intent == "open_topic":
-            return "Tamam. Başlayalım. İlk neyi konuşmak istersin?"
-
         return None
 
-    # =========================
-    # INTENT
-    # =========================
     def detect_intent(self, text):
         t = self._normalize(text)
 
-        if any(x in t for x in ["merhaba", "selam", "selamun aleykum", "selamün aleyküm"]):
-            if "nasilsin" in t or "nasılsın" in text.lower():
+        if "merhaba" in t or "selam" in t:
+            if "nasilsin" in t:
                 return "ask_status"
             return "greeting"
 
@@ -271,7 +237,7 @@ Kullanıcı: {text}
         if "nasilsin" in t or "nasılsın" in text.lower() or "iyi misin" in t:
             return "ask_status"
 
-        if "tesekkur" in t or "teşekkür" in text.lower():
+        if "tesekkur" in t or "teşekkür" in text.lower() or "sagol" in t or "sağol" in text.lower():
             return "thanks"
 
         if "gorusuruz" in t or "görüşürüz" in text.lower() or "hosca kal" in t or "hoşça kal" in text.lower():
@@ -283,62 +249,31 @@ Kullanıcı: {text}
         if "benim adim nedir" in t or "benim adım nedir" in text.lower() or "adim ne" in t:
             return "ask_user_name"
 
-        if "bana soru sor" in t:
-            return "ask_question_back"
-
-        if "ne konusalim" in t or "ne konuşalım" in text.lower():
-            return "ask_topic"
-
         if "konusalim" in t or "konuşalım" in text.lower():
             return "conversation_start"
 
         return "general"
 
-    # =========================
-    # TEMPLATE ACCESS
-    # =========================
     def _get_template(self, intent):
-        if hasattr(self.memory, "get_template"):
+        try:
+            return self.memory.get_template(intent_name=intent)
+        except TypeError:
             try:
-                return self.memory.get_template(intent_name=intent)
-            except TypeError:
-                try:
-                    return self.memory.get_template(intent)
-                except Exception:
-                    return None
+                return self.memory.get_template(intent)
             except Exception:
                 return None
-        return None
+        except Exception:
+            return None
 
-    # =========================
-    # MEMORY HELPERS
-    # =========================
     def _remembered_name(self):
-        if hasattr(self.memory, "get_person_by_role"):
-            try:
-                tanem = self.memory.get_person_by_role("tanem")
-                if tanem and tanem.get("name"):
-                    return tanem["name"]
-            except Exception:
-                pass
+        try:
+            p = self.memory.get_person_by_role("tanem")
+            if p and p.get("name"):
+                return p["name"]
+        except Exception:
+            pass
         return None
 
-    def _extract_user_name(self, text):
-        lowered = text.lower()
-        marker = "bana "
-        suffix = " diyebilirsin"
-
-        if marker in lowered and suffix in lowered:
-            start = lowered.find(marker) + len(marker)
-            end = lowered.find(suffix)
-            candidate = text[start:end].strip(" .,!?:;")
-            if candidate:
-                return candidate.title()
-        return None
-
-    # =========================
-    # LOGGER
-    # =========================
     def _log_and_return(
         self,
         text,
@@ -355,36 +290,31 @@ Kullanıcı: {text}
         normalized = self._normalize(text)
 
         try:
-            if hasattr(self.memory, "log_conversation"):
-                self.memory.log_conversation(
-                    raw_text=text,
-                    normalized_text=normalized,
-                    intent=intent,
-                    response_source=source,
-                    reply_text=reply,
-                )
+            self.memory.log_conversation(
+                raw_text=text,
+                normalized_text=normalized,
+                intent=intent,
+                response_source=source,
+                reply_text=reply,
+            )
         except Exception as e:
             print(f">>> [LOG CONVERSATION ERROR] {e}")
 
         try:
-            if hasattr(self.memory, "log_conversation_telemetry"):
-                self.memory.log_conversation_telemetry(
-                    session_id=session_id,
-                    intent=intent,
-                    response_source=source,
-                    model_name=model,
-                    latency_ms=latency,
-                    memory_context_used=memory_used,
-                    status=status,
-                    error_text=error,
-                )
+            self.memory.log_conversation_telemetry(
+                session_id=session_id,
+                intent=intent,
+                response_source=source,
+                model_name=model,
+                latency_ms=latency,
+                memory_context_used=memory_used,
+                status=status,
+                error_text=error,
+            )
         except Exception as e:
             print(f">>> [LOG TELEMETRY ERROR] {e}")
 
         return BrainResult(reply_text=reply, intent=intent)
 
-    # =========================
-    # NORMALIZE
-    # =========================
     def _normalize(self, text):
         return (text or "").strip().lower()
