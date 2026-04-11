@@ -87,17 +87,7 @@ class PoodleSpeech:
 
     def _auto_select_input_device(self):
         devices = PvRecorder.get_available_devices()
-
-        # --- TEST HACK: JABRA FORCE ---
-        for i, d in enumerate(self.devices):
-            name = d["name"].lower()
-            if "jabra" in name:
-                self.device_index = i
-                self.device_name = d["name"]
-                log_time(f">>> [MIC OVERRIDE - TEMP] Jabra seçildi: #{i} {d['name']}")
-                return
-        # --- END ---
-        
+      
         if self.device_index is not None:
             if 0 <= self.device_index < len(devices):
                 self.device_name = devices[self.device_index]
@@ -112,7 +102,7 @@ class PoodleSpeech:
             p = preferred.lower()
             for i, name, lowered in lowered_devices:
                 if p in lowered:
-                    self.device_index = i
+                    self.device_index = 0
                     self.device_name = name
                     log_time(f">>> [MIC ACTIVE] Otomatik seçim: #{i} {name}")
                     return
