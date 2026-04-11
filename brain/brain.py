@@ -22,6 +22,8 @@ class PoodleBrain:
         self.system_prompt = build_system_prompt()
 
         self.memory = MemoryManager()
+        from datetime import date
+        
         self.education = EducationEngine()
         self.writer = MemoryWriter(self.memory)
         self.retriever = MemoryRetriever(self.memory)
@@ -326,3 +328,36 @@ Kurallar:
             .replace("ü", "u")
         )
         return " ".join(t.split())
+        
+    def _run_daily_maintenance_if_needed(self):
+    today = date.today().isoformat()
+
+    # Basit local işaret dosyası
+    marker_path = ".last_maintenance_date"
+
+    last_run = None
+    try:
+        with open(marker_path, "r", encoding="utf-8") as f:
+            last_run = f.read().strip()
+    except FileNotFoundError:
+        pass
+
+    if last_run == today:
+        return
+
+    try:
+        self.memory.rebuild_daily_metrics()
+        self.memory.cleanup_logs(
+            conversation_days=30,
+            llm_days=90,
+            system_event_days=60,
+            run_vacuum=True,
+        )
+
+        with open(marker_path, "w", encoding="utf-8") as f:
+            f.write(today)
+
+        print(">>> [MAINTENANCE] Daily metrics + cleanup tamamlandı.")
+
+    except Exception as e:
+        print(f">>> [MAINTENANCE ERROR] {e}")
