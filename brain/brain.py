@@ -12,9 +12,6 @@ class PoodleBrain:
         self.memory = MemoryManager()
         self._run_daily_maintenance_if_needed()
 
-    # =========================
-    # DAILY MAINTENANCE
-    # =========================
     def _run_daily_maintenance_if_needed(self):
         marker = ".last_maintenance"
 
@@ -41,15 +38,9 @@ class PoodleBrain:
         except Exception as e:
             print(f">>> [MAINTENANCE ERROR] {e}")
 
-    # =========================
-    # ORCHESTRATOR API
-    # =========================
     def handle_user_input(self, text, session_id=None):
         return self.handle(text, session_id)
 
-    # =========================
-    # MAIN LOGIC
-    # =========================
     def handle(self, text, session_id=None):
 
         text = (text or "").strip()
@@ -65,7 +56,6 @@ class PoodleBrain:
 
         intent = self.detect_intent(text)
 
-        # ---- TEMPLATE ----
         if intent == "greeting":
             return self._log_and_return(
                 text=text,
@@ -75,7 +65,6 @@ class PoodleBrain:
                 session_id=session_id
             )
 
-        # ---- LLM FLOW ----
         prompt = f"Kullanıcı: {text}"
 
         start = time.perf_counter()
@@ -91,7 +80,6 @@ class PoodleBrain:
 
         model = getattr(self.llm, "model_name", None) or getattr(self.llm, "model", "unknown")
 
-        # LLM LOG
         try:
             self.memory.log_llm_call(
                 session_id=session_id,
@@ -131,9 +119,6 @@ class PoodleBrain:
             latency=latency
         )
 
-    # =========================
-    # LOGGER
-    # =========================
     def _log_and_return(
         self,
         text,
@@ -150,7 +135,6 @@ class PoodleBrain:
 
         normalized = self._normalize(text)
 
-        # conversation_logs
         try:
             self.memory.log_conversation(
                 raw_text=text,
@@ -162,7 +146,6 @@ class PoodleBrain:
         except Exception as e:
             print(f">>> [LOG CONVERSATION ERROR] {e}")
 
-        # telemetry
         try:
             self.memory.log_conversation_telemetry(
                 session_id=session_id,
@@ -179,11 +162,7 @@ class PoodleBrain:
 
         return BrainResult(reply_text=reply, intent=intent)
 
-    # =========================
-    # INTENT (TEMP)
-    # =========================
     def detect_intent(self, text):
-
         t = text.lower()
 
         if "merhaba" in t or "selam" in t:
@@ -191,8 +170,5 @@ class PoodleBrain:
 
         return "general"
 
-    # =========================
-    # NORMALIZE
-    # =========================
     def _normalize(self, text):
         return (text or "").strip().lower()
