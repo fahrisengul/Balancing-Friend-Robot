@@ -81,7 +81,7 @@ class MemoryWriter:
             return "episodic"
 
         # Genel ama anlamlı sayılabilecek uzun kullanıcı ifadeleri
-        if len(text.split()) >= 5 and self._is_coherent_enough(text):
+        if len(text.split()) >= 4 and self._is_coherent_enough(text):
             return "episodic"
 
         return "discard"
