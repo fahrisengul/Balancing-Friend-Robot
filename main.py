@@ -3,6 +3,7 @@ import sys
 
 from speech_engine import PoodleSpeech
 from brain.brain import PoodleBrain
+from brain.llm_client import LLMClient
 from character_ui import PoodleCharacter
 from orchestrator import Orchestrator
 
@@ -13,16 +14,9 @@ def main():
     pygame.display.set_caption("Poodle Robot")
     clock = pygame.time.Clock()
 
-    # Input tarafında Jabra yerine daha stabil mikrofonları önce dene.
-    speech = PoodleSpeech(
-        preferred_input_names=[
-            "MacBook Pro Mikrofonu",
-            "FahriSengul Mikrofonu",
-            "Jabra",
-        ]
-    )
-
-    brain = PoodleBrain()
+    speech = PoodleSpeech()
+    llm = LLMClient()
+    brain = PoodleBrain(llm)
     face = PoodleCharacter(1024, 600)
     face.bind_audio_source(speech)
 
