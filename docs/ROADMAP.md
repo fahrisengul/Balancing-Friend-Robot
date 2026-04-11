@@ -120,6 +120,8 @@ Amaç:
 - Riskli durum yönetimi
 - Ebeveyn kontrol mekanizması
 - Memory güvenlik katmanı
+- Safety layer v2
+- hallucination control
 
 👉 Sonuç:
 - Güvenli ürün  
