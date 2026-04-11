@@ -6,15 +6,14 @@ from .models import BrainResult
 
 
 class PoodleBrain:
+
     def __init__(self, llm):
         self.llm = llm
         self.memory = MemoryManager()
         self._run_daily_maintenance_if_needed()
 
     # =========================
-    # DAILY CLEANUP / METRICS
-    # MacBook'ta uygulama açıldığında günde bir kez çalışır
-    # Pi tarafında bunu cron'a taşıyacağız
+    # DAILY MAINTENANCE
     # =========================
     def _run_daily_maintenance_if_needed(self):
         marker = ".last_maintenance"
@@ -22,9 +21,7 @@ class PoodleBrain:
         try:
             with open(marker, "r", encoding="utf-8") as f:
                 last = f.read().strip()
-        except FileNotFoundError:
-            last = None
-        except Exception:
+        except:
             last = None
 
         today = date.today().isoformat()
@@ -40,19 +37,21 @@ class PoodleBrain:
                 f.write(today)
 
             print(">>> [MAINTENANCE DONE]")
+
         except Exception as e:
             print(f">>> [MAINTENANCE ERROR] {e}")
 
     # =========================
-    # ORCHESTRATOR UYUMLU API
+    # ORCHESTRATOR API
     # =========================
     def handle_user_input(self, text, session_id=None):
-        return self.handle(text, session_id=session_id)
+        return self.handle(text, session_id)
 
     # =========================
-    # MAIN ENTRY
+    # MAIN LOGIC
     # =========================
     def handle(self, text, session_id=None):
+
         text = (text or "").strip()
 
         if not text:
@@ -61,33 +60,27 @@ class PoodleBrain:
                 intent="empty",
                 source="clarify",
                 reply="Biraz daha açık söyler misin?",
-                session_id=session_id,
-                status="ok",
+                session_id=session_id
             )
 
         intent = self.detect_intent(text)
 
-        # ---------------------------------
-        # TEMPLATE / SKILL kısa yol
-        # ---------------------------------
+        # ---- TEMPLATE ----
         if intent == "greeting":
             return self._log_and_return(
                 text=text,
                 intent=intent,
                 source="template",
                 reply="Selam.",
-                session_id=session_id,
-                status="ok",
+                session_id=session_id
             )
 
-        # ---------------------------------
-        # LLM FLOW
-        # ---------------------------------
+        # ---- LLM FLOW ----
         prompt = f"Kullanıcı: {text}"
 
         start = time.perf_counter()
-        error = None
         raw = None
+        error = None
 
         try:
             raw = self.llm.generate(prompt)
@@ -96,21 +89,19 @@ class PoodleBrain:
 
         latency = int((time.perf_counter() - start) * 1000)
 
-        model = getattr(self.llm, "model_name", None)
-        if not model:
-            model = getattr(self.llm, "model", "unknown")
+        model = getattr(self.llm, "model_name", None) or getattr(self.llm, "model", "unknown")
 
-        # LLM telemetry
+        # LLM LOG
         try:
             self.memory.log_llm_call(
                 session_id=session_id,
-                model_name=model,
                 intent=intent,
+                model_name=model,
                 prompt_chars=len(prompt),
                 response_chars=len(raw) if raw else 0,
                 latency_ms=latency,
                 status="error" if error else "ok",
-                error_text=error,
+                error_text=error
             )
         except Exception as e:
             print(f">>> [LOG LLM ERROR] {e}")
@@ -124,9 +115,8 @@ class PoodleBrain:
                 session_id=session_id,
                 model=model,
                 latency=latency,
-                memory_used=False,
                 status="error",
-                error=error,
+                error=error
             )
 
         final_reply = raw if raw else "Bir şeyler ters gitti."
@@ -138,71 +128,71 @@ class PoodleBrain:
             reply=final_reply,
             session_id=session_id,
             model=model,
-            latency=latency,
-            memory_used=False,
-            status="ok",
+            latency=latency
         )
 
     # =========================
-    # LOGGER WRAPPER
-    # conversation_logs + conversation_telemetry birlikte yazılır
+    # LOGGER
     # =========================
-   def _log_and_return(
-    self,
-    text,
-    intent,
-    source,
-    reply,
-    session_id=None,
-    model=None,
-    latency=None,
-    memory_used=False,
-    status="ok",
-    error=None,
-):
-    normalized = self._normalize(text)
+    def _log_and_return(
+        self,
+        text,
+        intent,
+        source,
+        reply,
+        session_id=None,
+        model=None,
+        latency=None,
+        memory_used=False,
+        status="ok",
+        error=None
+    ):
 
-    try:
-        self.memory.log_conversation(
-            raw_text=text,
-            normalized_text=normalized,
-            intent=intent,
-            response_source=source,
-            reply_text=reply,
-        )
-    except Exception as e:
-        print(f">>> [LOG CONVERSATION ERROR] {e}")
+        normalized = self._normalize(text)
 
-    try:
-        self.memory.log_conversation_telemetry(
-            session_id=session_id,
-            intent=intent,
-            response_source=source,
-            model_name=model,
-            latency_ms=latency,
-            memory_context_used=memory_used,
-            status=status,
-            error_text=error,
-        )
-    except Exception as e:
-        print(f">>> [LOG TELEMETRY ERROR] {e}")
+        # conversation_logs
+        try:
+            self.memory.log_conversation(
+                raw_text=text,
+                normalized_text=normalized,
+                intent=intent,
+                response_source=source,
+                reply_text=reply
+            )
+        except Exception as e:
+            print(f">>> [LOG CONVERSATION ERROR] {e}")
 
-    return BrainResult(reply_text=reply, intent=intent)
+        # telemetry
+        try:
+            self.memory.log_conversation_telemetry(
+                session_id=session_id,
+                intent=intent,
+                response_source=source,
+                model_name=model,
+                latency_ms=latency,
+                memory_context_used=memory_used,
+                status=status,
+                error_text=error
+            )
+        except Exception as e:
+            print(f">>> [LOG TELEMETRY ERROR] {e}")
+
+        return BrainResult(reply_text=reply, intent=intent)
 
     # =========================
-    # INTENT (placeholder)
-    # Bunu sonra gerçek intent_router'a bağlayacağız
+    # INTENT (TEMP)
     # =========================
     def detect_intent(self, text):
-        lower = text.lower()
 
-        if "selam" in lower or "merhaba" in lower:
+        t = text.lower()
+
+        if "merhaba" in t or "selam" in t:
             return "greeting"
 
         return "general"
 
     # =========================
-    # NORMALIZER
+    # NORMALIZE
     # =========================
     def _normalize(self, text):
         return (text or "").strip().lower()
