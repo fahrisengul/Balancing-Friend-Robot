@@ -4,6 +4,8 @@ from datetime import date
 from memory.memory_manager import MemoryManager
 from .models import BrainResult
 from .response_policy import ResponsePolicy
+from memory.memory_writer import MemoryWriter
+from memory.memory_retriever import MemoryRetriever
 
 
 SYSTEM_PROMPT = """
@@ -30,6 +32,8 @@ class PoodleBrain:
         self.memory = MemoryManager()
         self.policy = ResponsePolicy()
         self._run_daily_maintenance_if_needed()
+        self.writer = MemoryWriter(self.memory)
+        self.retriever = MemoryRetriever(self.memory)
 
     # =========================
     # DAILY MAINTENANCE
@@ -70,6 +74,7 @@ class PoodleBrain:
     # MAIN ENTRY
     # =========================
     def handle(self, text, session_id=None):
+        self.writer.process(text)
         text = (text or "").strip()
 
         if not text:
