@@ -2,6 +2,7 @@ import time
 from datetime import date
 
 from memory.memory_manager import MemoryManager
+from .models import BrainResult
 
 
 class PoodleBrain:
@@ -146,49 +147,47 @@ class PoodleBrain:
     # LOGGER WRAPPER
     # conversation_logs + conversation_telemetry birlikte yazılır
     # =========================
-    def _log_and_return(
-        self,
-        text,
-        intent,
-        source,
-        reply,
-        session_id=None,
-        model=None,
-        latency=None,
-        memory_used=False,
-        status="ok",
-        error=None,
-    ):
-        normalized = self._normalize(text)
+   def _log_and_return(
+    self,
+    text,
+    intent,
+    source,
+    reply,
+    session_id=None,
+    model=None,
+    latency=None,
+    memory_used=False,
+    status="ok",
+    error=None,
+):
+    normalized = self._normalize(text)
 
-        # 1) Eski conversation log
-        try:
-            self.memory.log_conversation(
-                raw_text=text,
-                normalized_text=normalized,
-                intent=intent,
-                response_source=source,
-                reply_text=reply,
-            )
-        except Exception as e:
-            print(f">>> [LOG CONVERSATION ERROR] {e}")
+    try:
+        self.memory.log_conversation(
+            raw_text=text,
+            normalized_text=normalized,
+            intent=intent,
+            response_source=source,
+            reply_text=reply,
+        )
+    except Exception as e:
+        print(f">>> [LOG CONVERSATION ERROR] {e}")
 
-        # 2) Yeni telemetry log
-        try:
-            self.memory.log_conversation_telemetry(
-                session_id=session_id,
-                intent=intent,
-                response_source=source,
-                model_name=model,
-                latency_ms=latency,
-                memory_context_used=memory_used,
-                status=status,
-                error_text=error,
-            )
-        except Exception as e:
-            print(f">>> [LOG TELEMETRY ERROR] {e}")
+    try:
+        self.memory.log_conversation_telemetry(
+            session_id=session_id,
+            intent=intent,
+            response_source=source,
+            model_name=model,
+            latency_ms=latency,
+            memory_context_used=memory_used,
+            status=status,
+            error_text=error,
+        )
+    except Exception as e:
+        print(f">>> [LOG TELEMETRY ERROR] {e}")
 
-        return reply
+    return BrainResult(reply_text=reply, intent=intent)
 
     # =========================
     # INTENT (placeholder)
