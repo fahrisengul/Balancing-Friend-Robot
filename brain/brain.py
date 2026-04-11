@@ -114,10 +114,12 @@ class PoodleBrain:
 
         # RAG READ
         try:
-           context = self.retriever.get_context(text)
-           prompt = f"{SYSTEM_PROMPT}\n{context}\nKullanıcı: {text}"
-
-        prompt = f"""
+            context = self.retriever.get_context(text)
+        except Exception as e:
+            print(f">>> [MEMORY RETRIEVER ERROR] {e}")
+            context = ""
+        
+        prompt = f"{SYSTEM_PROMPT}\n{context}\nKullanıcı: {text}"
 {SYSTEM_PROMPT}
 
 {context}
