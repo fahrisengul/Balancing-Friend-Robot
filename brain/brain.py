@@ -120,12 +120,6 @@ class PoodleBrain:
             context = ""
         
         prompt = f"{SYSTEM_PROMPT}\n{context}\nKullanıcı: {text}"
-{SYSTEM_PROMPT}
-
-{context}
-
-Kullanıcı: {text}
-""".strip()
 
         memory_used = bool(context.strip())
 
