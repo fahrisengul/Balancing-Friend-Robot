@@ -1,4 +1,5 @@
 import threading
+import time
 
 
 class Orchestrator:
@@ -6,15 +7,21 @@ class Orchestrator:
         self.brain = brain
         self.speech = speech
         self.face = face
+
         self.state = "idle"
         self.running = True
+
         self._busy = False
         self._lock = threading.Lock()
 
-        # streaming / buffer ayarları
-        self.min_flush_words = 16
-        self.max_buffer_words = 28
+        # Streaming flush ayarları
+        self.min_flush_words = 14
+        self.max_flush_words = 30
+        self.min_chars_to_speak = 28
 
+    # =========================================================
+    # LIFECYCLE
+    # =========================================================
     def stop(self):
         self.running = False
 
@@ -25,6 +32,9 @@ class Orchestrator:
         except Exception:
             pass
 
+    # =========================================================
+    # EVENT ENTRY
+    # =========================================================
     def handle_event(self, event):
         if not self.running:
             return
@@ -46,11 +56,14 @@ class Orchestrator:
             return
 
         if etype == "command":
-            text = event.get("text", "").strip()
+            text = (event.get("text") or "").strip()
             if text:
                 self._start_async(self._process_command_stream, text)
             return
 
+    # =========================================================
+    # THREAD CONTROL
+    # =========================================================
     def _start_async(self, fn, *args):
         with self._lock:
             if self._busy:
@@ -67,6 +80,9 @@ class Orchestrator:
             with self._lock:
                 self._busy = False
 
+    # =========================================================
+    # SIMPLE SPEAK
+    # =========================================================
     def _speak_text(self, text):
         self.set_state("speaking")
         try:
@@ -76,23 +92,26 @@ class Orchestrator:
         finally:
             self.set_state("idle")
 
+    # =========================================================
+    # STREAMING COMMAND FLOW
+    # =========================================================
     def _process_command_stream(self, text):
         try:
             self.set_state("thinking")
 
             buffer = ""
-            streamed_any = False
+            spoke_anything = False
 
             for item in self.brain.ask_poodle_stream(text):
                 item_type = item.get("type")
                 chunk_text = item.get("text", "")
 
                 if item_type == "final":
-                    cleaned = self._clean_for_speech(chunk_text)
-                    if cleaned:
+                    final_text = self._clean_for_speech(chunk_text)
+                    if final_text:
                         self.set_state("speaking")
-                        self.speech.speak(cleaned)
-                        streamed_any = True
+                        self.speech.speak(final_text)
+                        spoke_anything = True
                     break
 
                 if item_type == "chunk":
@@ -106,21 +125,21 @@ class Orchestrator:
                             if cleaned:
                                 self.set_state("speaking")
                                 self.speech.speak(cleaned)
-                                streamed_any = True
+                                spoke_anything = True
 
                         buffer = remainder
 
                 if item_type == "done":
-                    # done event'inde final text varsa onu kullan, yoksa buffer'ı konuş
-                    final_text = self._clean_for_speech(chunk_text or buffer)
+                    # done aşamasında kalan buffer varsa onu tek parça okut
+                    final_text = self._clean_for_speech(buffer or chunk_text)
                     if final_text:
                         self.set_state("speaking")
                         self.speech.speak(final_text)
-                        streamed_any = True
+                        spoke_anything = True
                     buffer = ""
                     break
 
-            if not streamed_any:
+            if not spoke_anything:
                 self.set_state("speaking")
                 self.speech.speak("Şu an küçük bir sorun oluştu.")
 
@@ -131,27 +150,35 @@ class Orchestrator:
         finally:
             self.set_state("idle")
 
+    # =========================================================
+    # FLUSH LOGIC
+    # =========================================================
     def _should_flush(self, text: str) -> bool:
         stripped = (text or "").strip()
         if not stripped:
             return False
 
-        if stripped.endswith((".", "!", "?")):
-            return True
-
         words = stripped.split()
 
-        if len(words) >= self.max_buffer_words:
+        # Tam cümle varsa okut
+        if stripped.endswith((".", "!", "?")) and len(stripped) >= self.min_chars_to_speak:
             return True
 
+        # Çok uzadıysa tutma
+        if len(words) >= self.max_flush_words:
+            return True
+
+        # Orta uzunluktaysa ve güvenli yumuşak sınır varsa okut
         if len(words) >= self.min_flush_words and self._has_soft_boundary(stripped):
             return True
 
         return False
 
     def _has_soft_boundary(self, text: str) -> bool:
-        # Virgülde flush etmiyoruz
-        soft_markers = [
+        lower = text.lower()
+
+        # Virgül boundary değil
+        markers = [
             " çünkü ",
             " ama ",
             " fakat ",
@@ -162,16 +189,16 @@ class Orchestrator:
             " örneğin ",
             " bu yüzden ",
             " bunun için ",
+            " yani ",
         ]
-        lower = text.lower()
-        return any(marker in lower for marker in soft_markers)
+        return any(marker in lower for marker in markers)
 
     def _extract_speakable_piece(self, text: str):
         stripped = (text or "").strip()
         if not stripped:
             return "", ""
 
-        # 1. Tercih: son tam cümleye kadar konuş
+        # 1) Son tam cümleye kadar konuş
         last_sentence_end = max(
             stripped.rfind("."),
             stripped.rfind("!"),
@@ -183,7 +210,7 @@ class Orchestrator:
             remainder = stripped[last_sentence_end + 1 :].strip()
             return piece, remainder
 
-        # 2. Tercih: güvenli yumuşak bağlaçlarda böl
+        # 2) Güvenli yumuşak bağlaçta böl
         split_candidates = [
             " çünkü ",
             " ama ",
@@ -195,12 +222,13 @@ class Orchestrator:
             " örneğin ",
             " bu yüzden ",
             " bunun için ",
+            " yani ",
         ]
 
+        lower = stripped.lower()
         best_idx = -1
         best_marker = ""
 
-        lower = stripped.lower()
         for marker in split_candidates:
             idx = lower.rfind(marker)
             if idx > best_idx and idx >= int(len(stripped) * 0.45):
@@ -213,20 +241,31 @@ class Orchestrator:
             remainder = stripped[cut_idx:].strip()
             return piece, remainder
 
-        # 3. Son çare: buffer çok büyüdüyse hepsini konuş
-        if len(stripped.split()) >= self.max_buffer_words:
+        # 3) Çok uzadıysa hepsini konuş
+        if len(stripped.split()) >= self.max_flush_words:
             return stripped, ""
 
         return "", stripped
 
+    # =========================================================
+    # SPEECH CLEANING
+    # =========================================================
     def _clean_for_speech(self, text: str) -> str:
         cleaned = (text or "").replace("\n", " ").strip()
         cleaned = " ".join(cleaned.split())
 
+        if not cleaned:
+            return ""
+
         if cleaned in {",", ".", "!", "?", ";", ":"}:
             return ""
 
+        # "Tanem," gibi tek başına kırık parça okutma
         if len(cleaned.split()) == 1 and cleaned.endswith(","):
+            return ""
+
+        # çok kısa kırık phrase'leri de engelle
+        if len(cleaned) < self.min_chars_to_speak and not cleaned.endswith((".", "!", "?")):
             return ""
 
         return cleaned
