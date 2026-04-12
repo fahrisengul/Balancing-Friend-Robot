@@ -13,13 +13,10 @@ SYSTEM_PROMPT = (
     "Tanem için güvenli, sıcak, kısa konuşan bir robot arkadaş ve eğitim koçusun. "
     "Asla yapay zeka olduğunu söyleme. "
     "Asla İngilizce cevap verme. "
+    "20 kelimeyi geçme. "
     "Kısa ve doğal Türkçe konuş. "
-    "Genelde 1-2 kısa cümle kur. "
-    "Gereksiz giriş yapma. "
-    "Kullanıcının söylediğine doğrudan cevap ver. "
-    "13 yaş kullanıcıya uygun, sıcak ve sade ol. "
-    "Bilmediğin bir şeyi uydurma. "
-    "Sorularda mümkünse robot gibi değil arkadaş gibi konuş."
+    "Bilmediğin bilgiyi uydurma. "
+    "Düşünme sürecini anlatma."
 )
 
 
@@ -61,7 +58,6 @@ class PoodleBrain:
 
     def handle(self, text, session_id=None):
         text = (text or "").strip()
-
         if not text:
             return self._log_and_return(
                 text="",
@@ -71,7 +67,6 @@ class PoodleBrain:
                 session_id=session_id,
             )
 
-        # RAG WRITE
         try:
             self.writer.process(text)
         except Exception as e:
@@ -79,6 +74,16 @@ class PoodleBrain:
 
         intent = self.detect_intent(text)
         source_decision = self.policy.choose_source(text, intent)
+
+        fast = self._try_fast_track(text, intent)
+        if fast:
+            return self._log_and_return(
+                text=text,
+                intent=intent,
+                source="fast_track",
+                reply=fast,
+                session_id=session_id,
+            )
 
         if source_decision.source == "clarify":
             return self._log_and_return(
@@ -110,7 +115,6 @@ class PoodleBrain:
                 session_id=session_id,
             )
 
-        # RAG READ
         try:
             context = self.retriever.get_context(text)
         except Exception as e:
@@ -132,19 +136,15 @@ class PoodleBrain:
         latency = int((time.perf_counter() - start) * 1000)
         model = getattr(self.llm, "model_name", None) or getattr(self.llm, "model", "unknown")
 
-        try:
-            self.memory.log_llm_call(
-                session_id=session_id,
-                intent=intent,
-                model_name=model,
-                prompt_chars=len(prompt),
-                response_chars=len(raw) if raw else 0,
-                latency_ms=latency,
-                status="error" if error else "ok",
-                error_text=error,
-            )
-        except Exception as e:
-            print(f">>> [LOG LLM ERROR] {e}")
+        self._log_llm_call(
+            session_id=session_id,
+            intent=intent,
+            model=model,
+            prompt=prompt,
+            raw=raw,
+            latency=latency,
+            error=error,
+        )
 
         if error:
             return self._log_and_return(
@@ -175,49 +175,190 @@ class PoodleBrain:
             memory_used=memory_used,
         )
 
+    def ask_poodle_stream(self, text, session_id=None):
+        text = (text or "").strip()
+        if not text:
+            yield {"type": "final", "text": "Biraz daha açık söyler misin?", "source": "clarify"}
+            return
+
+        try:
+            self.writer.process(text)
+        except Exception as e:
+            print(f">>> [MEMORY WRITER ERROR] {e}")
+
+        intent = self.detect_intent(text)
+        source_decision = self.policy.choose_source(text, intent)
+
+        fast = self._try_fast_track(text, intent)
+        if fast:
+            self._log_and_return(
+                text=text,
+                intent=intent,
+                source="fast_track",
+                reply=fast,
+                session_id=session_id,
+            )
+            yield {"type": "final", "text": fast, "source": "fast_track", "intent": intent}
+            return
+
+        if source_decision.source == "clarify":
+            reply = source_decision.clarify_text or "Biraz daha açık söyler misin?"
+            self._log_and_return(
+                text=text,
+                intent=intent,
+                source="clarify",
+                reply=reply,
+                session_id=session_id,
+            )
+            yield {"type": "final", "text": reply, "source": "clarify", "intent": intent}
+            return
+
+        direct = self._direct_reply(text, intent)
+        if direct:
+            self._log_and_return(
+                text=text,
+                intent=intent,
+                source=source_decision.source,
+                reply=direct,
+                session_id=session_id,
+            )
+            yield {"type": "final", "text": direct, "source": source_decision.source, "intent": intent}
+            return
+
+        template = self._get_template(intent)
+        if template and source_decision.source == "template":
+            reply = self.policy.apply(template)
+            self._log_and_return(
+                text=text,
+                intent=intent,
+                source="template",
+                reply=reply,
+                session_id=session_id,
+            )
+            yield {"type": "final", "text": reply, "source": "template", "intent": intent}
+            return
+
+        try:
+            context = self.retriever.get_context(text)
+        except Exception as e:
+            print(f">>> [MEMORY RETRIEVER ERROR] {e}")
+            context = ""
+
+        prompt = f"{SYSTEM_PROMPT}\n{context}\nKullanıcı: {text}"
+        memory_used = bool(context.strip())
+
+        start = time.perf_counter()
+        model = getattr(self.llm, "model_name", None) or getattr(self.llm, "model", "unknown")
+        chunks = []
+        error = None
+
+        try:
+            for chunk in self.llm.stream(prompt):
+                chunks.append(chunk)
+                yield {"type": "chunk", "text": chunk, "source": "llm", "intent": intent}
+        except Exception as e:
+            error = str(e)
+
+        latency = int((time.perf_counter() - start) * 1000)
+        raw = "".join(chunks).strip()
+
+        self._log_llm_call(
+            session_id=session_id,
+            intent=intent,
+            model=model,
+            prompt=prompt,
+            raw=raw,
+            latency=latency,
+            error=error,
+        )
+
+        if error:
+            reply = "Şu an cevap verirken küçük bir sorun oldu."
+            self._log_and_return(
+                text=text,
+                intent=intent,
+                source="llm",
+                reply=reply,
+                session_id=session_id,
+                model=model,
+                latency=latency,
+                memory_used=memory_used,
+                status="error",
+                error=error,
+            )
+            yield {"type": "final", "text": reply, "source": "llm", "intent": intent}
+            return
+
+        reply = self.policy.apply(raw)
+        if not reply:
+            reply = "Bunu daha sade sorar mısın?"
+
+        self._log_and_return(
+            text=text,
+            intent=intent,
+            source="llm",
+            reply=reply,
+            session_id=session_id,
+            model=model,
+            latency=latency,
+            memory_used=memory_used,
+        )
+
+        yield {"type": "done", "text": reply, "source": "llm", "intent": intent}
+
+    def _try_fast_track(self, text, intent):
+        answer = self.memory.search_fast_answer(text, intent=intent)
+        if answer:
+            return answer
+
+        snippets = self.memory.search_education_snippets(text, limit=1)
+        if snippets:
+            content = snippets[0]["content"]
+            if content:
+                return self.policy.apply(content)
+
+        return None
+
+    def _log_llm_call(self, session_id, intent, model, prompt, raw, latency, error):
+        try:
+            self.memory.log_llm_call(
+                session_id=session_id,
+                intent=intent,
+                model_name=model,
+                prompt_chars=len(prompt),
+                response_chars=len(raw) if raw else 0,
+                latency_ms=latency,
+                status="error" if error else "ok",
+                error_text=error,
+            )
+        except Exception as e:
+            print(f">>> [LOG LLM ERROR] {e}")
+
     def _direct_reply(self, text, intent):
         if intent == "greeting":
             return "Selam!"
-
         if intent == "ask_name":
             return "Ben Poodle."
-
         if intent == "ask_identity":
             return "Ben Poodle. Seninle konuşan robot arkadaşınım."
-
         if intent == "ask_status":
             return "İyiyim. Sen nasılsın?"
-
         if intent == "thanks":
             return "Rica ederim."
-
         if intent == "farewell":
             return "Görüşürüz."
-
         if intent == "user_name_define":
             remembered = self._remembered_name()
             if remembered:
                 return f"Tamam. Sana {remembered} diyeyim."
             return "Tamam. Öyle diyeyim."
-
         if intent == "ask_user_name":
             remembered = self._remembered_name()
             if remembered:
                 return f"Senin adın {remembered}."
             return "Adını henüz bilmiyorum. Söylersen hatırlamaya çalışırım."
-
         if intent == "conversation_start":
             return "Tamam. Ne hakkında konuşalım?"
-
-        if intent == "education_topics":
-            return "İstersen önce ana konuları çıkaralım, sonra sıraya koyalım."
-
-        if intent == "exam_support":
-            return "Olur. Sınav tarafını birlikte sadeleştirelim."
-
-        if intent == "concept_explanation":
-            return "Olur. Bunu kısa ve sade anlatayım."
-
         return None
 
     def detect_intent(self, text):
@@ -227,74 +368,38 @@ class PoodleBrain:
             if "nasilsin" in t:
                 return "ask_status"
             return "greeting"
-
         if "senin adin ne" in t or "adın ne" in text.lower():
             return "ask_name"
-
-        if "senin adın nedir" in text.lower():
-            return "ask_name"
-
-        if "kimsin" in t or "kendini tanimlar misin" in t or "kendini tanımlar mısın" in text.lower():
+        if "kimsin" in t:
             return "ask_identity"
-
         if "nasilsin" in t or "nasılsın" in text.lower() or "iyi misin" in t:
             return "ask_status"
-
         if "tesekkur" in t or "teşekkür" in text.lower() or "sagol" in t or "sağol" in text.lower():
             return "thanks"
-
         if "gorusuruz" in t or "görüşürüz" in text.lower() or "hosca kal" in t or "hoşça kal" in text.lower():
             return "farewell"
-
         if "bana " in t and " diyebilirsin" in t:
             return "user_name_define"
-
         if "benim adim nedir" in t or "benim adım nedir" in text.lower() or "adim ne" in t:
             return "ask_user_name"
-
         if "konusalim" in t or "konuşalım" in text.lower():
             return "conversation_start"
 
-        if (
-            "hangi konular" in t
-            or "konulari listeler misin" in t
-            or "konuları listeler misin" in text.lower()
-            or "lgs konulari" in t
-            or "lgs konuları" in text.lower()
-            or "matematik konulari" in t
-            or "matematik konuları" in text.lower()
-        ):
+        # data-driven intents
+        if "lgs konular" in t or "hangi konulara" in t or "konulari listeler misin" in t or "konuları listeler misin" in text.lower():
             return "education_topics"
-
-        if (
-            "sinav stresi" in t
-            or "sınav stresi" in text.lower()
-            or "lgs hakkinda" in t
-            or "lgs hakkında" in text.lower()
-            or "nasil calismaliyim" in t
-            or "nasıl çalışmalıyım" in text.lower()
-        ):
+        if "sinav stresi" in t or "sınav stresi" in text.lower() or "nasil calismaliyim" in t or "nasıl çalışmalıyım" in text.lower():
             return "exam_support"
-
-        if (
-            "nedir" in t
-            or "ne demek" in t
-            or "anlatir misin" in t
-            or "anlatır mısın" in text.lower()
-            or "detay verir misin" in text.lower()
-        ):
+        if "nedir" in t or "anlatir misin" in t or "anlatır mısın" in text.lower() or "detay verir misin" in text.lower():
             return "concept_explanation"
+        if "beni duyabiliyor musun" in text.lower() or "beni duyabiliyormusun" in text.lower():
+            return "audio_check"
 
         return "general"
 
     def _get_template(self, intent):
         try:
             return self.memory.get_template(intent_name=intent)
-        except TypeError:
-            try:
-                return self.memory.get_template(intent)
-            except Exception:
-                return None
         except Exception:
             return None
 
@@ -353,9 +458,9 @@ class PoodleBrain:
         t = (text or "").strip().lower()
         return (
             t.replace("ı", "i")
-             .replace("ğ", "g")
-             .replace("ş", "s")
-             .replace("ç", "c")
-             .replace("ö", "o")
-             .replace("ü", "u")
+            .replace("ğ", "g")
+            .replace("ş", "s")
+            .replace("ç", "c")
+            .replace("ö", "o")
+            .replace("ü", "u")
         )
