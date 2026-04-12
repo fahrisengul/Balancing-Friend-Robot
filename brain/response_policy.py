@@ -31,12 +31,16 @@ class ResponsePolicy:
             "open_topic",
             "ask_user_name",
             "user_name_define",
+            "education_topics",
+            "exam_support",
+            "concept_explanation",
+            "education_planning",
+            "audio_check",
         }
 
         if intent in template_intents:
             return Decision("template")
 
-        # bozuk kısa STT girişi
         if len(t.split()) <= 2 and intent == "general":
             return Decision("clarify", "Son kısmı tam anlayamadım. Bir kez daha söyler misin?")
 
@@ -50,11 +54,15 @@ class ResponsePolicy:
         lower = text.lower()
 
         if self._looks_like_persona_break(lower):
-            return "Tamam. Bunu daha sade söyleyeyim. Devam edelim mi?"
+            return "Bunu daha sade söyleyeyim. Devam edelim mi?"
 
         text = self._strip_bad_openings(text)
         text = self._strip_meta_robotic(text)
         text = self._strip_garbage_terms(text)
+
+        if not text:
+            return "Bunu tam net duyamadım. İstersen bir kez daha söyle."
+
         text = self._limit_length(text)
         text = self._soften_style(text)
         text = self._force_child_friendly_style(text)
@@ -124,21 +132,21 @@ class ResponsePolicy:
         return " ".join(result.split()).strip()
 
     def _strip_garbage_terms(self, text: str) -> str:
-    bad_terms = [
-        "hız nav stressi",
-        "naw stressi",
-        "now see to see",
-        "sinov",
-        "hıznav",
-        "naw",
-    ]
+        bad_terms = [
+            "hız nav stressi",
+            "naw stressi",
+            "now see to see",
+            "sinov",
+            "hıznav",
+            "naw",
+        ]
 
-    lowered = text.lower()
+        lowered = text.lower()
 
-    if any(b in lowered for b in bad_terms):
-        return ""
+        if any(term in lowered for term in bad_terms):
+            return ""
 
-    return text
+        return text
 
     def _limit_length(self, text: str) -> str:
         parts = self._split_sentences(text)
@@ -172,7 +180,6 @@ class ResponsePolicy:
     def _force_child_friendly_style(self, text: str) -> str:
         result = text.strip()
 
-        # çok kuru kalırsa yumuşat
         if result in {"Tamam", "Peki"}:
             result += "."
 
