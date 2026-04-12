@@ -1,107 +1,107 @@
 [
   {
-    "id": "strategy.planning.tip.081",
+    "id": "strategy.stress.explanation.091",
     "subject": "Rehberlik",
-    "topic": "Sarmal Tekrar Sistemi",
-    "chunk_type": "study_tip",
-    "difficulty": "medium",
-    "content": "Öğrenilen bilgilerin kalıcı hafızaya geçmesi için sarmal tekrar yöntemini uygula. İlk tekrarı çalışmadan 10 dakika sonra, ikinciyi 24 saat sonra, üçüncüyü bir hafta sonra ve dördüncüyü bir ay sonra yap. Bu yöntemle beynindeki nöronlar arasındaki bağları güçlendirir ve sınav anında bilginin geri çağrılmasını hızlandırırsın. Tekrar edilmeyen bilgi çöptür.",
-    "embedding_priority": 1.0,
-    "intent_tags": ["tekrar", "hafıza teknikleri", "nasıl çalışılır"],
-    "exam_weight": 0.6
-  },
-  {
-    "id": "strategy.math.strategy.082",
-    "subject": "Rehberlik",
-    "topic": "Matematiksel Akıl Yürütme",
-    "chunk_type": "exam_strategy",
-    "content": "Yeni nesil matematik sorularında işlem yapmaya başlamadan önce sorudaki 'hikaye' ile 'matematiksel model' arasındaki bağı kur. Verilenleri ve istenenleri bir tabloya veya basit bir çizime dök. Soruda kullanılan görselin hangi kuralı (alan, hacim, oran) temsil ettiğini bulduğunda, çözüm yolu kendiliğinden netleşecektir. Kalem oynatmadan önce strateji belirle.",
-    "embedding_priority": 0.95,
-    "intent_tags": ["yeni nesil", "matematik taktiği", "strateji"],
-    "exam_weight": 1.0
-  },
-  {
-    "id": "strategy.analysis.guidance.083",
-    "subject": "Rehberlik",
-    "topic": "Yanlış Defteri Yönetimi",
-    "chunk_type": "exam_guidance",
-    "content": "Seni başarıya götürecek olan doğru çözdüğün sorular değil, yanlış yapıp doğrusunu öğrendiğin sorulardır. Yanlış yaptığın her soruyu kesip 'Hata Defterine' yapıştır. Altına çözümü kendi cümlelerinle yaz ve hangi kuralı unuttuğunu not et. Her pazar günü bu defteri baştan sona çöz. Hataların azaldıkça netlerinin hızla arttığını göreceksin.",
-    "embedding_priority": 1.0,
-    "intent_tags": ["hata defteri", "analiz", "net artırma"],
-    "exam_weight": 0.9
-  },
-  {
-    "id": "strategy.time.tip.084",
-    "subject": "Rehberlik",
-    "topic": "Sayısal Bölüm Zaman Yönetimi",
-    "chunk_type": "study_tip",
-    "difficulty": "medium",
-    "content": "Sayısal bölümde Fen Bilimleri sorularını hızlı ve dikkatli çözerek Matematik için ek zaman kazanmaya çalış. Fen sorularında ortalama 1-1.5 dakika harcarken, Matematik için 2-2.5 dakika ayırabilirsin. Ancak Fen'i 'hızlı bitireceğim' diye dikkatsiz okuma. Zamanı dengeli dağıtmak, sınavın sonundaki panik havasını engeller ve işlem hatası yapma riskini azaltır.",
-    "embedding_priority": 0.9,
-    "intent_tags": ["zaman yönetimi", "sayısal taktik", "sınav süresi"],
-    "exam_weight": 1.0
-  },
-  {
-    "id": "strategy.stress.explanation.085",
-    "subject": "Rehberlik",
-    "topic": "Zihinsel Prova Tekniği",
+    "topic": "Stresin Tanımı ve Faydası",
     "chunk_type": "simple_explanation",
-    "title": "Sınav Günü Simülasyonu",
-    "content": "Haftada en az bir gün, sabah sınav saatinde, gerçek sınav kurallarına uyarak evde deneme çöz. Telefonu uzaklaştır, masanı düzenle ve süreyi tam tut. Bu zihinsel ve fiziksel provalar, sınav günü yaşayabileceğin 'yabancılık' hissini yok eder. Beynin bu tempoya alışınca gerçek sınav senin için sıradan bir deneme gibi gelecektir.",
-    "embedding_priority": 0.85,
-    "intent_tags": ["deneme", "prova", "stres yönetimi"],
-    "exam_weight": 0.7
-  },
-  {
-    "id": "strategy.reading.tip.086",
-    "subject": "Rehberlik",
-    "topic": "Soru Kökü Analizi",
-    "chunk_type": "study_tip",
-    "difficulty": "easy",
-    "content": "Soru kökündeki 'değildir', 'çıkarılamaz', 'en az', 'kesinlikle' gibi ifadelerin altını mutlaka çiz. Bu kelimeler sorunun yönünü tamamen değiştirir. Beynimiz yorulduğunda olumsuz ifadeleri olumlu gibi algılamaya meyleder. Görsel dikkatini bu kelimelere odaklayarak en basit görünen sorularda bile hata yapma riskini sıfıra indirirsin.",
-    "embedding_priority": 1.0,
-    "intent_tags": ["dikkat", "soru kökü", "hata engelleme"],
-    "exam_weight": 1.0
-  },
-  {
-    "id": "strategy.active.strategy.087",
-    "subject": "Rehberlik",
-    "topic": "Feynman Tekniği ile Öğrenme",
-    "chunk_type": "exam_strategy",
-    "content": "Bir konuyu tam öğrenip öğrenmediğini anlamak için onu hiç bilmeyen birine (veya Poodle'a!) en basit haliyle anlatmaya çalış. Karmaşık terimler kullanmadan anlatabiliyorsan konuya hakimsin demektir. Eğer bir noktada takılıyorsan, o kısım senin 'bilgi deliğindir'. Hemen kaynağına dön ve sadece o takıldığın noktayı tekrar incele. Anlatmak, en derin öğrenmedir.",
-    "embedding_priority": 0.85,
-    "intent_tags": ["aktif öğrenme", "anlatma", "taktik"],
-    "exam_weight": 0.6
-  },
-  {
-    "id": "strategy.nutrition.tip.088",
-    "subject": "Rehberlik",
-    "topic": "Bilişim Performansı ve Beslenme",
-    "chunk_type": "study_tip",
-    "content": "Ders çalışırken ağır ve şekerli yiyeceklerden kaçın. Kan şekerindeki ani dalgalanmalar odaklanmanı bozar ve uykunu getirir. Beyin fonksiyonlarını destekleyen omega-3 (balık, ceviz) ve su tüketimine önem ver. Susuz kalan bir beyin daha yavaş işlem yapar ve dikkat süresi kısalır. Masanda her zaman bir bardak su bulundurmayı alışkanlık haline getir.",
-    "embedding_priority": 0.75,
-    "intent_tags": ["beslenme", "sağlık", "odaklanma"],
-    "exam_weight": 0.3
-  },
-  {
-    "id": "strategy.environment.mistake.089",
-    "subject": "Rehberlik",
-    "topic": "Uzanarak Çalışma Hatası",
-    "chunk_type": "common_mistake",
-    "content": "Yatarak veya çok rahat koltuklarda ders çalışmak beynine 'dinlenme' sinyali gönderir. Bu durum odaklanma seviyeni düşürür ve kısa sürede uykunu getirir. En verimli çalışma pozisyonu, dik oturduğun bir masa ve sandalye düzenidir. Vücudun aktif bir duruşta olduğunda, zihnin de daha uyanık ve bilgiyi işlemeye hazır olur. Konfor alanından çık, başarıya odaklan.",
-    "embedding_priority": 0.8,
-    "intent_tags": ["yanlış çalışma", "odaklanma", "düzen"],
+    "title": "Stres Aslında Bir Yakıttır",
+    "content": "Sınav stresini tamamen yok etmeye çalışma; çünkü bir miktar stres senin yakıtındır. Stres, beyninin ve vücudunun 'şimdi odaklanma vakti' deme şeklidir. Önemli olan bu enerjiyi korkuya değil, dikkate dönüştürmektir. Eğer stresin hiç olmasaydı, ders çalışmak için motivasyon bulmakta zorlanabilirdin. Stresini kontrol etmeyi öğrenmek, onu bir başarı motoruna dönüştürür.",
+    "embedding_priority": 0.9,
+    "intent_tags": ["stres", "motivasyon", "nedir"],
     "exam_weight": 0.4
   },
   {
-    "id": "strategy.success.explanation.090",
+    "id": "strategy.stress.tip.092",
     "subject": "Rehberlik",
-    "topic": "Netleşme ve Hızlanma",
-    "chunk_type": "simple_explanation",
-    "title": "Hız ve Doğruluk Dengesi",
-    "content": "LGS'de hız kadar doğruluk da önemlidir. Hızlı çözmek için işlem basamaklarını atlama; bu durum basit toplama-çıkarma hatalarına yol açar. Her soruyu çözdükten sonra bulduğun sonucun 'mantıklı' olup olmadığını 1 saniye düşün. Eğer bir üçgenin kenarını negatif veya olasılığı 1'den büyük bulduysan, bir yerlerde yanlış yaptığını hemen fark etmelisiniz.",
+    "topic": "Nefes Egzersizi",
+    "chunk_type": "study_tip",
+    "difficulty": "easy",
+    "content": "Sınav anında paniklediğini hissedersen '4-7-8' tekniğini kullan. 4 saniye boyunca burnundan nefes al, 7 saniye nefesini tut ve 8 saniyede ağzından yavaşça ver. Bu egzersiz, vücudundaki stres hormonlarını hızla düşürür ve beynine 'her şey yolunda' sinyali gönderir. Sadece 1 dakikalık bu uygulama, odağını tekrar soruya toplamanı sağlar.",
+    "embedding_priority": 1.0,
+    "intent_tags": ["nefes egzersizi", "panik", "taktik"],
+    "exam_weight": 0.8
+  },
+  {
+    "id": "strategy.stress.guidance.093",
+    "subject": "Rehberlik",
+    "topic": "Felaket Senaryoları",
+    "chunk_type": "exam_guidance",
+    "content": "Zihnin 'Ya kazanamazsam?' veya 'Ya ailem üzülürse?' gibi felaket senaryoları yazmaya başladığında onu durdur. Kendine şu soruyu sor: 'Şu an elimden gelenin en iyisini yapıyor muyum?'. Cevabın evetse, sonucun sorumluluğunu o anlık bırak. Sadece o anki soruya odaklanmak, geleceğin kaygısından kurtulmanın tek yoludur. Sen sonuçtan değil, emekten sorumlusun.",
+    "embedding_priority": 0.95,
+    "intent_tags": ["kaygı", "stres", "özgüven"],
+    "exam_weight": 0.7
+  },
+  {
+    "id": "strategy.stress.strategy.094",
+    "subject": "Rehberlik",
+    "topic": "Görselleştirme Tekniği",
+    "chunk_type": "exam_strategy",
+    "content": "Sınavdan önceki günlerde kendini sınav salonunda, sakin ve soruları çözerken hayal et. Buna 'Zihinsel Prova' denir. Başarılı olduğunu, zor bir soruyu sakinlikle geçtiğini ve sınavdan gülümseyerek çıktığını gözünde canlandır. Beyin, gerçek ile hayal arasındaki farkı tam ayırt edemez; bu sayede sınav günü kendini daha önce oradaymışsın gibi güvende hissedersin.",
+    "embedding_priority": 0.85,
+    "intent_tags": ["görselleştirme", "hayal kurma", "taktik"],
+    "exam_weight": 0.6
+  },
+  {
+    "id": "strategy.stress.mistake.095",
+    "subject": "Rehberlik",
+    "topic": "Sosyal Medya ve Kıyas",
+    "chunk_type": "common_mistake",
+    "content": "Sınav haftasında sosyal medyada arkadaşlarınızın kaç soru çözdüğünü veya netlerini takip etmek en büyük stres kaynağıdır. Herkesin öğrenme hızı ve stratejisi farklıdır. Başkalarının başarısı senin başarısızlığın değildir. Kıyaslama yapmak yerine sadece kendi dünkü performansınla yarış. Telefonu ve sosyal medyayı bu süreçte bir 'gürültü' olarak gör ve uzak dur.",
     "embedding_priority": 0.9,
-    "intent_tags": ["hız", "doğruluk", "işlem hatası"],
+    "intent_tags": ["kıyaslama", "hata", "sosyal medya"],
+    "exam_weight": 0.5
+  },
+  {
+    "id": "strategy.stress.explanation.096",
+    "subject": "Rehberlik",
+    "topic": "Uyku ve Stres",
+    "chunk_type": "simple_explanation",
+    "title": "Uykusuzluk Kaygıyı Tetikler",
+    "content": "Uykusuz kaldığında beyninin duygusal merkezi olan amigdala daha hassas hale gelir, bu da senin daha kolay kaygılanmana ve strese girmene neden olur. Düzenli ve kaliteli uyku, sinir sistemini yatıştırır. Sınava hazırlık sürecinde uykundan feragat ederek ders çalışmak, aslında dikkatini ve stres yönetimini zayıflatır. İyi bir uyku, en iyi sınav hazırlığıdır.",
+    "embedding_priority": 0.8,
+    "intent_tags": ["uyku", "sağlık", "dinlenme"],
+    "exam_weight": 0.3
+  },
+  {
+    "id": "strategy.stress.tip.097",
+    "subject": "Rehberlik",
+    "topic": "Küçük Molaların Gücü",
+    "chunk_type": "study_tip",
+    "difficulty": "easy",
+    "content": "Ders çalışırken stresin çok arttığını hissedersen masadan kalk ve 5 dakikalık bir 'şarj molası' ver. Pencereyi aç, derin nefes al veya evin içinde yürü. Masada oturup stresle boğuşmak sadece zaman kaybettirir. Kısa bir fiziksel hareket, beynindeki kan akışını hızlandırır ve stres seviyeni düşürerek tekrar odaklanmanı sağlar. Hareket, stresi dağıtır.",
+    "embedding_priority": 0.85,
+    "intent_tags": ["mola", "hareket", "stres yönetimi"],
+    "exam_weight": 0.4
+  },
+  {
+    "id": "strategy.stress.guidance.098",
+    "subject": "Rehberlik",
+    "topic": "Sınav Sabahı Rutini",
+    "chunk_type": "exam_guidance",
+    "content": "Sınav sabahı belirsizlikten kaçınmak stresi azaltır. Giyeceğin kıyafetleri, kalemlerini ve belgelerini bir gece önceden hazırla. Sabah hafif bir kahvaltı yap ve sınav yerine erken git. Sınav kapısında arkadaşlarınla zor sorular veya konular hakkında konuşma; bu durum 'bilmiyorum' hissini tetikleyebilir. Sadece güzel şeylerden bahset veya müzik dinle.",
+    "embedding_priority": 0.9,
+    "intent_tags": ["sınav sabahı", "rutin", "hazırlık"],
     "exam_weight": 0.9
+  },
+  {
+    "id": "strategy.stress.strategy.099",
+    "subject": "Rehberlik",
+    "topic": "Olumlu İç Konuşma",
+    "chunk_type": "exam_strategy",
+    "content": "Kendine söylediğin sözleri değiştir: 'Bu sınav hayatımın sonu' yerine 'Bu benim yeteneklerimi göstermek için bir fırsat' de. Olumlu iç konuşma, beynin stres tepkisini fiziksel olarak değiştirir. Başarısızlık korkusuna odaklanmak yerine, hazırlık sürecinde ne kadar emek verdiğini ve neler öğrendiğini kendine hatırlat. Sen kendi kendinin en iyi destekçisi olmalısın.",
+    "embedding_priority": 0.85,
+    "intent_tags": ["motivasyon", "iç ses", "özgüven"],
+    "exam_weight": 0.5
+  },
+  {
+    "id": "strategy.stress.explanation.100",
+    "subject": "Rehberlik",
+    "topic": "Sınav Sonrası Rahatlama",
+    "chunk_type": "simple_explanation",
+    "title": "Sınav Sadece Bir Adımdır",
+    "content": "LGS önemli bir duraktır ama yolun sonu değildir. Hayatın boyunca karşına pek çok fırsat çıkacak. Bu sınavın stresiyle başa çıkmayı öğrenmek, sana ömür boyu kullanacağın bir dayanıklılık kazandırır. Sınavdan çıktığında ne olursa olsun kendine 'Elimden geleni yaptım' diyebilmek en büyük başarıdır. Poodle olarak seninle gurur duyuyorum, sakin kal ve devam et!",
+    "embedding_priority": 0.5,
+    "intent_tags": ["başarı", "felsefe", "motivasyon"],
+    "exam_weight": 0.2
   }
 ]
