@@ -1,6 +1,6 @@
 import time
 from datetime import date
-from typing import Optional
+from typing import Optional, Dict, Any
 
 from memory.memory_manager import MemoryManager
 from memory.memory_writer import MemoryWriter
@@ -61,6 +61,15 @@ class PoodleBrain:
         self.policy = ResponsePolicy()
         self._run_daily_maintenance_if_needed()
 
+        self.last_turn: Dict[str, Any] = {
+            "raw_text": "",
+            "resolved_text": "",
+            "intent": None,
+            "mode": None,
+            "topic_hint": None,
+            "reply": "",
+        }
+
     # =========================================================
     # MAINTENANCE
     # =========================================================
@@ -108,11 +117,21 @@ class PoodleBrain:
 
         self._safe_memory_write(text)
 
-        intent = self.detect_intent(text)
-        mode = self._detect_mode(text, intent)
+        resolved = self._resolve_follow_up(text)
+        effective_text = resolved["effective_text"]
 
-        fast = self._try_fast_track(text, intent, mode)
+        intent = self.detect_intent(effective_text)
+        mode = self._detect_mode(effective_text, intent)
+
+        fast = self._try_fast_track(effective_text, intent, mode)
         if fast:
+            self._remember_turn(
+                raw_text=text,
+                resolved_text=effective_text,
+                intent=intent,
+                mode=mode,
+                reply=fast,
+            )
             return self._log_and_return(
                 text=text,
                 intent=intent,
@@ -121,8 +140,15 @@ class PoodleBrain:
                 session_id=session_id,
             )
 
-        direct = self._direct_reply(text, intent)
+        direct = self._direct_reply(effective_text, intent)
         if direct:
+            self._remember_turn(
+                raw_text=text,
+                resolved_text=effective_text,
+                intent=intent,
+                mode=mode,
+                reply=direct,
+            )
             return self._log_and_return(
                 text=text,
                 intent=intent,
@@ -133,6 +159,13 @@ class PoodleBrain:
 
         template = self._get_template(intent)
         if template and intent in {"ask_identity", "ask_name", "ask_user_name", "user_name_define"}:
+            self._remember_turn(
+                raw_text=text,
+                resolved_text=effective_text,
+                intent=intent,
+                mode=mode,
+                reply=template,
+            )
             return self._log_and_return(
                 text=text,
                 intent=intent,
@@ -141,20 +174,28 @@ class PoodleBrain:
                 session_id=session_id,
             )
 
-        if self._should_clarify(text, intent):
+        if self._should_clarify(effective_text, intent):
+            reply = "Son kısmı tam anlayamadım. Bir kez daha söyler misin?"
+            self._remember_turn(
+                raw_text=text,
+                resolved_text=effective_text,
+                intent=intent,
+                mode=mode,
+                reply=reply,
+            )
             return self._log_and_return(
                 text=text,
                 intent=intent,
                 source="clarify",
-                reply="Son kısmı tam anlayamadım. Bir kez daha söyler misin?",
+                reply=reply,
                 session_id=session_id,
             )
 
         bundle = self.retriever.get_context_bundle(
-            text=text,
+            text=effective_text,
             intent=intent,
             mode=mode,
-            top_k=4,
+            top_k=5,
         )
 
         context = bundle["context_text"]
@@ -164,11 +205,12 @@ class PoodleBrain:
         llm_mode = self._select_llm_mode(intent=intent, mode=mode, confidence=confidence)
 
         prompt = self._build_prompt(
-            text=text,
+            text=effective_text,
             intent=intent,
             mode=mode,
             context=context,
             confidence=confidence,
+            is_follow_up=resolved["is_follow_up"],
         )
 
         start = time.perf_counter()
@@ -194,11 +236,19 @@ class PoodleBrain:
         )
 
         if error:
+            reply = "Şu an cevap verirken küçük bir sorun oldu."
+            self._remember_turn(
+                raw_text=text,
+                resolved_text=effective_text,
+                intent=intent,
+                mode=mode,
+                reply=reply,
+            )
             return self._log_and_return(
                 text=text,
                 intent=intent,
                 source="llm",
-                reply="Şu an cevap verirken küçük bir sorun oldu.",
+                reply=reply,
                 session_id=session_id,
                 model=model,
                 latency=latency,
@@ -210,6 +260,15 @@ class PoodleBrain:
         reply = self.policy.apply(raw)
         if not reply:
             reply = "Bunu bir kez daha söyler misin?"
+
+        self._remember_turn(
+            raw_text=text,
+            resolved_text=effective_text,
+            intent=intent,
+            mode=mode,
+            reply=reply,
+        )
+        self._push_short_term_memory(effective_text, intent, mode, reply)
 
         return self._log_and_return(
             text=text,
@@ -222,145 +281,53 @@ class PoodleBrain:
             memory_used=memory_used,
         )
 
-    def ask_poodle_stream(self, text, session_id=None):
-        text = (text or "").strip()
+    # =========================================================
+    # FOLLOW-UP
+    # =========================================================
+    def _resolve_follow_up(self, text: str) -> Dict[str, Any]:
+        raw = (text or "").strip()
+        norm = self._normalize(raw)
 
-        if not text:
-            yield {"type": "final", "text": "Biraz daha açık söyler misin?", "source": "clarify"}
-            return
+        follow_up_markers = [
+            "bir de",
+            "daha fazla",
+            "detay ver",
+            "biraz daha",
+            "bunu aç",
+            "onu aç",
+            "örnek ver",
+            "başka ne",
+            "devam et",
+            "onu tekrar",
+        ]
 
-        self._safe_memory_write(text)
+        is_follow_up = any(marker in norm for marker in follow_up_markers)
 
-        intent = self.detect_intent(text)
-        mode = self._detect_mode(text, intent)
+        if not is_follow_up:
+            return {
+                "is_follow_up": False,
+                "effective_text": raw,
+            }
 
-        fast = self._try_fast_track(text, intent, mode)
-        if fast:
-            self._log_and_return(
-                text=text,
-                intent=intent,
-                source="fast_track",
-                reply=fast,
-                session_id=session_id,
-            )
-            yield {"type": "final", "text": fast, "source": "fast_track", "intent": intent}
-            return
+        prev_topic = self.last_turn.get("resolved_text") or ""
+        prev_intent = self.last_turn.get("intent") or "general"
 
-        direct = self._direct_reply(text, intent)
-        if direct:
-            self._log_and_return(
-                text=text,
-                intent=intent,
-                source="direct",
-                reply=direct,
-                session_id=session_id,
-            )
-            yield {"type": "final", "text": direct, "source": "direct", "intent": intent}
-            return
+        if prev_topic:
+            effective = f"Önceki konu: {prev_topic}. Yeni istek: {raw}"
+        else:
+            effective = raw
 
-        template = self._get_template(intent)
-        if template and intent in {"ask_identity", "ask_name", "ask_user_name", "user_name_define"}:
-            self._log_and_return(
-                text=text,
-                intent=intent,
-                source="template",
-                reply=template,
-                session_id=session_id,
-            )
-            yield {"type": "final", "text": template, "source": "template", "intent": intent}
-            return
+        # follow-up ise intent'i daha iyi koru
+        if prev_intent in {"concept_explanation", "exam_support", "education_topics"}:
+            return {
+                "is_follow_up": True,
+                "effective_text": effective,
+            }
 
-        if self._should_clarify(text, intent):
-            reply = "Son kısmı tam anlayamadım. Bir kez daha söyler misin?"
-            self._log_and_return(
-                text=text,
-                intent=intent,
-                source="clarify",
-                reply=reply,
-                session_id=session_id,
-            )
-            yield {"type": "final", "text": reply, "source": "clarify", "intent": intent}
-            return
-
-        bundle = self.retriever.get_context_bundle(
-            text=text,
-            intent=intent,
-            mode=mode,
-            top_k=4,
-        )
-
-        context = bundle["context_text"]
-        confidence = float(bundle["confidence"])
-        memory_used = bool(context.strip())
-
-        llm_mode = self._select_llm_mode(intent=intent, mode=mode, confidence=confidence)
-
-        prompt = self._build_prompt(
-            text=text,
-            intent=intent,
-            mode=mode,
-            context=context,
-            confidence=confidence,
-        )
-
-        start = time.perf_counter()
-        model = getattr(self.llm, "model_name", None) or getattr(self.llm, "model", "unknown")
-        chunks = []
-        error = None
-
-        try:
-            for chunk in self.llm.stream(prompt, mode=llm_mode):
-                chunks.append(chunk)
-                yield {"type": "chunk", "text": chunk, "source": "llm", "intent": intent}
-        except Exception as e:
-            error = str(e)
-
-        latency = int((time.perf_counter() - start) * 1000)
-        raw = "".join(chunks).strip()
-
-        self._log_llm_call(
-            session_id=session_id,
-            intent=intent,
-            model=model,
-            prompt=prompt,
-            raw=raw,
-            latency=latency,
-            error=error,
-        )
-
-        if error:
-            reply = "Şu an cevap verirken küçük bir sorun oldu."
-            self._log_and_return(
-                text=text,
-                intent=intent,
-                source="llm",
-                reply=reply,
-                session_id=session_id,
-                model=model,
-                latency=latency,
-                memory_used=memory_used,
-                status="error",
-                error=error,
-            )
-            yield {"type": "final", "text": reply, "source": "llm", "intent": intent}
-            return
-
-        reply = self.policy.apply(raw)
-        if not reply:
-            reply = "Bunu bir kez daha söyler misin?"
-
-        self._log_and_return(
-            text=text,
-            intent=intent,
-            source="llm",
-            reply=reply,
-            session_id=session_id,
-            model=model,
-            latency=latency,
-            memory_used=memory_used,
-        )
-
-        yield {"type": "done", "text": reply, "source": "llm", "intent": intent}
+        return {
+            "is_follow_up": True,
+            "effective_text": effective,
+        }
 
     # =========================================================
     # INTERNAL FLOW
@@ -371,11 +338,54 @@ class PoodleBrain:
         except Exception as e:
             print(f">>> [MEMORY WRITER ERROR] {e}")
 
+    def _push_short_term_memory(self, text: str, intent: str, mode: str, reply: str):
+        try:
+            items = [
+                {
+                    "id": f"short.user.{hash(text)}",
+                    "subject": "Conversation",
+                    "topic": intent,
+                    "chunk_type": "simple_explanation",
+                    "title": "Kullanıcı son mesajı",
+                    "content": text,
+                    "keywords": [],
+                    "difficulty": "easy",
+                    "audience": "assistant",
+                    "intent_tags": [intent, mode],
+                    "embedding_priority": 0.90,
+                },
+                {
+                    "id": f"short.reply.{hash(reply)}",
+                    "subject": "Conversation",
+                    "topic": intent,
+                    "chunk_type": "simple_explanation",
+                    "title": "Asistan son cevabı",
+                    "content": reply,
+                    "keywords": [],
+                    "difficulty": "easy",
+                    "audience": "assistant",
+                    "intent_tags": [intent, mode, "reply"],
+                    "embedding_priority": 0.85,
+                },
+            ]
+            self.faiss.add_short_term(items)
+        except Exception as e:
+            print(f">>> [SHORT TERM FAISS ERROR] {e}")
+
+    def _remember_turn(self, raw_text: str, resolved_text: str, intent: str, mode: str, reply: str):
+        self.last_turn = {
+            "raw_text": raw_text,
+            "resolved_text": resolved_text,
+            "intent": intent,
+            "mode": mode,
+            "reply": reply,
+        }
+
     def _select_llm_mode(self, intent: str, mode: str, confidence: float) -> str:
         if intent in {"ask_name", "ask_identity", "audio_check", "thanks", "greeting", "farewell"}:
             return "deterministic"
 
-        if intent in {"concept_explanation", "exam_support"}:
+        if intent in {"concept_explanation", "exam_support", "follow_up"}:
             return "deep"
 
         if intent == "education_topics":
@@ -389,7 +399,15 @@ class PoodleBrain:
 
         return "balanced"
 
-    def _build_prompt(self, text: str, intent: str, mode: str, context: str, confidence: float) -> str:
+    def _build_prompt(
+        self,
+        text: str,
+        intent: str,
+        mode: str,
+        context: str,
+        confidence: float,
+        is_follow_up: bool,
+    ) -> str:
         parts = [SYSTEM_PROMPT]
 
         if mode == "education":
@@ -397,7 +415,7 @@ class PoodleBrain:
         else:
             parts.append(GENERAL_PROMPT)
 
-        parts.append(self._depth_instruction(intent=intent, mode=mode, confidence=confidence))
+        parts.append(self._depth_instruction(intent=intent, mode=mode, confidence=confidence, is_follow_up=is_follow_up))
 
         if context:
             parts.append("Bağlam:")
@@ -410,7 +428,13 @@ class PoodleBrain:
 
         return "\n\n".join(parts).strip()
 
-    def _depth_instruction(self, intent: str, mode: str, confidence: float) -> str:
+    def _depth_instruction(self, intent: str, mode: str, confidence: float, is_follow_up: bool) -> str:
+        if is_follow_up:
+            return (
+                "Yanıt biçimi: Bu bir devam sorusu. Önceki bağlamı koru, aynı konuyu sürdür, "
+                "gerekirse biraz daha detay ver."
+            )
+
         if mode == "education":
             if intent == "education_topics":
                 return (
@@ -438,7 +462,7 @@ class PoodleBrain:
         return "Yanıt biçimi: Kısa ama anlamlı ve dürüst cevap ver."
 
     def _try_fast_track(self, text: str, intent: str, mode: str) -> Optional[str]:
-        hard_intents = {"greeting", "ask_name", "ask_identity", "audio_check", "thanks", "farewell"}
+        hard_intents = {"greeting", "ask_name", "ask_identity", "audio_check", "thanks", "farewell", "ask_status"}
 
         if intent in hard_intents:
             answer = self.memory.search_fast_answer(text, intent=intent)
@@ -457,6 +481,9 @@ class PoodleBrain:
             return "Tamam. Ne hakkında konuşalım?"
         return None
 
+    # =========================================================
+    # INTENT / MODE
+    # =========================================================
     def detect_intent(self, text: str) -> str:
         t = self._normalize(text)
         raw = text.lower()
@@ -491,13 +518,9 @@ class PoodleBrain:
             return "audio_check"
 
         if (
-            "lgs konular" in t
-            or "dgs konular" in t
-            or "hangi konular" in t
-            or "konulari listeler misin" in t
-            or "konuları listeler misin" in raw
-            or "odaklanmam gerektigini" in t
-            or "odaklanmam gerektiğini" in raw
+            "lgs" in t or "dgs" in t
+        ) and (
+            "konu" in t or "list" in t or "odaklan" in t
         ):
             return "education_topics"
 
@@ -510,6 +533,7 @@ class PoodleBrain:
             or "nasıl çalışmalıyım" in raw
             or "strateji" in t
             or "taktik" in t
+            or ("lgs" in t and "bilgi" in t)
         ):
             return "exam_support"
 
@@ -518,6 +542,7 @@ class PoodleBrain:
             or "anlatir misin" in t
             or "anlatır mısın" in raw
             or "detay verir misin" in raw
+            or "bilgi verir misin" in raw
         ):
             return "concept_explanation"
 
@@ -629,9 +654,6 @@ class PoodleBrain:
 
         return BrainResult(reply_text=reply, intent=intent)
 
-    # =========================================================
-    # NORMALIZE
-    # =========================================================
     def _normalize(self, text: str) -> str:
         t = (text or "").strip().lower()
         return (
