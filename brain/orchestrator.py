@@ -25,9 +25,6 @@ class Orchestrator:
         if not self.running:
             return
 
-        if getattr(self.speech, "_busy", False):
-            return
-
         etype = event.get("type", "none")
         if etype == "none":
             return
@@ -47,7 +44,7 @@ class Orchestrator:
         if etype == "command":
             text = event.get("text", "").strip()
             if text:
-                self._start_async(self._process_command, text)
+                self._start_async(self._process_command_stream, text)
             return
 
     def _start_async(self, fn, *args):
@@ -73,14 +70,44 @@ class Orchestrator:
         finally:
             self.set_state("idle")
 
-    def _process_command(self, text):
+    def _process_command_stream(self, text):
         try:
             self.set_state("thinking")
-            result = self.brain.handle_user_input(text)
-            reply = result.reply_text
+            buffer = []
+            streamed_any = False
 
-            self.set_state("speaking")
-            self.speech.speak(reply)
+            for item in self.brain.ask_poodle_stream(text):
+                item_type = item.get("type")
+                chunk_text = item.get("text", "")
+
+                if item_type == "final":
+                    self.set_state("speaking")
+                    self.speech.speak(chunk_text)
+                    streamed_any = True
+                    break
+
+                if item_type == "chunk":
+                    buffer.append(chunk_text)
+
+                    current = "".join(buffer).strip()
+                    if self._should_flush(current):
+                        self.set_state("speaking")
+                        self.speech.speak(current)
+                        buffer.clear()
+                        streamed_any = True
+
+                if item_type == "done":
+                    final_text = "".join(buffer).strip()
+                    if final_text:
+                        self.set_state("speaking")
+                        self.speech.speak(final_text)
+                        buffer.clear()
+                        streamed_any = True
+                    break
+
+            if not streamed_any:
+                self.set_state("speaking")
+                self.speech.speak("Şu an küçük bir sorun oluştu.")
 
         except Exception as e:
             print(f">>> [ORCHESTRATOR ERROR] {e}")
@@ -88,3 +115,12 @@ class Orchestrator:
             self.speech.speak("Şu an küçük bir sorun oluştu.")
         finally:
             self.set_state("idle")
+
+    def _should_flush(self, text):
+        if not text:
+            return False
+
+        if text.endswith((".", "!", "?", ",", ";", ":")):
+            return True
+
+        return len(text.split()) >= 7
