@@ -1,8 +1,8 @@
 import json
 import uuid
 
-INPUT_FILE = "math_lgs_chunks_v1.json"
-OUTPUT_FILE = "math_lgs_chunks_v2.json"
+INPUT_FILE = "chunks_v1.json"
+OUTPUT_FILE = "chunks_v2.json"
 
 
 def shorten_text(text, max_words=60):
