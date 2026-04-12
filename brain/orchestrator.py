@@ -11,6 +11,10 @@ class Orchestrator:
         self._busy = False
         self._lock = threading.Lock()
 
+        # streaming / buffer ayarları
+        self.min_flush_words = 16
+        self.max_buffer_words = 28
+
     def stop(self):
         self.running = False
 
@@ -66,14 +70,17 @@ class Orchestrator:
     def _speak_text(self, text):
         self.set_state("speaking")
         try:
-            self.speech.speak(text)
+            cleaned = self._clean_for_speech(text)
+            if cleaned:
+                self.speech.speak(cleaned)
         finally:
             self.set_state("idle")
 
     def _process_command_stream(self, text):
         try:
             self.set_state("thinking")
-            buffer = []
+
+            buffer = ""
             streamed_any = False
 
             for item in self.brain.ask_poodle_stream(text):
@@ -81,28 +88,36 @@ class Orchestrator:
                 chunk_text = item.get("text", "")
 
                 if item_type == "final":
-                    self.set_state("speaking")
-                    self.speech.speak(chunk_text)
-                    streamed_any = True
+                    cleaned = self._clean_for_speech(chunk_text)
+                    if cleaned:
+                        self.set_state("speaking")
+                        self.speech.speak(cleaned)
+                        streamed_any = True
                     break
 
                 if item_type == "chunk":
-                    buffer.append(chunk_text)
+                    buffer += chunk_text
 
-                    current = "".join(buffer).strip()
-                    if self._should_flush(current):
-                        self.set_state("speaking")
-                        self.speech.speak(current)
-                        buffer.clear()
-                        streamed_any = True
+                    if self._should_flush(buffer):
+                        piece, remainder = self._extract_speakable_piece(buffer)
+
+                        if piece:
+                            cleaned = self._clean_for_speech(piece)
+                            if cleaned:
+                                self.set_state("speaking")
+                                self.speech.speak(cleaned)
+                                streamed_any = True
+
+                        buffer = remainder
 
                 if item_type == "done":
-                    final_text = "".join(buffer).strip()
+                    # done event'inde final text varsa onu kullan, yoksa buffer'ı konuş
+                    final_text = self._clean_for_speech(chunk_text or buffer)
                     if final_text:
                         self.set_state("speaking")
                         self.speech.speak(final_text)
-                        buffer.clear()
                         streamed_any = True
+                    buffer = ""
                     break
 
             if not streamed_any:
@@ -116,11 +131,102 @@ class Orchestrator:
         finally:
             self.set_state("idle")
 
-    def _should_flush(self, text):
-        if not text:
+    def _should_flush(self, text: str) -> bool:
+        stripped = (text or "").strip()
+        if not stripped:
             return False
 
-        if text.endswith((".", "!", "?", ",", ";", ":")):
+        if stripped.endswith((".", "!", "?")):
             return True
 
-        return len(text.split()) >= 7
+        words = stripped.split()
+
+        if len(words) >= self.max_buffer_words:
+            return True
+
+        if len(words) >= self.min_flush_words and self._has_soft_boundary(stripped):
+            return True
+
+        return False
+
+    def _has_soft_boundary(self, text: str) -> bool:
+        # Virgülde flush etmiyoruz
+        soft_markers = [
+            " çünkü ",
+            " ama ",
+            " fakat ",
+            " ancak ",
+            " sonra ",
+            " ayrıca ",
+            " böylece ",
+            " örneğin ",
+            " bu yüzden ",
+            " bunun için ",
+        ]
+        lower = text.lower()
+        return any(marker in lower for marker in soft_markers)
+
+    def _extract_speakable_piece(self, text: str):
+        stripped = (text or "").strip()
+        if not stripped:
+            return "", ""
+
+        # 1. Tercih: son tam cümleye kadar konuş
+        last_sentence_end = max(
+            stripped.rfind("."),
+            stripped.rfind("!"),
+            stripped.rfind("?"),
+        )
+
+        if last_sentence_end != -1 and last_sentence_end >= int(len(stripped) * 0.45):
+            piece = stripped[: last_sentence_end + 1].strip()
+            remainder = stripped[last_sentence_end + 1 :].strip()
+            return piece, remainder
+
+        # 2. Tercih: güvenli yumuşak bağlaçlarda böl
+        split_candidates = [
+            " çünkü ",
+            " ama ",
+            " fakat ",
+            " ancak ",
+            " sonra ",
+            " ayrıca ",
+            " böylece ",
+            " örneğin ",
+            " bu yüzden ",
+            " bunun için ",
+        ]
+
+        best_idx = -1
+        best_marker = ""
+
+        lower = stripped.lower()
+        for marker in split_candidates:
+            idx = lower.rfind(marker)
+            if idx > best_idx and idx >= int(len(stripped) * 0.45):
+                best_idx = idx
+                best_marker = marker
+
+        if best_idx != -1:
+            cut_idx = best_idx + len(best_marker.strip())
+            piece = stripped[:cut_idx].strip()
+            remainder = stripped[cut_idx:].strip()
+            return piece, remainder
+
+        # 3. Son çare: buffer çok büyüdüyse hepsini konuş
+        if len(stripped.split()) >= self.max_buffer_words:
+            return stripped, ""
+
+        return "", stripped
+
+    def _clean_for_speech(self, text: str) -> str:
+        cleaned = (text or "").replace("\n", " ").strip()
+        cleaned = " ".join(cleaned.split())
+
+        if cleaned in {",", ".", "!", "?", ";", ":"}:
+            return ""
+
+        if len(cleaned.split()) == 1 and cleaned.endswith(","):
+            return ""
+
+        return cleaned
