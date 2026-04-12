@@ -377,5 +377,4 @@ class MemoryManager:
                     "llm_call_count": len(llm_calls),
                 },
             }
-        
-            conn.commit()
+    conn.commit()
