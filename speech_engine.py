@@ -352,7 +352,7 @@ class PoodleSpeech:
             frames = wf.readframes(wf.getnframes())
             data = np.frombuffer(frames, dtype=np.int16).astype(np.float32) / 32767.0
             return data, sr
-
+            
     def debug_list_input_devices(self):
         print(">>> [MIC DEBUG] Cihaz Listesi:")
 
