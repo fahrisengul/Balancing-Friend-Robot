@@ -10,6 +10,13 @@ class Decision:
 
 
 class ResponsePolicy:
+    """
+    Yeni strateji:
+    - İyi cevapları gereksiz kısaltma
+    - Ama bozuk / halüsinatif / meta cevapları yakala
+    - Türkçe dışına kayan, hibrit, anlamsız ya da robotik çıktıları temizle
+    """
+
     def __init__(self):
         self.last_reply = None
 
@@ -21,35 +28,29 @@ class ResponsePolicy:
             "ask_status",
             "thanks",
             "conversation_start",
-            "ask_topic",
-            "open_topic",
             "ask_user_name",
             "user_name_define",
-            "education_topics",
             "audio_check",
         }
 
-        self.banned_phrases = [
+        self.banned_meta_phrases = [
             "ben bir ai",
             "yapay zeka",
-            "artificial intelligence",
             "language model",
             "llm",
+            "artificial intelligence",
             "ben bir sistemim",
             "ai system",
             "as an ai",
             "i am an ai",
-            "ben sen poodle",
-            "sen poodle'sın",
-            "sen poodlesin",
+            "robot arkadaşın ve eğitim koçusum",
+            "robot arkadaşın ve eğitim koçuyum",
             "size yardımcı olmaktan memnuniyet duyarım",
-            "lütfen sorularınızı bildirin",
-            "bilgi vermemeyeceğim",
-            "veremem",
             "yardımcı olmak için buradayım",
+            "lütfen sorularınızı bildirin",
         ]
 
-        self.noise_terms = [
+        self.bad_noise_terms = [
             "hıznav",
             "naw stress",
             "naw stressi",
@@ -59,13 +60,22 @@ class ResponsePolicy:
             "3 stres",
         ]
 
+        self.bad_mixed_terms = [
+            "gemeinschaft",
+            "mutual",
+            "happinessa",
+            "expectasyon",
+            "newtör",
+            "friendse",
+            "ouruzu",
+        ]
+
         self.bad_openings = [
             "merhaba tanem",
             "merhaba",
             "selam tanem",
             "selam",
             "hey",
-            "tanem",
         ]
 
     # =========================================================
@@ -83,13 +93,13 @@ class ResponsePolicy:
         if self._looks_like_noise_input(t):
             return Decision("clarify", "Son kısmı tam anlayamadım. Bir kez daha söyler misin?")
 
-        if len(t.split()) <= 2 and intent == "general":
+        if len(t.split()) <= 1 and intent == "general":
             return Decision("clarify", "Biraz daha açık söyler misin?")
 
         return Decision("llm")
 
     # =========================================================
-    # POST-PROCESS
+    # MAIN APPLY
     # =========================================================
     def apply(self, raw: str) -> str:
         if not raw:
@@ -98,37 +108,44 @@ class ResponsePolicy:
         text = self._cleanup_whitespace(raw)
         lower = text.lower()
 
-        # 1) ağır persona / meta kaçakları direkt fallback'e çevir
-        if self._contains_banned_phrase(lower):
-            return "Bunu daha kısa ve net söyleyeyim. Sorunu tekrar sorar mısın?"
+        # 1. ağır meta kaçakları
+        if self._contains_any(lower, self.banned_meta_phrases):
+            return "Bunu daha doğal ve net söyleyeyim. Sorunu tekrar sorar mısın?"
 
-        # 2) gürültülü / saçma içerikleri temizle
-        if self._contains_noise_term(lower):
-            return "Bunu tam net anlayamadım. Bir kez daha söyler misin?"
+        # 2. gürültü / saçma STT terimleri
+        if self._contains_any(lower, self.bad_noise_terms):
+            return "Son kısmı tam net anlayamadım. Bir kez daha söyler misin?"
 
-        # 3) açılış, meta ve robotik kısımları sök
+        # 3. kötü hibrit dil
+        if self._contains_any(lower, self.bad_mixed_terms):
+            cleaned = self._remove_bad_mixed_parts(text)
+            if cleaned and len(cleaned.split()) >= 4:
+                text = cleaned
+            else:
+                return "Bunu daha düzgün ve net anlatayım. Sorunu bir kez daha sorar mısın?"
+
+        # 4. açılış ve robotik meta temizliği
         text = self._strip_bad_opening(text)
         text = self._strip_meta_robotic(text)
 
-        # 4) tekrar normalize et
+        # 5. whitespace / punctuation temizliği
         text = self._cleanup_whitespace(text)
 
-        # 5) boş kaldıysa güvenli fallback
+        # 6. boş kaldıysa fallback
         if not text or len(text.strip()) < 3:
-            return "Bunu daha kısa ve net söyler misin?"
+            return "Bunu daha net söyler misin?"
 
-        # 6) eğitim stiline çek
+        # 7. çocuk dostu ama aşırı küçültmeden
         text = self._make_child_friendly(text)
 
-        # 7) uzunluğu sıkı kontrol et
-        text = self._limit_sentences(text, max_sentences=2)
-        text = self._limit_words(text, max_words=20)
+        # 8. cümle sayısını çok sert kısma; ama saçma uzamayı kes
+        text = self._limit_sentences(text, max_sentences=4)
+        text = self._limit_words(text, max_words=80)
 
-        # 8) yine boş / bozuksa fallback
+        # 9. tekrar kontrolü
         if not text or len(text.strip()) < 3:
-            return "Bunu daha kısa ve net söyler misin?"
+            return "Bunu daha net söyler misin?"
 
-        # 9) tekrar cevabı engelle
         if self.last_reply and self._is_too_similar(text, self.last_reply):
             text = self._diversify(text)
 
@@ -138,23 +155,19 @@ class ResponsePolicy:
     # =========================================================
     # CHECKS
     # =========================================================
-    def _contains_banned_phrase(self, lower: str) -> bool:
-        return any(p in lower for p in self.banned_phrases)
-
-    def _contains_noise_term(self, lower: str) -> bool:
-        return any(p in lower for p in self.noise_terms)
+    def _contains_any(self, text: str, phrases) -> bool:
+        return any(p in text for p in phrases)
 
     def _looks_like_noise_input(self, text: str) -> bool:
         if len(text) < 4:
             return True
 
-        if len(text.split()) == 1 and text not in {"merhaba", "selam", "teşekkür", "sağol"}:
+        if len(text.split()) == 1 and text not in {"merhaba", "selam", "teşekkür", "sagol", "sağol"}:
             return True
 
-        if any(term in text for term in self.noise_terms):
+        if self._contains_any(text, self.bad_noise_terms):
             return True
 
-        # çok bozuk karakter / tekrar yapısı
         tokens = text.split()
         if tokens:
             unique_ratio = len(set(tokens)) / len(tokens)
@@ -181,12 +194,10 @@ class ResponsePolicy:
             "Ben bir yapay zeka sistemiyim": "",
             "Ben bir sistemim": "",
             "Artificial Intelligence": "",
-            "robot arkadaşın ve eğitim koçusum": "robot arkadaşınım",
-            "robot arkadaşın ve eğitim koçuyum": "robot arkadaşınım",
             "Güzel günler dilerim": "",
             "yardımcı olmak için buradayım": "",
-            "bilgi vermemeyeceğim": "kısa anlatayım",
-            "olacam": "olurum",
+            "Size yardımcı olmayı umuyorum": "",
+            "Tanışalım": "",
             "gerçekten mi": "",
             "neden mi": "",
             "sayın kullanıcı": "",
@@ -199,42 +210,48 @@ class ResponsePolicy:
 
         return result.strip()
 
+    def _remove_bad_mixed_parts(self, text: str) -> str:
+        result = text
+        for term in self.bad_mixed_terms:
+            result = re.sub(re.escape(term), "", result, flags=re.IGNORECASE)
+        result = self._cleanup_whitespace(result)
+        return result
+
     def _make_child_friendly(self, text: str) -> str:
         result = text.strip()
 
         replacements = {
             "zorundasın": "yapabilirsin",
             "yapmalısın": "yapabilirsin",
-            "mutlaka": "öncelikle",
             "karmaşık": "biraz zor",
             "komplike": "biraz zor",
-            "Hayır,": "",
-            "Hayır!": "",
-            "Hayır, hayır!": "Şöyle diyeyim.",
             "Aslında": "",
             "Özetle": "Kısaca",
+            "Hayır,": "",
+            "Hayır!": "",
         }
 
         for old, new in replacements.items():
             result = result.replace(old, new)
 
-        # fazla ünlem / soru işareti temizliği
         result = result.replace("!!", "!")
         result = result.replace("??", "?")
         result = re.sub(r"\s+", " ", result).strip()
 
-        # bazı istenmeyen ton kalıpları
-        banned_patterns = [
+        # gereksiz garip kalıplar
+        bad_patterns = [
             r"\bçok ilgincikler\b",
             r"\bseneye yeni şeyler öğreniyorum\b",
             r"\bbu konuda hiç altyazım yok\b",
-            r"\bgüzel günler dilerim\b",
+            r"\bbilgi vermemeyeceğim\b",
+            r"\bouruzu\b",
+            r"\bhappinessa\b",
+            r"\bexpectasyonlar\b",
         ]
-        for pattern in banned_patterns:
+        for pattern in bad_patterns:
             result = re.sub(pattern, "", result, flags=re.IGNORECASE).strip()
 
         result = self._cleanup_whitespace(result)
-
         return result
 
     def _cleanup_whitespace(self, text: str) -> str:
@@ -245,14 +262,13 @@ class ResponsePolicy:
     # =========================================================
     # LENGTH CONTROL
     # =========================================================
-    def _limit_sentences(self, text: str, max_sentences: int = 2) -> str:
+    def _limit_sentences(self, text: str, max_sentences: int = 4) -> str:
         parts = self._split_sentences(text)
         if len(parts) <= max_sentences:
             return text.strip()
-
         return " ".join(parts[:max_sentences]).strip()
 
-    def _limit_words(self, text: str, max_words: int = 20) -> str:
+    def _limit_words(self, text: str, max_words: int = 80) -> str:
         words = text.split()
         if len(words) <= max_words:
             return text.strip()
@@ -279,7 +295,7 @@ class ResponsePolicy:
         return parts
 
     # =========================================================
-    # SIMILARITY / DIVERSIFY
+    # SIMILARITY
     # =========================================================
     def _is_too_similar(self, a: str, b: str) -> bool:
         a_tokens = set(self._normalize(a).split())
@@ -289,20 +305,14 @@ class ResponsePolicy:
             return False
 
         overlap = len(a_tokens & b_tokens) / max(len(a_tokens), 1)
-        return overlap > 0.75
+        return overlap > 0.82
 
     def _diversify(self, text: str) -> str:
-        short_forms = [
-            "Kısaca şöyle:",
-            "Şöyle diyeyim:",
-            "Daha kısa anlatayım:",
-        ]
-
+        prefix = "Şöyle diyeyim:"
         base = self._cleanup_whitespace(text)
         if not base:
-            return "Bunu daha kısa ve net söyler misin?"
-
-        return f"{short_forms[0]} {base}"
+            return "Bunu daha net söyler misin?"
+        return f"{prefix} {base}"
 
     # =========================================================
     # NORMALIZE
