@@ -1,0 +1,404 @@
+[
+  {
+    "id": "math.carpanlar.definition.001",
+    "subject": "Matematik",
+    "topic": "Çarpanlar ve Katlar",
+    "chunk_type": "definition",
+    "difficulty": "easy",
+    "content": "Bir pozitif tam sayıyı kalansız bölebilen sayılara o sayının çarpanları denir. Çarpanlar aynı zamanda o sayının bölenleridir. Örneğin, 12 sayısının çarpanları 1, 2, 3, 4, 6 ve 12'dir. Her doğal sayı, en az iki çarpanın çarpımı şeklinde yazılabilir. Bir sayının çarpanlarından asal olanlarına ise asal çarpanlar adı verilir.",
+    "embedding_priority": 1.0,
+    "intent_tags": ["tanım", "nedir", "konu anlatımı"],
+    "exam_weight": 0.8
+  },
+  {
+    "id": "math.carpanlar.explanation.002",
+    "subject": "Matematik",
+    "topic": "Çarpanlar ve Katlar",
+    "chunk_type": "simple_explanation",
+    "title": "EBOB ve EKOK Kullanım Alanları",
+    "content": "EBOB, büyük parçaları eşit büyüklükte küçük parçalara ayırırken kullanılır; tarlaya ağaç dikme veya bidonlardaki sıvıları şişelere paylaştırma soruları buna örnektir. EKOK ise küçük parçalardan büyük bir bütün oluştururken kullanılır; nöbet tutma, zil çalma süreleri veya gemilerin limanda karşılaşma vakitleri sorularında tercih edilir.",
+    "embedding_priority": 1.0,
+    "intent_tags": ["anlat", "açıkla", "farkı nedir"],
+    "exam_weight": 0.9
+  },
+  {
+    "id": "math.carpanlar.mistake.003",
+    "subject": "Matematik",
+    "topic": "Çarpanlar ve Katlar",
+    "chunk_type": "common_mistake",
+    "content": "En sık yapılan hata, aralarında asal sayıların mutlaka asal olması gerektiğini düşünmektir. Oysa 8 ve 9 sayıları asal değildir ama aralarında asaldır. Çünkü ortak bölenleri sadece 1'dir. Aralarında asal olması için sayıların kendi başına asal olma zorunluluğu yoktur, sadece ortak bölenlerine bakılmalıdır.",
+    "embedding_priority": 0.95,
+    "intent_tags": ["hata", "yanlış", "dikkat"],
+    "exam_weight": 0.85
+  },
+  {
+    "id": "math.uslu.definition.004",
+    "subject": "Matematik",
+    "topic": "Üslü Sayılar",
+    "chunk_type": "definition",
+    "content": "Bir sayının kendisiyle tekrarlı çarpımına üslü ifade denir. a üzeri n şeklinde gösterilir; burada a taban, n ise üs (kuvvet) adını alır. Üs, tabandaki sayının kaç kez çarpılacağını söyler. Örneğin, 2 üzeri 3 ifadesi 2 çarpı 2 çarpı 2 işlemine eşittir ve sonucu 8'dir. Sıfır hariç tüm sayıların sıfırıncı kuvveti 1'dir.",
+    "embedding_priority": 1.0,
+    "intent_tags": ["tanım", "nedir", "üslü sayı"],
+    "exam_weight": 0.9
+  },
+  {
+    "id": "math.uslu.example.005",
+    "subject": "Matematik",
+    "topic": "Üslü Sayılar",
+    "chunk_type": "example",
+    "content": "Negatif üs, sayının işaretini değiştirmez, sadece sayıyı ters çevirir. Örneğin, 5 üzeri -2 ifadesi -25 demek değildir. Bu ifade 1 bölü 5'in karesi yani 1 bölü 25 anlamına gelir. Sayı takla atar ama dostça kalır! Pozitif bir sayının negatif kuvveti her zaman pozitiftir, sadece değeri küçülür.",
+    "embedding_priority": 0.9,
+    "intent_tags": ["örnek", "nasıl çözülür", "negatif üs"],
+    "exam_weight": 0.85
+  },
+  {
+    "id": "math.uslu.strategy.006",
+    "subject": "Matematik",
+    "topic": "Üslü Sayılar",
+    "chunk_type": "exam_strategy",
+    "content": "LGS'de çok büyük ve çok küçük sayılarla ilgili sorular gelirse virgül kaydırma kuralını unutma. Virgülü sağa kaydırdığında sayının değeri büyür, dengelemek için on'un kuvvetini azaltmalısın. Virgülü sola kaydırdığında ise sayının değeri küçülür, bu yüzden on'un kuvvetini artırmalısın. Bilimsel gösterimde katsayı her zaman 1 ile 10 arasında olmalıdır.",
+    "embedding_priority": 0.85,
+    "intent_tags": ["strateji", "nasıl çözülür", "taktik"],
+    "exam_weight": 0.95
+  },
+  {
+    "id": "math.karekok.definition.007",
+    "subject": "Matematik",
+    "topic": "Kareköklü Sayılar",
+    "chunk_type": "definition",
+    "content": "Verilen bir sayının hangi pozitif sayının karesi olduğunu bulma işlemine karekök alma denir. Karekök sembolü ile gösterilir. 1, 4, 9, 16, 25 gibi bir tam sayının karesi olan sayılara tam kare sayılar denir. Tam kare sayılar kök dışına tam sayı olarak çıkabilirler. Negatif sayıların karekökü reel sayılarda tanımlı değildir.",
+    "embedding_priority": 1.0,
+    "intent_tags": ["nedir", "tanım", "karekök"],
+    "exam_weight": 0.9
+  },
+  {
+    "id": "math.karekok.explanation.008",
+    "subject": "Matematik",
+    "topic": "Kareköklü Sayılar",
+    "chunk_type": "simple_explanation",
+    "content": "Kareköklü sayılarda toplama ve çıkarma yapabilmek için kök içlerinin mutlaka aynı olması gerekir. Kök içleri aynıysa katsayılar toplanır veya çıkarılır, ortak kök aynen yazılır. Çarpma ve bölme işlemlerinde ise katsayılar kendi arasında, kök içleri kendi arasında işleme alınır. Kök içlerini eşitlemek için a kök b formunu kullanmalısın.",
+    "embedding_priority": 1.0,
+    "intent_tags": ["anlat", "açıkla", "işlemler"],
+    "exam_weight": 0.9
+  },
+  {
+    "id": "math.karekok.guidance.009",
+    "subject": "Matematik",
+    "topic": "Kareköklü Sayılar",
+    "chunk_type": "exam_guidance",
+    "content": "Sınavda yaklaşık değer soruları çok sık gelir. Bir kareköklü sayının hangi iki tam sayı arasında olduğunu bulmak için, kök içindeki sayıya en yakın tam kare sayıları belirle. Örneğin, kök 20 sayısı kök 16 ile kök 25 arasındadır. Yani 4 ile 5 arasındadır. 16'ya daha yakın olduğu için 4,5'ten küçüktür.",
+    "embedding_priority": 0.9,
+    "intent_tags": ["sınav", "nasıl çıkar", "tahmin"],
+    "exam_weight": 0.95
+  },
+  {
+    "id": "math.veri.definition.010",
+    "subject": "Matematik",
+    "topic": "Veri Analizi",
+    "chunk_type": "definition",
+    "content": "Verileri görselleştirmek için sütun, çizgi ve daire grafikleri kullanılır. Sütun grafiği farklı verileri karşılaştırmak, çizgi grafiği zaman içindeki değişimi göstermek, daire grafiği ise bir bütünün parçalarını oranlamak için en uygundur. LGS'de genellikle grafikler arası dönüşüm (daireden sütuna geçiş gibi) soruları sorulur.",
+    "embedding_priority": 1.0,
+    "intent_tags": ["nedir", "grafikler", "veri analizi"],
+    "exam_weight": 0.85
+  },
+  {
+    "id": "math.veri.strategy.011",
+    "subject": "Matematik",
+    "topic": "Veri Analizi",
+    "chunk_type": "exam_strategy",
+    "content": "Daire grafiği sorularında her zaman 360 derece kuralını kullan. Verilerin toplamını 360 dereceye oranlayarak her bir verinin merkez açısını bulabilirsin. Pratik yol: Eğer toplam veri sayısı 360'ın bir böleniyse (örneğin 72), her bir veri için kaç derece düştüğünü (360/72=5 derece) hesaplayarak işlem hızını artırabilirsin.",
+    "embedding_priority": 0.85,
+    "intent_tags": ["strateji", "taktik", "hızlı çözüm"],
+    "exam_weight": 0.9
+  },
+  {
+    "id": "math.cebir.definition.012",
+    "subject": "Matematik",
+    "topic": "Cebirsel İfadeler",
+    "chunk_type": "definition",
+    "content": "En az bir bilinmeyen ve işlem içeren ifadelere cebirsel ifade denir. Cebirsel ifadelerde toplama veya çıkarma ile ayrılan kısımlara terim, bilinmeyenin önündeki sayıya katsayı, yanında bilinmeyen olmayan sayıya sabit terim denir. Benzer terimler, bilinmeyenleri ve bu bilinmeyenlerin kuvvetleri aynı olan terimlerdir.",
+    "embedding_priority": 1.0,
+    "intent_tags": ["nedir", "cebir", "tanım"],
+    "exam_weight": 0.8
+  },
+  {
+    "id": "math.cebir.explanation.013",
+    "subject": "Matematik",
+    "topic": "Cebirsel İfadeler",
+    "chunk_type": "simple_explanation",
+    "content": "Özdeşlik, değişkenin alacağı her değer için doğru olan eşitliklerdir. LGS'de en önemli üç özdeşlik: İki terimin toplamının karesi, iki terimin farkının karesi ve iki kare farkıdır. Çarpanlara ayırma ise bir cebirsel ifadeyi çarpım durumundaki küçük parçalara bölmektir. Ortak çarpan parantezine alma en temel yöntemdir.",
+    "embedding_priority": 1.0,
+    "intent_tags": ["anlat", "açıkla", "özdeşlikler"],
+    "exam_weight": 0.95
+  },
+  {
+    "id": "math.cebir.mistake.014",
+    "subject": "Matematik",
+    "topic": "Cebirsel İfadeler",
+    "chunk_type": "common_mistake",
+    "content": "Tam kare özdeşliğini açarken en büyük hata orta terimi unutmaktır. (x+y) karesi x kare artı y kare değildir! Mutlaka 'birinci ile ikincinin çarpımının iki katı' olan 2xy terimini de eklemelisin. Doğru açılım: x kare + 2xy + y karedir. Bu orta terim eksikliği sınavda çok puan kaybettirir, dikkat et!",
+    "embedding_priority": 0.95,
+    "intent_tags": ["hata", "yanlış", "dikkat"],
+    "exam_weight": 0.9
+  },
+  {
+    "id": "math.denklem.definition.015",
+    "subject": "Matematik",
+    "topic": "Doğrusal Denklemler",
+    "chunk_type": "definition",
+    "content": "İçinde birinci dereceden bir bilinmeyen bulunan denklemlerin grafiği bir doğrudur. Koordinat sisteminde x ekseni yatay, y ekseni dikeydir. Bir doğrunun x eksenini kestiği noktayı bulmak için y yerine 0, y eksenini kestiği noktayı bulmak için x yerine 0 verilir. Orijinden geçen doğruların denkleminde sabit terim bulunmaz.",
+    "embedding_priority": 1.0,
+    "intent_tags": ["tanım", "nedir", "doğrusal denklem"],
+    "exam_weight": 0.85
+  },
+  {
+    "id": "math.denklem.explanation.016",
+    "subject": "Matematik",
+    "topic": "Doğrusal Denklemler",
+    "chunk_type": "simple_explanation",
+    "content": "Eğim, dikey uzunluğun yatay uzunluğa oranıdır ve 'm' harfi ile gösterilir. Koordinat sisteminde sağa yatık doğruların eğimi pozitif (+), sola yatık doğruların eğimi negatiftir (-). X eksenine paralel (yatay) doğruların eğimi 0 iken, y eksenine paralel (dikey) doğruların eğimi tanımsızdır. Rampalar ve çatılar eğim sorularının ana kaynağıdır.",
+    "embedding_priority": 1.0,
+    "intent_tags": ["eğim", "açıkla", "nasıl bulunur"],
+    "exam_weight": 0.9
+  },
+  {
+    "id": "math.denklem.tip.017",
+    "subject": "Matematik",
+    "topic": "Doğrusal Denklemler",
+    "chunk_type": "study_tip",
+    "content": "Doğrusal ilişki sorularında 'bağımlı' ve 'bağımsız' değişkenleri karıştırmamak için şu soruyu sor: 'Hangisi hangisine bağlı?'. Örneğin, taksi ücreti gidilen yola bağlıdır. Burada yol bağımsız değişkendir çünkü sen belirlersin; ücret ise bağımlı değişkendir çünkü yola göre değişir. Denklemi kurarken genelde y bağımlı, x bağımsızdır.",
+    "embedding_priority": 0.8,
+    "intent_tags": ["nasıl çalışılır", "taktik", "ipucu"],
+    "exam_weight": 0.8
+  },
+  {
+    "id": "math.esitsizlik.definition.018",
+    "subject": "Matematik",
+    "topic": "Eşitsizlikler",
+    "chunk_type": "definition",
+    "content": "İçinde küçüktür, büyüktür, küçük eşittir veya büyük eşittir sembollerinden en az birini bulunduran ifadelere eşitsizlik denir. Eşitsizlik çözümü denklem çözümüne çok benzer. Ancak en kritik fark şudur: Eşitsizliğin her iki tarafı negatif bir sayı ile çarpılırsa veya bölünürse eşitsizlik yön değiştirir. Bu kuralı unutmak soruyu hatalı çözer.",
+    "embedding_priority": 1.0,
+    "intent_tags": ["nedir", "tanım", "eşitsizlik"],
+    "exam_weight": 0.85
+  },
+  {
+    "id": "math.esitsizlik.guidance.019",
+    "subject": "Matematik",
+    "topic": "Eşitsizlikler",
+    "chunk_type": "exam_guidance",
+    "content": "Sınavda eşitsizliklerin sayı doğrusunda gösterimi sorulabilir. Eğer sembolde 'eşittir' çizgisi varsa (≤ veya ≥) noktanın içi dolu olur, yoksa içi boş kalır. Ayrıca 'en az' ifadesi büyük eşittir, 'en fazla' ifadesi küçük eşittir anlamına gelir. Günlük hayat problemlerinde bu kelime oyunlarına çok dikkat etmelisin.",
+    "embedding_priority": 0.9,
+    "intent_tags": ["sınav", "nasıl çıkar", "taktik"],
+    "exam_weight": 0.9
+  },
+  {
+    "id": "math.geometri.explanation.020",
+    "subject": "Matematik",
+    "topic": "Geometrik Cisimler",
+    "chunk_type": "simple_explanation",
+    "content": "LGS'de dik dairesel silindirin alanı ve hacmi sıkça sorulur. Silindirin yan yüzeyi açıldığında bir dikdörtgen oluşur. Bu dikdörtgenin bir kenarı silindirin yüksekliği (h), diğer kenarı ise taban dairesinin çevresidir (2.pi.r). Hacim ise taban alanı çarpı yüksekliktir (pi.r kare.h). Formülleri ezberlemek yerine şekli gözünde canlandırmak daha kalıcıdır.",
+    "embedding_priority": 1.0,
+    "intent_tags": ["silindir", "açıkla", "formüller"],
+    "exam_weight": 0.9
+  },
+  {
+    "id": "math.donusum.definition.021",
+    "subject": "Matematik",
+    "topic": "Dönüşüm Geometrisi",
+    "chunk_type": "definition",
+    "content": "Dönüşüm geometrisi öteleme ve yansıma hareketlerini inceler. Öteleme, bir şeklin yönünü ve boyutunu değiştirmeden belirli bir doğrultuda kaydırılmasıdır. Yansıma (simetri) ise şeklin bir doğruya göre görüntüsünün alınmasıdır. Yansımada şeklin yönü değişir ancak boyutu aynı kalır. Koordinat sisteminde x eksenine göre yansımada y'nin işareti, y eksenine göre yansımada x'nin işareti değişir.",
+    "embedding_priority": 1.0,
+    "intent_tags": ["nedir", "tanım", "yansıma"],
+    "exam_weight": 0.8
+  },
+  {
+    "id": "math.ucgen.explanation.022",
+    "subject": "Matematik",
+    "topic": "Üçgenler",
+    "chunk_type": "simple_explanation",
+    "content": "Üçgen eşitsizliği kuralına göre, bir üçgenin herhangi bir kenar uzunluğu, diğer iki kenarın uzunlukları toplamından küçük, farklarının mutlak değerinden büyük olmalıdır. Bu kural, verilen kenar uzunluklarıyla bir üçgen çizilip çizilemeyeceğini belirler. Ayrıca büyük açının karşısında büyük kenar, küçük açının karşısında küçük kenar bulunur.",
+    "embedding_priority": 1.0,
+    "intent_tags": ["üçgen eşitsizliği", "açıkla", "kurallar"],
+    "exam_weight": 0.9
+  },
+  {
+    "id": "math.pisagor.definition.023",
+    "subject": "Matematik",
+    "topic": "Üçgenler",
+    "chunk_type": "definition",
+    "content": "Pisagor bağıntısı sadece dik üçgenlerde geçerlidir. Dik açının karşısındaki en uzun kenara hipotenüs denir. Bağıntıya göre, dik kenarların karelerinin toplamı hipotenüsün karesine eşittir (a kare + b kare = c kare). 3-4-5, 5-12-13, 8-15-17 gibi özel dik üçgenleri bilmek sınavda çok zaman kazandırır.",
+    "embedding_priority": 1.0,
+    "intent_tags": ["pisagor", "nedir", "dik üçgen"],
+    "exam_weight": 0.95
+  },
+  {
+    "id": "math.benzerlik.explanation.024",
+    "subject": "Matematik",
+    "topic": "Eşlik ve Benzerlik",
+    "chunk_type": "simple_explanation",
+    "content": "Karşılıklı açıları eşit ve karşılıklı kenar uzunlukları orantılı olan şekillere benzer şekiller denir. Benzerlik oranı (k), karşılıklı kenarların birbirine bölünmesiyle bulunur. İki şekil eş ise benzerlik oranı 1'dir. Benzerlik oranı k olan iki şeklin çevreleri oranı k, alanları oranı ise k karedir. Bu kare ilişkisi sınav sorularında can kurtarır.",
+    "embedding_priority": 1.0,
+    "intent_tags": ["benzerlik", "açıkla", "oran"],
+    "exam_weight": 0.9
+  },
+  {
+    "id": "math.olasilik.definition.025",
+    "subject": "Matematik",
+    "topic": "Basit Olayların Olma Olasılığı",
+    "chunk_type": "definition",
+    "content": "Bir olayın olma olasılığı, istenilen durumların sayısının tüm olası durumların sayısına bölünmesiyle hesaplanır. Olasılık değeri her zaman 0 ile 1 arasındadır. Kesin olayların olasılığı 1, imkansız olayların olasılığı 0'dır. Bir olayın olma olasılığı ile olmama olasılığının toplamı her zaman 1'e eşittir. Olasılık sorularında tüm durumları eksiksiz saymak çok önemlidir.",
+    "embedding_priority": 1.0,
+    "intent_tags": ["olasılık", "nedir", "tanım"],
+    "exam_weight": 0.85
+  },
+  {
+    "id": "math.carpanlar.tip.026",
+    "subject": "Matematik",
+    "topic": "Çarpanlar ve Katlar",
+    "chunk_type": "study_tip",
+    "content": "EBOB-EKOK sorularını çözerken şu ipucunu kullan: Eğer soru 'küçük parçalardan büyük bir şeye' gidiyorsa (zamanlar birleşiyor, fayanslar birleşip duvar oluyor) cevap EKOK'tur. Eğer soru 'büyük bir şeyi küçük parçalara' ayırıyorsa (kumaş kesiliyor, bidonlar şişelere ayrılıyor) cevap EBOB'dur. Sorunun gidiş yönü sana hangi yöntemi seçeceğini söyler.",
+    "embedding_priority": 0.8,
+    "intent_tags": ["taktik", "nasıl çalışılır", "ipucu"],
+    "exam_weight": 0.9
+  },
+  {
+    "id": "math.ks.relation.027",
+    "subject": "Matematik",
+    "topic": "Kareköklü Sayılar",
+    "chunk_type": "relation",
+    "content": "Kareköklü sayılar alanı verilen bir karenin bir kenarını bulmakla doğrudan ilişkilidir. Alanı 50 santimetrekare olan bir karenin bir kenarı kök 50 santimetredir. Bu ilişkiyi anlamak, geometri sorularında karekök işlemlerini neden yaptığını kavramana yardımcı olur. Karekök aslında 'alanı bilinen karenin kenarına dönme' işlemidir.",
+    "embedding_priority": 0.7,
+    "intent_tags": ["ilişki", "bağlantı", "geometri"],
+    "exam_weight": 0.85
+  },
+  {
+    "id": "math.cebir.example.028",
+    "subject": "Matematik",
+    "topic": "Cebirsel İfadeler",
+    "chunk_type": "example",
+    "content": "İki kare farkı özdeşliği (a kareden b kareyi çıkarmak), hesap makinelerinde bile zorlanacağın büyük sayı işlemlerini kolaylaştırır. Örneğin: 101 karesi eksi 99 karesi işlemini uzun uzun yapma. (101-99) çarpı (101+99) olarak yaz. Bu da 2 çarpı 200 demektir, sonuç 400! Özdeşlikler sayıların karelerini almaktan seni kurtaran sihirli araçlardır.",
+    "embedding_priority": 0.9,
+    "intent_tags": ["örnek", "nasıl çözülür", "pratik"],
+    "exam_weight": 0.9
+  },
+  {
+    "id": "math.veri.guidance.029",
+    "subject": "Matematik",
+    "topic": "Veri Analizi",
+    "chunk_type": "exam_guidance",
+    "content": "Daire grafiği sorularında bazen açılar yerine yüzdeler verilir. Tamamının %100 olduğunu sakın unutma. %25 çeyrek demektir (90 derece), %50 yarım demektir (180 derece). Oran orantı kurarken 'Yüzde yüzü 360 derece ise, yüzde şu kadarı kaç derecedir?' diyerek köprü kurabilirsin. Derece ve yüzde arasındaki farkı karıştırmamalısın.",
+    "embedding_priority": 0.9,
+    "intent_tags": ["sınav", "nasıl çıkar", "dikkat"],
+    "exam_weight": 0.85
+  },
+  {
+    "id": "math.ucgen.tip.030",
+    "subject": "Matematik",
+    "topic": "Üçgenler",
+    "chunk_type": "study_tip",
+    "content": "Üçgende kenar-açı ilişkisini unutma: 'Büyük ağız (açı), büyük lokma (kenar) yer!'. Yani bir üçgende en büyük açının baktığı kenar en uzun kenardır. En küçük açının baktığı kenar ise en kısa kenardır. Bu kural özellikle birden fazla üçgenin birleştiği şekillerde en uzun kenarı bulmak için tek anahtardır.",
+    "embedding_priority": 0.8,
+    "intent_tags": ["taktik", "ipucu", "nasıl çalışılır"],
+    "exam_weight": 0.85
+  },
+  {
+    "id": "math.uslu.mistake.031",
+    "subject": "Matematik",
+    "topic": "Üslü Sayılar",
+    "chunk_type": "common_mistake",
+    "content": "Üslü sayılarda toplama yaparken üsleri toplamaya çalışma! 2 üzeri 3 artı 2 üzeri 4, asla 2 üzeri 7 değildir. Toplama ve çıkarmada kural yoktur; sayıların değerlerini bulup öyle toplamalısın ya da ortak çarpan parantezine almalısın. Üsleri toplama sadece çarpma işleminde (tabanlar aynıysa) geçerlidir. Bu kuralı karıştırmak sınavda çok puan götürür.",
+    "embedding_priority": 0.95,
+    "intent_tags": ["hata", "yanlış", "dikkat"],
+    "exam_weight": 0.9
+  },
+  {
+    "id": "math.ks.example.032",
+    "subject": "Matematik",
+    "topic": "Kareköklü Sayılar",
+    "chunk_type": "example",
+    "content": "Kök 50 sayısını a kök b şeklinde yazalım. 50'yi içinde tam kare çarpan olacak şekilde parçala: 25 çarpı 2. 25 dışarıya 5 olarak çıkar ama 2 içeride hapsolur. Sonuç: 5 kök 2. Bu işlemi hızlı yapmak için 1'den 20'ye kadar olan sayıların karelerini (1, 4, 9, 16, 25, 36...) ezbere bilmelisin. Bu sayılar senin kurtarıcıların olacak.",
+    "embedding_priority": 0.9,
+    "intent_tags": ["örnek", "nasıl çözülür", "a kök b"],
+    "exam_weight": 0.9
+  },
+  {
+    "id": "math.denklem.strategy.033",
+    "subject": "Matematik",
+    "topic": "Doğrusal Denklemler",
+    "chunk_type": "exam_strategy",
+    "content": "Denklem sorularında grafik çizmeden de hızı yakalayabilirsin. Eğer doğru (3, 4) noktasından geçiyor diyorsa, denklemdeki x yerine 3, y yerine 4 yazdığında eşitlik sağlanmalıdır. Bu yöntemle şıklardan giderek çok hızlı sonuç alabilirsin. Nokta denklemi her zaman sağlar! Bu kuralı cebine koy ve karmaşık grafiklerle uğraşmaktan kurtul.",
+    "embedding_priority": 0.85,
+    "intent_tags": ["strateji", "taktik", "hızlı çözüm"],
+    "exam_weight": 0.9
+  },
+  {
+    "id": "math.esitsizlik.example.034",
+    "subject": "Matematik",
+    "topic": "Eşitsizlikler",
+    "chunk_type": "example",
+    "content": "'Cebimdeki paranın 2 katının 5 eksiği 25 liradan küçüktür' ifadesini eşitsizliğe dökelim. Paraya x dersek; 2x - 5 < 25 olur. Çözerken -5 karşıya +5 geçer: 2x < 30. Her iki tarafı 2'ye bölersek x < 15 sonucuna ulaşırız. Yani cebimdeki para 15 liradan azmış. İşte günlük hayattaki belirsizlikleri matematiksel olarak böyle ifade ediyoruz.",
+    "embedding_priority": 0.9,
+    "intent_tags": ["örnek", "nasıl çözülür", "problem"],
+    "exam_weight": 0.85
+  },
+  {
+    "id": "math.geometri.guidance.035",
+    "subject": "Matematik",
+    "topic": "Geometrik Cisimler",
+    "chunk_type": "exam_guidance",
+    "content": "Silindir sorularında pi sayısını kaç alman gerektiğine mutlaka bak. Eğer 3 al diyorsa işin kolaydır, ancak pi olarak bırakmanı istiyorsa sonuçların pi'li olacaktır. Ayrıca silindirin açınımında oluşan dikdörtgenin üst kenarının tabandaki daireyi tam tur sardığını, yani dairenin çevresine (2.pi.r) eşit olduğunu asla unutma. LGS bu bilgiyi çok sever.",
+    "embedding_priority": 0.9,
+    "intent_tags": ["sınav", "nasıl çıkar", "dikkat"],
+    "exam_weight": 0.9
+  },
+  {
+    "id": "math.donusum.tip.036",
+    "subject": "Matematik",
+    "topic": "Dönüşüm Geometrisi",
+    "chunk_type": "study_tip",
+    "content": "Yansıma ve öteleme yaparken şeklin üzerindeki sadece bir köşeye (noktaya) odaklan. O noktayı istenilen kadar kaydır veya yansıt, sonra şekli o nokta üzerinden tekrar çiz. Tüm şekli aynı anda hareket ettirmeye çalışmak kafa karıştırabilir. Tek bir nokta üzerinden ilerlemek her zaman daha garantidir. Koordinat düzleminde birim sayarken dikkatli olmalısın.",
+    "embedding_priority": 0.8,
+    "intent_tags": ["taktik", "nasıl çalışılır", "ipucu"],
+    "exam_weight": 0.8
+  },
+  {
+    "id": "math.ucgen.definition.037",
+    "subject": "Matematik",
+    "topic": "Üçgenler",
+    "chunk_type": "definition",
+    "content": "Üçgende kenarortay, bir köşeyi karşı kenarın orta noktasına birleştiren doğrudur. Açıortay, bir açıyı iki eş parçaya bölen doğrudur. Yükseklik ise bir köşeden karşı kenara indirilen dikmedir. Üçgende bu 'yardımcı elemanlar'ın kesiştiği noktaların özel isimleri vardır. Örneğin, kenarortayların kesiştiği nokta üçgenin ağırlık merkezidir.",
+    "embedding_priority": 1.0,
+    "intent_tags": ["nedir", "tanım", "yardımcı elemanlar"],
+    "exam_weight": 0.8
+  },
+  {
+    "id": "math.pisagor.relation.038",
+    "subject": "Matematik",
+    "topic": "Üçgenler",
+    "chunk_type": "relation",
+    "content": "Pisagor bağıntısı, koordinat sistemindeki iki nokta arasındaki en kısa mesafeyi bulmak için de kullanılır. İki nokta arasında hayali bir dik üçgen oluşturduğunda, yatay mesafe bir dik kenar, dikey mesafe diğer dik kenar olur. İki nokta arasındaki kuş uçuşu mesafe ise bu dik üçgenin hipotenüsüdür. Geometri ve koordinat sisteminin mükemmel buluşması budur.",
+    "embedding_priority": 0.7,
+    "intent_tags": ["ilişki", "bağlantı", "koordinat sistemi"],
+    "exam_weight": 0.9
+  },
+  {
+    "id": "math.benzerlik.mistake.039",
+    "subject": "Matematik",
+    "topic": "Eşlik ve Benzerlik",
+    "chunk_type": "common_mistake",
+    "content": "Benzerlik oranı k ise alanlar oranı k karedir dedik ya, öğrenciler genelde bunu unutur. Eğer benzerlik oranı 2 ise, büyük şeklin alanı küçüğün 2 katı değil, 4 katıdır (2'nin karesi). Hacimler oranı sorulursa o da k küptür (2'nin küpü = 8 kat). Bu kat farkı sınavın en tuzaklı yerlerinden biridir. Alan ve hacimdeki kuvvet farkına dikkat!",
+    "embedding_priority": 0.95,
+    "intent_tags": ["hata", "yanlış", "dikkat"],
+    "exam_weight": 0.9
+  },
+  {
+    "id": "math.olasilik.example.040",
+    "subject": "Matematik",
+    "topic": "Basit Olayların Olma Olasılığı",
+    "chunk_type": "example",
+    "content": "Bir torbada 3 mavi, 4 kırmızı ve 5 sarı bilye olsun. Rastgele çekilen bir bilyenin mavi olmama olasılığını bulalım. Toplam bilye sayısı 12'dir. Mavi olmama durumu, kırmızı veya sarı olması demektir (4+5=9). Olasılık 9/12 olur, sadeleştirirsek 3/4 sonucuna ulaşırız. İpucu: 'Olmama' olasılığını bulmak için 1'den 'olma' olasılığını (3/12) çıkararak da sonuca gidebilirsin.",
+    "embedding_priority": 0.9,
+    "intent_tags": ["örnek", "nasıl çözülür", "olasılık"],
+    "exam_weight": 0.85
+  }
+]
