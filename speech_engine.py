@@ -352,37 +352,36 @@ class PoodleSpeech:
             frames = wf.readframes(wf.getnframes())
             data = np.frombuffer(frames, dtype=np.int16).astype(np.float32) / 32767.0
             return data, sr
-            
+
     def debug_list_input_devices(self):
         print(">>> [MIC DEBUG] Cihaz Listesi:")
-    
+
         try:
             devices = sd.query_devices()
-    
+
             for i, dev in enumerate(devices):
                 if dev["max_input_channels"] > 0:
                     print(f"    #{i}: {dev['name']}")
-    
+
         except Exception as e:
             print(f">>> [MIC DEBUG ERROR] {e}")
 
     def select_default_input_device(self):
         try:
             devices = sd.query_devices()
-            default = sd.default.device[0]
-    
-            if default is not None:
-                name = devices[default]["name"]
-                print(f">>> [MIC ACTIVE] Otomatik seçim: #{default} {name}")
-                return default
-    
-            # fallback: ilk input device
+            default_input = sd.default.device[0]
+
+            if default_input is not None and default_input >= 0:
+                name = devices[default_input]["name"]
+                print(f">>> [MIC ACTIVE] Otomatik seçim: #{default_input} {name}")
+                return default_input
+
             for i, dev in enumerate(devices):
                 if dev["max_input_channels"] > 0:
                     print(f">>> [MIC ACTIVE] Fallback seçim: #{i} {dev['name']}")
                     return i
-    
+
         except Exception as e:
             print(f">>> [MIC SELECT ERROR] {e}")
-    
+
         return None
