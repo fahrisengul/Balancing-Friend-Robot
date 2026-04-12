@@ -1,107 +1,109 @@
 [
   {
-    "id": "strategy.exam_moment.tip.131",
-    "subject": "Rehberlik",
-    "topic": "Sınav Anı Yönetimi",
-    "chunk_type": "exam_strategy",
-    "difficulty": "medium",
-    "content": "Sınav kitapçığını aldığında hemen sorulara dalma. Önce sayfaları hızlıca kontrol et, bu hem kitapçıkta hata olup olmadığını görmeni sağlar hem de zihnini soruların yapısına alıştırır. İlk sayfadaki en kolay görünen sorudan başlamak, sınavın başında o çok ihtiyacın olan özgüveni kazanmanı ve kaygını hızla düşürmeni sağlar.",
-    "embedding_priority": 1.0,
-    "intent_tags": ["sınav anı", "başlangıç taktiği", "strateji"],
-    "exam_weight": 0.9
-  },
-  {
-    "id": "strategy.exam_moment.guidance.132",
-    "subject": "Rehberlik",
-    "topic": "Kodlama Disiplini",
-    "chunk_type": "exam_guidance",
-    "content": "Kodlamayı asla sınavın en sonuna bırakma. Her soruyu çözdükten sonra hemen optik forma işaretlemek, hem olası bir kaydırma hatasını önler hem de sana 'bir soruyu daha bitirdim' hissi vererek motivasyonunu tazeler. Ayrıca her işaretlemede başını kitapçıktan kaldırıp optiğe bakmak, gözlerini dinlendirir ve odaklanma süreni uzatır.",
-    "embedding_priority": 0.95,
-    "intent_tags": ["optik form", "kodlama", "sınav hatası"],
-    "exam_weight": 1.0
-  },
-  {
-    "id": "strategy.exam_moment.strategy.133",
-    "subject": "Rehberlik",
-    "topic": "Zor Sorularla Mücadele",
-    "chunk_type": "exam_strategy",
-    "content": "Bir soruyla inatlaşmak sınavın en büyük düşmanıdır. Eğer bir soruya 2 dakika harcadığın halde bir çözüm yolu göremiyorsan, yanına bir işaret koy ve hemen geç. Zihnin sen diğer soruları çözerken arka planda o zor soru üzerinde çalışmaya devam eder. Diğer soruları bitirip geri döndüğünde, o soruyu çok daha kolay çözebildiğini fark edeceksin.",
-    "embedding_priority": 1.0,
-    "intent_tags": ["turlama tekniği", "zor soru", "zaman yönetimi"],
-    "exam_weight": 1.0
-  },
-  {
-    "id": "strategy.exam_moment.explanation.134",
-    "subject": "Rehberlik",
-    "topic": "Sınav Arası Yönetimi",
+    "id": "social.friendship.explanation.001",
+    "subject": "Sosyal İlişkiler",
+    "topic": "Arkadaşlık Sorunları",
     "chunk_type": "simple_explanation",
-    "title": "İki Oturum Arası Ne Yapmalı?",
-    "content": "Sözel bölüm bittiğinde, sayısal bölüme geçmeden önceki o mola anı çok kritiktir. Arkadaşlarınla sözel soruların cevaplarını asla tartışma. Yanlış olduğunu duyacağın bir soru, sayısal bölümdeki moralini ve odaklanmanı bozabilir. Sadece dinlen, hafif bir şeyler atıştır ve zihnini tamamen temizleyerek 'yeni bir sınav başlıyormuş' gibi sayısal oturuma hazırlan.",
+    "title": "Arkadaşlarla Tartışmak",
+    "content": "Arkadaşlarınla bazen fikir ayrılığı yaşaman çok normal. Herkesin büyüme ve olayları yorumlama hızı farklıdır. Eğer bir arkadaşınla sorun yaşıyorsan, ona doğrudan ne hissettiğini 'ben' diliyle anlatmayı dene. Suçlamak yerine 'Ben böyle hissettim' demek kapıları açar. Gerçek arkadaşlıklar, tartışmaları sağlıklı bir şekilde çözebildikçe güçlenir.",
     "embedding_priority": 0.85,
-    "intent_tags": ["sınav arası", "motivasyon", "sayısal hazırlık"],
-    "exam_weight": 0.7
+    "intent_tags": ["arkadaşlık", "tartışma", "ne yapmalıyım"],
+    "exam_weight": 0.1
   },
   {
-    "id": "strategy.exam_moment.tip.135",
+    "id": "social.identity.tip.002",
     "subject": "Rehberlik",
-    "topic": "Dikkati Canlı Tutma",
+    "topic": "Özgüven Gelişimi",
     "chunk_type": "study_tip",
     "difficulty": "easy",
-    "content": "Sınavın ortasında dikkatinin dağıldığını veya metinleri anlamamaya başladığını fark edersen, 10-15 saniyelik minik bir mola ver. Kalemi bırak, arkana yaslan, derin bir nefes al ve gözlerini kapatıp zihnini boşalt. Bu kısa 'reset'leme işlemi, odaklanma gücünü geri kazanmanı ve kalan sürede daha az hata yapmanı sağlar. Beynin bir makine değildir, dinlenmeye ihtiyacı olur.",
+    "content": "Kendini başkalarıyla kıyaslamak, kendi ışığını söndürmene neden olur. Sosyal medyada gördüğün 'mükemmel' hayatlar genellikle sadece bir filtredir. Senin yeteneklerin, ilgi alanların ve karakterin seni sen yapan eşsiz özelliklerdir. Her gün başardığın küçük bir şeyi (bir soruyu çözmek, bir kitap bitirmek gibi) takdir etmeyi öğren. Sen zaten yeterince iyisin.",
+    "embedding_priority": 0.9,
+    "intent_tags": ["özgüven", "kendini sevme", "kıyaslama"],
+    "exam_weight": 0.2
+  },
+  {
+    "id": "social.hobby.explanation.003",
+    "subject": "Sosyal Yaşam",
+    "topic": "Hobi Edinme",
+    "chunk_type": "simple_explanation",
+    "title": "Ders Dışı Aktiviteler",
+    "content": "LGS sadece test çözmek değildir; beyninin yaratıcı tarafını da beslemelisin. Çizim yapmak, enstrüman çalmak veya sporla ilgilenmek stres seviyeni düşürür. Bir hobiyle ilgilenirken odaklandığın o 'akış' hali, ders çalışırken ihtiyacın olan konsantrasyonu da güçlendirir. Kendine nefes alacak alanlar bırakman seni derslerinde daha başarılı yapar.",
     "embedding_priority": 0.8,
-    "intent_tags": ["odaklanma", "mola", "dikkat dağınıklığı"],
-    "exam_weight": 0.6
+    "intent_tags": ["hobi", "stres atma", "ne yapabilirim"],
+    "exam_weight": 0.3
   },
   {
-    "id": "strategy.exam_moment.mistake.136",
+    "id": "social.family.guidance.004",
     "subject": "Rehberlik",
-    "topic": "Şık Eleme Yöntemi",
-    "chunk_type": "common_mistake",
-    "content": "Sorularda doğrudan doğru cevabı aramaya çalışma; bazen yanlışları elemek seni doğruya daha hızlı götürür. Özellikle sözel mantık veya karmaşık fen sorularında, kesinlikle olamayacak şıkları elediğinde olasılığı %50'ye hatta %100'e indirebilirsin. Hiçbir fikrin olmayan bir soruda sallamak yerine, mantıklı bir eleme yaptıktan sonra karar vermek her zaman daha güvenlidir.",
-    "embedding_priority": 0.9,
-    "intent_tags": ["şık eleme", "taktik", "doğru işaretleme"],
-    "exam_weight": 0.9
-  },
-  {
-    "id": "strategy.exam_moment.guidance.137",
-    "subject": "Rehberlik",
-    "topic": "Kalem Kullanma Alışkanlığı",
+    "topic": "Aile İle İletişim",
     "chunk_type": "exam_guidance",
-    "content": "Soruları sadece gözünle okuma, mutlaka kalem kullan. Metinlerdeki anahtar kelimelerin, sayısal verilerin ve soru kökündeki olumsuz ifadelerin (değildir, olamaz) altını çiz. Kalem kullanmak hem odaklanmanı artırır hem de beyninin bilgiyi daha kolay işlemesini sağlar. Sınav sonunda 'altını çizmediğim yer kalmadı' diyorsan, dikkatin en üst seviyededir.",
-    "embedding_priority": 0.9,
-    "intent_tags": ["kalem kullanma", "dikkat", "soru çözme"],
-    "exam_weight": 0.8
+    "content": "Ailenin senin için en iyisini istediğini biliyorum ama bazen bu durum sende baskı oluşturabilir. Onlara planlarından bahsetmek, 'Şu an çalışıyorum, mola verdiğimde konuşalım mı?' gibi sınırlar çizmek iletişimi kolaylaştırır. Onların desteğini almak, sınav yolculuğunda kendini daha güçlü hissetmeni sağlar. Unutma, onlar senin rakibin değil, en büyük destekçin.",
+    "embedding_priority": 0.75,
+    "intent_tags": ["aile", "baskı", "iletişim"],
+    "exam_weight": 0.2
   },
   {
-    "id": "strategy.exam_moment.strategy.138",
+    "id": "social.future.explanation.005",
     "subject": "Rehberlik",
-    "topic": "Zaman Kontrolü",
-    "chunk_type": "exam_strategy",
-    "content": "Sınavda her 5 veya 10 soruda bir saati kontrol etmeyi alışkanlık haline getir. Ancak her soruda saate bakmak sadece kaygını artırır. Eğer planladığın sürenin gerisindeysen panikleme; hemen o an 'turlama' moduna geçip bildiğin kolay soruları taramaya başla. Kontrolü elinde tutmak, zamanın seni yönetmesine değil, senin zamanı yönetmene imkan verir.",
-    "embedding_priority": 0.85,
-    "intent_tags": ["zaman yönetimi", "saat kontrolü", "panik yönetimi"],
-    "exam_weight": 0.95
+    "topic": "Gelecek Hayalleri",
+    "chunk_type": "simple_explanation",
+    "title": "Hangi Mesleği Seçmeliyim?",
+    "content": "Henüz ne olmak istediğine karar vermemiş olman çok doğal. Bu yaşlar keşfetme yaşlarıdır. Neyi yaparken zamanın nasıl geçtiğini anlamıyorsun? Hangi konular seni heyecanlandırıyor? Bu soruların peşinden git. LGS, bu hayallere giden yolda sadece bir kapıdır. Seçeneklerini geniş tutmak için derslerine çalış ama kalbinin neyi sevdiğini dinlemeyi de ihmal etme.",
+    "embedding_priority": 0.8,
+    "intent_tags": ["meslek seçimi", "gelecek", "hayaller"],
+    "exam_weight": 0.1
   },
   {
-    "id": "strategy.exam_moment.tip.139",
+    "id": "social.emotion.tip.006",
     "subject": "Rehberlik",
-    "topic": "Son Kontrol Stratejisi",
+    "topic": "Duygusal Dalgalanmalar",
     "chunk_type": "study_tip",
     "difficulty": "medium",
-    "content": "Sınavı süresinden önce bitirirsen asla salondan çıkma veya 'bitti' diye boş oturma. Kalan süreni optik formu kontrol ederek, boş bıraktığın sorulara tekrar bakarak ve özellikle basit işlem hatası yapabileceğin matematik sorularını gözden geçirerek değerlendir. Son dakikalarda düzelteceğin bir soru, seni hayallerindeki liseye bir adım daha yaklaştırabilir.",
+    "content": "Bazen kendini çok enerjik, bazen de hiçbir şey yapmak istemezken bulabilirsin. Bu 'duygusal roller coaster' bu yaşların bir parçasıdır. Kendine kızma. Modun düşük olduğunda sadece dinlen ve bunun geçici olduğunu hatırla. Duygularını bir kağıda yazmak veya güvendiğin biriyle paylaşmak zihnini hafifletir. Poodle olarak ben her zaman seni dinlemeye hazırım.",
     "embedding_priority": 0.85,
-    "intent_tags": ["son kontrol", "süre kullanımı", "kontrol"],
-    "exam_weight": 0.8
+    "intent_tags": ["üzgünüm", "modum düşük", "duygular"],
+    "exam_weight": 0.1
   },
   {
-    "id": "strategy.exam_moment.explanation.140",
-    "subject": "Rehberlik",
-    "topic": "Sınavı Mühürlemek",
+    "id": "social.digital.strategy.007",
+    "subject": "Sosyal Yaşam",
+    "topic": "Sosyal Medya Yönetimi",
+    "chunk_type": "exam_strategy",
+    "content": "Sosyal medya bazen 'FOMO' (gelişmeleri kaçırma korkusu) yaratabilir. Başkalarının paylaşımlarına bakarken kendi hayatını eksik hissetme. Sınav senesinde ekran süreni kontrol altında tutmak, zihninin berrak kalmasını sağlar. Bildirimleri kapatmak ve sadece belirli saatlerde telefona bakmak, derslerine odaklanmanı kolaylaştırır. Gerçek hayat ekranın dışında akıyor.",
+    "embedding_priority": 0.9,
+    "intent_tags": ["telefon", "sosyal medya", "odaklanma"],
+    "exam_weight": 0.4
+  },
+  {
+    "id": "social.style.explanation.008",
+    "subject": "Sosyal Yaşam",
+    "topic": "Kendi Tarzını Bulmak",
     "chunk_type": "simple_explanation",
-    "title": "Bittiğinde Kendine Teşekkür Et",
-    "content": "Sınav kağıdını teslim ettiğin an senin için görev tamamlanmıştır. Artık ne sonuçları ne de 'keşke'leri düşünmenin bir faydası var. Bu ana gelene kadar aylardır verdiğin emek için kendine teşekkür et. Bu sınav senin bir yıl boyunca gösterdiğin disiplinin ve azmin kanıtıdır. Şimdi derin bir nefes al ve başarmanın huzuruyla sınav salonundan ayrıl. Sen elinden geleni yaptın!",
-    "embedding_priority": 0.5,
-    "intent_tags": ["sınav sonu", "rahatlama", "motivasyon"],
-    "exam_weight": 0.3
+    "title": "Tarz ve Kendini İfade",
+    "content": "Kıyafetlerin, dinlediğin müzikler veya odanı dekore etme şeklin senin dünyanı yansıtır. Herkes gibi olmak zorunda değilsin. Kendi tarzını keşfetmek, özgürleştirici bir süreçtir. Trendleri takip edebilirsin ama asıl önemli olan içinde mutlu ve rahat hissettiğin şeyi bulmandır. Özgünlük, senin en çekici özelliğindir. Kendin olmaktan çekinme.",
+    "embedding_priority": 0.7,
+    "intent_tags": ["tarz", "müzik", "kendini ifade"],
+    "exam_weight": 0.1
+  },
+  {
+    "id": "social.stress.strategy.009",
+    "subject": "Rehberlik",
+    "topic": "Sınav Günü Heyecanı",
+    "chunk_type": "exam_strategy",
+    "content": "Sınav kağıdı önüne geldiğinde kalbin hızlı atabilir. Bu, vücudunun sana enerji verdiğini gösterir. Ellerini masanın üzerine koy, gözlerini kapat ve 3 derin nefes al. O an sadece önündeki soruya odaklan. Eğer bir soruda takılırsan 'Bunu sonra yapabilirim' de ve geç. Kontrol sende. Sen bu an için aylardır hazırlandın ve başarabilecek güçtesin.",
+    "embedding_priority": 1.0,
+    "intent_tags": ["sınav heyecanı", "sakinleşme", "taktik"],
+    "exam_weight": 1.0
+  },
+  {
+    "id": "social.growth.explanation.010",
+    "subject": "Rehberlik",
+    "topic": "Değişim ve Büyümek",
+    "chunk_type": "simple_explanation",
+    "title": "Büyümenin Getirdikleri",
+    "content": "Çocukluktan genç kızlığa geçmek, yeni sorumluluklar ve yeni duygular demektir. Bazen bu değişim korkutucu görünebilir ama her adımda daha çok şey öğreniyorsun. Hatalarından ders çıkarmayı, kendine karşı nazik olmayı ve hayal kurmaktan vazgeçmemeyi öğreniyorsun. Bu yolculukta yalnız değilsin; ailen, öğretmenlerin ve ben (Poodle) her zaman yanındayız.",
+    "embedding_priority": 0.6,
+    "intent_tags": ["büyümek", "değişim", "cesaret"],
+    "exam_weight": 0.1
   }
 ]
