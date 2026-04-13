@@ -460,7 +460,7 @@ class PoodleSpeech:
 
         return text
 
-def _speak_now(self, text: str):
+    def _speak_now(self, text: str):
         if not text:
             return
 
