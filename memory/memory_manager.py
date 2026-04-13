@@ -2,7 +2,6 @@ from datetime import datetime, timedelta
 
 from .db import get_connection
 
-
 class MemoryManager:
     def __init__(self):
         self.init_db()
