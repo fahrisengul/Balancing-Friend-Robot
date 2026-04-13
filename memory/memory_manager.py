@@ -1,23 +1,12 @@
-import sqlite3
 from datetime import datetime, timedelta
-import os
 
-DB_PATH = "memory/poodle.db"
-
-
-def get_connection():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+from db import get_connection
 
 
 class MemoryManager:
     def __init__(self):
-        import sqlite3
-        self.conn = sqlite3.connect(DB_PATH)
-        self.conn.row_factory = sqlite3.Row
         self.init_db()
-    
+
     def _now(self):
         return datetime.utcnow().isoformat()
 
@@ -333,47 +322,44 @@ class MemoryManager:
                         r["error_count"],
                     ),
                 )
+            conn.commit()
 
     def export_review_bundle(self, limit=200):
-            with get_connection() as conn:
-                conv_rows = conn.execute(
-                    """
-                    SELECT raw_text, normalized_text, intent, response_source, reply_text, created_at
-                    FROM conversation_logs
-                    ORDER BY id DESC
-                    LIMIT ?
-                    """,
-                    (limit,),
-                ).fetchall()
-    
-                telem_rows = conn.execute(
-                    """
-                    SELECT session_id, intent, response_source, model_name,
-                           latency_ms, memory_context_used, status, error_text, created_at
-                    FROM conversation_telemetry
-                    ORDER BY id DESC
-                    LIMIT ?
-                    """,
-                    (limit,),
-                ).fetchall()
-    
-                llm_rows = conn.execute(
-                    """
-                    SELECT session_id, intent, model_name,
-                           prompt_chars, response_chars,
-                           latency_ms, status, error_text, created_at
-                    FROM llm_calls
-                    ORDER BY id DESC
-                    LIMIT ?
-                    """,
-                    (limit,),
-                ).fetchall()
-    
-            conversations = [dict(r) for r in conv_rows]
-            telemetry = [dict(r) for r in telem_rows]
-            llm_calls = [dict(r) for r in llm_rows]
+        with get_connection() as conn:
+            conv_rows = conn.execute(
+                """
+                SELECT raw_text, normalized_text, intent, response_source, reply_text, created_at
+                FROM conversation_logs
+                ORDER BY id DESC
+                LIMIT ?
+                """,
+                (limit,),
+            ).fetchall()
 
-            retrieval_debug = self.conn.execute(
+            telem_rows = conn.execute(
+                """
+                SELECT session_id, intent, response_source, model_name,
+                       latency_ms, memory_context_used, status, error_text, created_at
+                FROM conversation_telemetry
+                ORDER BY id DESC
+                LIMIT ?
+                """,
+                (limit,),
+            ).fetchall()
+
+            llm_rows = conn.execute(
+                """
+                SELECT session_id, intent, model_name,
+                       prompt_chars, response_chars,
+                       latency_ms, status, error_text, created_at
+                FROM llm_calls
+                ORDER BY id DESC
+                LIMIT ?
+                """,
+                (limit,),
+            ).fetchall()
+
+            retrieval_rows = conn.execute(
                 """
                 SELECT session_id, intent, mode, query_text, query_variants_json,
                        selected_chunks_json, confidence, retrieval_source,
@@ -384,8 +370,8 @@ class MemoryManager:
                 """,
                 (limit,),
             ).fetchall()
-    
-            streaming_debug = self.conn.execute(
+
+            streaming_rows = conn.execute(
                 """
                 SELECT session_id, intent, flush_count, first_flush_ms,
                        total_stream_ms, total_chunks, spoken_segments_json, created_at
@@ -395,21 +381,28 @@ class MemoryManager:
                 """,
                 (limit,),
             ).fetchall()
-    
-            return {
-                "generated_at": self._now(),
-                "conversation_logs": conversations,
-                "conversation_telemetry": telemetry,
-                "llm_calls": llm_calls,
-                "summary": {
-                    "conversation_count": len(conversations),
-                    "telemetry_count": len(telemetry),
-                    "llm_call_count": len(llm_calls),
-                    "retrieval_debug": [dict(row) for row in retrieval_debug],
-                    "streaming_debug": [dict(row) for row in streaming_debug],
-                },
-            }
-            conn.commit()
+
+        conversations = [dict(r) for r in conv_rows]
+        telemetry = [dict(r) for r in telem_rows]
+        llm_calls = [dict(r) for r in llm_rows]
+        retrieval_debug = [dict(r) for r in retrieval_rows]
+        streaming_debug = [dict(r) for r in streaming_rows]
+
+        return {
+            "generated_at": self._now(),
+            "conversation_logs": conversations,
+            "conversation_telemetry": telemetry,
+            "llm_calls": llm_calls,
+            "retrieval_debug": retrieval_debug,
+            "streaming_debug": streaming_debug,
+            "summary": {
+                "conversation_count": len(conversations),
+                "telemetry_count": len(telemetry),
+                "llm_call_count": len(llm_calls),
+                "retrieval_debug_count": len(retrieval_debug),
+                "streaming_debug_count": len(streaming_debug),
+            },
+        }
 
     def get_intent_hints(self, intent: str, mode: str):
         q = """
@@ -418,7 +411,9 @@ class MemoryManager:
         WHERE intent = ? AND (mode = ? OR mode IS NULL) AND is_active = 1
         ORDER BY priority DESC
         """
-        return self.conn.execute(q, (intent, mode)).fetchall()
+        with get_connection() as conn:
+            rows = conn.execute(q, (intent, mode)).fetchall()
+        return rows
 
     def get_topic_aliases(self, tokens: list[str]):
         if not tokens:
@@ -432,57 +427,60 @@ class MemoryManager:
         WHERE alias IN ({placeholders}) AND is_active = 1
         """
 
-        return self.conn.execute(q, tokens).fetchall()
+        with get_connection() as conn:
+            rows = conn.execute(q, tokens).fetchall()
+        return rows
 
     def init_db(self):
         """
         RAG ve Streaming debug tablolarını oluşturur.
         """
         try:
-            # RETRIEVAL DEBUG
-            self.conn.execute("""
-            CREATE TABLE IF NOT EXISTS retrieval_debug (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                session_id TEXT,
-                intent TEXT,
-                mode TEXT,
-                query_text TEXT,
-                query_variants_json TEXT,
-                selected_chunks_json TEXT,
-                confidence REAL,
-                retrieval_source TEXT,
-                context_chars INTEGER,
-                created_at TEXT DEFAULT CURRENT_TIMESTAMP
-            )
-            """)
-    
-            self.conn.execute("""
-            CREATE INDEX IF NOT EXISTS idx_retrieval_debug_created_at
-            ON retrieval_debug(created_at)
-            """)
-    
-            # STREAMING DEBUG
-            self.conn.execute("""
-            CREATE TABLE IF NOT EXISTS streaming_debug (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                session_id TEXT,
-                intent TEXT,
-                flush_count INTEGER,
-                first_flush_ms INTEGER,
-                total_stream_ms INTEGER,
-                total_chunks INTEGER,
-                spoken_segments_json TEXT,
-                created_at TEXT DEFAULT CURRENT_TIMESTAMP
-            )
-            """)
-    
-            self.conn.execute("""
-            CREATE INDEX IF NOT EXISTS idx_streaming_debug_created_at
-            ON streaming_debug(created_at)
-            """)
-    
-            self.conn.commit()
-    
+            with get_connection() as conn:
+                # RETRIEVAL DEBUG
+                conn.execute("""
+                CREATE TABLE IF NOT EXISTS retrieval_debug (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    session_id TEXT,
+                    intent TEXT,
+                    mode TEXT,
+                    query_text TEXT,
+                    query_variants_json TEXT,
+                    selected_chunks_json TEXT,
+                    confidence REAL,
+                    retrieval_source TEXT,
+                    context_chars INTEGER,
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+                )
+                """)
+
+                conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_retrieval_debug_created_at
+                ON retrieval_debug(created_at)
+                """)
+
+                # STREAMING DEBUG
+                conn.execute("""
+                CREATE TABLE IF NOT EXISTS streaming_debug (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    session_id TEXT,
+                    intent TEXT,
+                    flush_count INTEGER,
+                    first_flush_ms INTEGER,
+                    total_stream_ms INTEGER,
+                    total_chunks INTEGER,
+                    spoken_segments_json TEXT,
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+                )
+                """)
+
+                conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_streaming_debug_created_at
+                ON streaming_debug(created_at)
+                """)
+
+                conn.commit()
+
         except Exception as e:
             print(f">>> [DB INIT ERROR] {e}")
 
@@ -498,26 +496,27 @@ class MemoryManager:
         retrieval_source,
         context_chars,
     ):
-        self.conn.execute(
-            """
-            INSERT INTO retrieval_debug (
-                session_id, intent, mode, query_text, query_variants_json,
-                selected_chunks_json, confidence, retrieval_source, context_chars
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                session_id,
-                intent,
-                mode,
-                query_text,
-                query_variants_json,
-                selected_chunks_json,
-                confidence,
-                retrieval_source,
-                context_chars,
-            ),
-        )
-        self.conn.commit()
+        with get_connection() as conn:
+            conn.execute(
+                """
+                INSERT INTO retrieval_debug (
+                    session_id, intent, mode, query_text, query_variants_json,
+                    selected_chunks_json, confidence, retrieval_source, context_chars
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    session_id,
+                    intent,
+                    mode,
+                    query_text,
+                    query_variants_json,
+                    selected_chunks_json,
+                    confidence,
+                    retrieval_source,
+                    context_chars,
+                ),
+            )
+            conn.commit()
 
     def log_streaming_debug(
         self,
@@ -529,21 +528,22 @@ class MemoryManager:
         total_chunks,
         spoken_segments_json,
     ):
-        self.conn.execute(
-            """
-            INSERT INTO streaming_debug (
-                session_id, intent, flush_count, first_flush_ms,
-                total_stream_ms, total_chunks, spoken_segments_json
-            ) VALUES (?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                session_id,
-                intent,
-                flush_count,
-                first_flush_ms,
-                total_stream_ms,
-                total_chunks,
-                spoken_segments_json,
-            ),
-        )
-        self.conn.commit()
+        with get_connection() as conn:
+            conn.execute(
+                """
+                INSERT INTO streaming_debug (
+                    session_id, intent, flush_count, first_flush_ms,
+                    total_stream_ms, total_chunks, spoken_segments_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    session_id,
+                    intent,
+                    flush_count,
+                    first_flush_ms,
+                    total_stream_ms,
+                    total_chunks,
+                    spoken_segments_json,
+                ),
+            )
+            conn.commit()
