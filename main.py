@@ -11,18 +11,17 @@ from brain.llm_client import LLMClient
 
 
 def main():
+    llm = LLMClient()
+    if hasattr(llm, "warmup"):
+        llm.warmup()
+    brain = PoodleBrain(llm)
+
     pygame.init()
     screen = pygame.display.set_mode((1024, 600))
     pygame.display.set_caption("Poodle Robot - AI Brain")
     clock = pygame.time.Clock()
 
     face = PoodleFace(1024, 600)
-    llm = LLMClient()
-    if hasattr(llm, "warmup"):
-        llm.warmup()
-    brain = PoodleBrain(llm)
-
-    # Varsayılan mikrofon için -1, listeden seçmek istersen ilgili indexi yaz
     speech = PoodleSpeech(input_device_index=-1)
     speech.debug_list_input_devices()
     speech.select_default_input_device()
@@ -59,7 +58,6 @@ def main():
         if not user_text:
             return
 
-        # Kısa ve anlamsız girişleri ele
         bad_inputs = {"hey", "poodle", "tamam", "peki", "evet"}
         if user_text.strip().lower() in bad_inputs:
             return
@@ -87,51 +85,59 @@ def main():
 
     print("\n--- Poodle Robot Aktif ---")
 
-    while running:
-        now = time.time()
+    try:
+        while running:
+            now = time.time()
 
-        # Olayları ve Event Kuyruğunu İşle
-        if not is_busy:
-            evt = speech.get_pending_event()
+            if not is_busy:
+                evt = speech.get_pending_event()
 
-            if evt["type"] == "command":
-                threading.Thread(
-                    target=run_response,
-                    args=(evt["text"],),
-                    daemon=True
-                ).start()
+                if evt["type"] == "command":
+                    threading.Thread(
+                        target=run_response,
+                        args=(evt["text"],),
+                        daemon=True
+                    ).start()
 
-            elif evt["type"] == "sleep":
-                face.set_state("idle")
+                elif evt["type"] == "sleep":
+                    face.set_state("idle")
 
-            elif evt["type"] == "resumed":
-                face.set_state("listening")
+                elif evt["type"] == "resumed":
+                    face.set_state("listening")
 
-            elif evt["type"] == "clarify":
-                speech.speak(evt.get("text", "Seni tam anlayamadım."))
-                speech.flush_pending_tts()
+                elif evt["type"] == "clarify":
+                    speech.speak(evt.get("text", "Seni tam anlayamadım."))
+                    speech.flush_pending_tts()
 
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
 
-        # Görsel Güncelleme (face_ui eski sürümle uyumlu korumalı kullanım)
-        if not is_busy and hasattr(face, "update_gaze"):
-            if now - last_interaction_time > 10:
-                if now > idle_look_timer:
-                    face.update_gaze(random.randint(200, 800), random.randint(150, 450))
-                    idle_look_timer = now + random.uniform(3, 6)
-            else:
-                mx, my = pygame.mouse.get_pos()
-                face.update_gaze(mx, my)
+            if not is_busy and hasattr(face, "update_gaze"):
+                if now - last_interaction_time > 10:
+                    if now > idle_look_timer:
+                        face.update_gaze(random.randint(200, 800), random.randint(150, 450))
+                        idle_look_timer = now + random.uniform(3, 6)
+                else:
+                    mx, my = pygame.mouse.get_pos()
+                    face.update_gaze(mx, my)
 
-        face.draw(screen)
-        pygame.display.flip()
-        clock.tick(30)  # CPU'yu yormamak için 30 FPS yeterli
+            face.draw(screen)
+            pygame.display.flip()
+            clock.tick(30)
 
-    speech.stop_auto_listener()
-    pygame.quit()
-    sys.exit()
+    finally:
+        try:
+            speech.stop_auto_listener()
+        except Exception as e:
+            print(f">>> [SHUTDOWN SPEECH ERROR] {type(e).__name__}: {e}")
+
+        try:
+            pygame.quit()
+        except Exception as e:
+            print(f">>> [SHUTDOWN PYGAME ERROR] {type(e).__name__}: {e}")
+
+        sys.exit()
 
 
 if __name__ == "__main__":
