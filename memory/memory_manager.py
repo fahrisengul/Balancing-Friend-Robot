@@ -377,4 +377,24 @@ class MemoryManager:
                     "llm_call_count": len(llm_calls),
                 },
             }
+        def get_intent_hints(self, intent: str, mode: str):
+            q = """
+            SELECT hint, priority
+            FROM retrieval_intent_hints
+            WHERE intent = ? AND (mode = ? OR mode IS NULL) AND is_active = 1
+            ORDER BY priority DESC
+            """
+            return self.conn.execute(q, (intent, mode)).fetchall()
+        
+        
+        def get_topic_aliases(self, tokens: list[str]):
+            placeholders = ",".join("?" for _ in tokens)
+        
+            q = f"""
+            SELECT canonical_topic, alias, priority
+            FROM retrieval_topic_aliases
+            WHERE alias IN ({placeholders}) AND is_active = 1
+            """
+        
+            return self.conn.execute(q, tokens).fetchall()
             conn.commit()
