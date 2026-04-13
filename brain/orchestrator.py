@@ -2,6 +2,142 @@ import threading
 import time
 
 
+class _StreamingBuffer:
+    def __init__(
+        self,
+        min_flush_words: int = 14,
+        max_flush_words: int = 30,
+        min_chars_to_speak: int = 28,
+        flush_timeout_sec: float = 1.1,
+    ):
+        self.min_flush_words = min_flush_words
+        self.max_flush_words = max_flush_words
+        self.min_chars_to_speak = min_chars_to_speak
+        self.flush_timeout_sec = flush_timeout_sec
+
+        self.buffer = ""
+        self.last_update = time.monotonic()
+
+    def add(self, chunk: str):
+        if not chunk:
+            return
+
+        if self.buffer and not self.buffer.endswith((" ", "\n")) and not chunk.startswith((" ", ".", ",", "!", "?", ";", ":")):
+            self.buffer += " "
+
+        self.buffer += chunk
+        self.last_update = time.monotonic()
+
+    def has_content(self) -> bool:
+        return bool(self.buffer.strip())
+
+    def should_flush(self) -> bool:
+        stripped = self.buffer.strip()
+        if not stripped:
+            return False
+
+        words = stripped.split()
+
+        # Tam cümle varsa
+        if stripped.endswith((".", "!", "?")) and len(stripped) >= self.min_chars_to_speak:
+            return True
+
+        # Çok uzadıysa
+        if len(words) >= self.max_flush_words:
+            return True
+
+        # Orta uzunluk + güvenli bağlaç
+        if len(words) >= self.min_flush_words and self._has_soft_boundary(stripped):
+            return True
+
+        # Timeout
+        if len(words) >= 6 and (time.monotonic() - self.last_update) >= self.flush_timeout_sec:
+            return True
+
+        return False
+
+    def pop_ready_text(self) -> str:
+        piece, remainder = self._extract_speakable_piece(self.buffer)
+        self.buffer = remainder
+        return piece
+
+    def flush_all(self) -> str:
+        text = self.buffer.strip()
+        self.buffer = ""
+        return text
+
+    def _has_soft_boundary(self, text: str) -> bool:
+        lower = text.lower()
+        markers = [
+            " çünkü ",
+            " ama ",
+            " fakat ",
+            " ancak ",
+            " sonra ",
+            " ayrıca ",
+            " böylece ",
+            " örneğin ",
+            " bu yüzden ",
+            " bunun için ",
+            " yani ",
+        ]
+        return any(marker in lower for marker in markers)
+
+    def _extract_speakable_piece(self, text: str):
+        stripped = (text or "").strip()
+        if not stripped:
+            return "", ""
+
+        # 1) Son tam cümleye kadar konuş
+        last_sentence_end = max(
+            stripped.rfind("."),
+            stripped.rfind("!"),
+            stripped.rfind("?"),
+        )
+
+        if last_sentence_end != -1 and last_sentence_end >= int(len(stripped) * 0.45):
+            piece = stripped[: last_sentence_end + 1].strip()
+            remainder = stripped[last_sentence_end + 1 :].strip()
+            return piece, remainder
+
+        # 2) Güvenli bağlaçta böl
+        split_candidates = [
+            " çünkü ",
+            " ama ",
+            " fakat ",
+            " ancak ",
+            " sonra ",
+            " ayrıca ",
+            " böylece ",
+            " örneğin ",
+            " bu yüzden ",
+            " bunun için ",
+            " yani ",
+        ]
+
+        lower = stripped.lower()
+        best_idx = -1
+        best_marker = ""
+
+        for marker in split_candidates:
+            idx = lower.rfind(marker)
+            if idx > best_idx and idx >= int(len(stripped) * 0.45):
+                best_idx = idx
+                best_marker = marker
+
+        if best_idx != -1:
+            cut_idx = best_idx + len(best_marker.strip())
+            piece = stripped[:cut_idx].strip()
+            remainder = stripped[cut_idx:].strip()
+            return piece, remainder
+
+        # 3) Çok uzadıysa hepsini ver
+        if len(stripped.split()) >= self.max_flush_words:
+            return stripped, ""
+
+        return "", stripped
+
+
 class Orchestrator:
     def __init__(self, brain, speech, face):
         self.brain = brain
@@ -14,10 +150,10 @@ class Orchestrator:
         self._busy = False
         self._lock = threading.Lock()
 
-        # Streaming flush ayarları
         self.min_flush_words = 14
         self.max_flush_words = 30
         self.min_chars_to_speak = 28
+        self.flush_timeout_sec = 1.1
 
     # =========================================================
     # LIFECYCLE
@@ -89,6 +225,7 @@ class Orchestrator:
             cleaned = self._clean_for_speech(text)
             if cleaned:
                 self.speech.speak(cleaned)
+                self.speech.flush_pending_tts()
         finally:
             self.set_state("idle")
 
@@ -96,10 +233,15 @@ class Orchestrator:
     # STREAMING COMMAND FLOW
     # =========================================================
     def _process_command_stream(self, text):
+        buffer = _StreamingBuffer(
+            min_flush_words=self.min_flush_words,
+            max_flush_words=self.max_flush_words,
+            min_chars_to_speak=self.min_chars_to_speak,
+            flush_timeout_sec=self.flush_timeout_sec,
+        )
+
         try:
             self.set_state("thinking")
-
-            buffer = ""
             spoke_anything = False
 
             for item in self.brain.ask_poodle_stream(text):
@@ -111,147 +253,62 @@ class Orchestrator:
                     if final_text:
                         self.set_state("speaking")
                         self.speech.speak(final_text)
+                        self.speech.flush_pending_tts()
                         spoke_anything = True
                     break
 
                 if item_type == "chunk":
-                    buffer += chunk_text
+                    buffer.add(chunk_text)
 
-                    if self._should_flush(buffer):
-                        piece, remainder = self._extract_speakable_piece(buffer)
+                    if buffer.should_flush():
+                        piece = buffer.pop_ready_text()
+                        cleaned = self._clean_for_speech(piece)
 
-                        if piece:
-                            cleaned = self._clean_for_speech(piece)
-                            if cleaned:
-                                self.set_state("speaking")
-                                self.speech.speak(cleaned)
-                                spoke_anything = True
-
-                        buffer = remainder
+                        if cleaned:
+                            self.set_state("speaking")
+                            self.speech.speak(cleaned)
+                            self.speech.flush_pending_tts()
+                            spoke_anything = True
 
                 if item_type == "done":
-                    # done aşamasında kalan buffer varsa onu tek parça okut
-                    final_text = self._clean_for_speech(buffer or chunk_text)
-                    if final_text:
+                    remainder = buffer.flush_all()
+                    cleaned = self._clean_for_speech(remainder or chunk_text)
+
+                    if cleaned:
                         self.set_state("speaking")
-                        self.speech.speak(final_text)
+                        self.speech.speak(cleaned)
+                        self.speech.flush_pending_tts()
                         spoke_anything = True
-                    buffer = ""
                     break
+
+            # Stream bittikten sonra içerik kalmışsa son flush
+            if buffer.has_content():
+                remainder = buffer.flush_all()
+                cleaned = self._clean_for_speech(remainder)
+                if cleaned:
+                    self.set_state("speaking")
+                    self.speech.speak(cleaned)
+                    self.speech.flush_pending_tts()
+                    spoke_anything = True
 
             if not spoke_anything:
                 self.set_state("speaking")
                 self.speech.speak("Şu an küçük bir sorun oluştu.")
+                self.speech.flush_pending_tts()
 
         except Exception as e:
             print(f">>> [ORCHESTRATOR ERROR] {e}")
             self.set_state("error")
             self.speech.speak("Şu an küçük bir sorun oluştu.")
+            self.speech.flush_pending_tts()
         finally:
             self.set_state("idle")
-
-    # =========================================================
-    # FLUSH LOGIC
-    # =========================================================
-    def _should_flush(self, text: str) -> bool:
-        stripped = (text or "").strip()
-        if not stripped:
-            return False
-
-        words = stripped.split()
-
-        # Tam cümle varsa okut
-        if stripped.endswith((".", "!", "?")) and len(stripped) >= self.min_chars_to_speak:
-            return True
-
-        # Çok uzadıysa tutma
-        if len(words) >= self.max_flush_words:
-            return True
-
-        # Orta uzunluktaysa ve güvenli yumuşak sınır varsa okut
-        if len(words) >= self.min_flush_words and self._has_soft_boundary(stripped):
-            return True
-
-        return False
-
-    def _has_soft_boundary(self, text: str) -> bool:
-        lower = text.lower()
-
-        # Virgül boundary değil
-        markers = [
-            " çünkü ",
-            " ama ",
-            " fakat ",
-            " ancak ",
-            " sonra ",
-            " ayrıca ",
-            " böylece ",
-            " örneğin ",
-            " bu yüzden ",
-            " bunun için ",
-            " yani ",
-        ]
-        return any(marker in lower for marker in markers)
-
-    def _extract_speakable_piece(self, text: str):
-        stripped = (text or "").strip()
-        if not stripped:
-            return "", ""
-
-        # 1) Son tam cümleye kadar konuş
-        last_sentence_end = max(
-            stripped.rfind("."),
-            stripped.rfind("!"),
-            stripped.rfind("?"),
-        )
-
-        if last_sentence_end != -1 and last_sentence_end >= int(len(stripped) * 0.45):
-            piece = stripped[: last_sentence_end + 1].strip()
-            remainder = stripped[last_sentence_end + 1 :].strip()
-            return piece, remainder
-
-        # 2) Güvenli yumuşak bağlaçta böl
-        split_candidates = [
-            " çünkü ",
-            " ama ",
-            " fakat ",
-            " ancak ",
-            " sonra ",
-            " ayrıca ",
-            " böylece ",
-            " örneğin ",
-            " bu yüzden ",
-            " bunun için ",
-            " yani ",
-        ]
-
-        lower = stripped.lower()
-        best_idx = -1
-        best_marker = ""
-
-        for marker in split_candidates:
-            idx = lower.rfind(marker)
-            if idx > best_idx and idx >= int(len(stripped) * 0.45):
-                best_idx = idx
-                best_marker = marker
-
-        if best_idx != -1:
-            cut_idx = best_idx + len(best_marker.strip())
-            piece = stripped[:cut_idx].strip()
-            remainder = stripped[cut_idx:].strip()
-            return piece, remainder
-
-        # 3) Çok uzadıysa hepsini konuş
-        if len(stripped.split()) >= self.max_flush_words:
-            return stripped, ""
-
-        return "", stripped
 
     # =========================================================
     # SPEECH CLEANING
     # =========================================================
     def _clean_for_speech(self, text: str) -> str:
-        cleaned = (text or "").replace("\n", " ").strip()
+        cleaned = (text or "").replace("\n", " ").replace("\r", " ").strip()
         cleaned = " ".join(cleaned.split())
 
         if not cleaned:
@@ -264,7 +321,7 @@ class Orchestrator:
         if len(cleaned.split()) == 1 and cleaned.endswith(","):
             return ""
 
-        # çok kısa kırık phrase'leri de engelle
+        # Çok kısa kırık phrase'leri engelle
         if len(cleaned) < self.min_chars_to_speak and not cleaned.endswith((".", "!", "?")):
             return ""
 
