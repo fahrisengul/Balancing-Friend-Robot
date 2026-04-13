@@ -1,5 +1,6 @@
 import os
 import wave
+import array
 import tempfile
 import threading
 import platform
@@ -75,7 +76,6 @@ class PoodleSpeech:
         try:
             devices = PvRecorder.get_available_devices()
 
-            # Manuel seçim geldiyse onu kullan
             if self.device_index is not None and self.device_index >= 0:
                 if self.device_index < len(devices):
                     log_time(f">>> [MIC ACTIVE] Manuel seçim: #{self.device_index} {devices[self.device_index]}")
@@ -86,7 +86,6 @@ class PoodleSpeech:
                 log_time(">>> [MIC ACTIVE] Kayıt cihazı bulunamadı, default (-1) kullanılacak.")
                 return self.device_index
 
-            # Otomatik seçim: mikrofon benzeri isimleri öne al
             preferred_idx = None
             preferred_keywords = [
                 "mikrofon",
@@ -186,11 +185,10 @@ class PoodleSpeech:
     def _listener_loop(self):
         recorder = None
 
-        # Rolling-buffer / segmentation tuning
-        prebuffer_frames = 12              # yaklaşık 12 * 32ms ≈ 384ms
-        min_voiced_frames_to_start = 4     # konuşmayı başlatmak için
-        silence_frames_to_stop = 18        # yaklaşık 576ms sessizlik
-        max_segment_frames = 260           # yaklaşık 8.3 saniye üst sınır
+        prebuffer_frames = 12
+        min_voiced_frames_to_start = 4
+        silence_frames_to_stop = 18
+        max_segment_frames = 260
 
         speech_start_level = 0.055
         speech_continue_level = 0.028
@@ -228,7 +226,7 @@ class PoodleSpeech:
                     break
 
                 audio_float32 = np.array(frame, dtype=np.float32) / 32768.0
-                audio_float32 = audio_float32 * 2.0  # hafif gain
+                audio_float32 = audio_float32 * 2.0
 
                 level = float(np.max(np.abs(audio_float32)))
                 frame_counter += 1
@@ -236,7 +234,6 @@ class PoodleSpeech:
                 if DEBUG_AUDIO and frame_counter % 8 == 0:
                     log_time(f">>> [AUDIO RAW] level={level:.4f}")
 
-                # Robot konuşurken yeni kayıt başlatma
                 if self._busy and not recording:
                     continue
 
@@ -251,14 +248,10 @@ class PoodleSpeech:
                     if voiced_run >= min_voiced_frames_to_start:
                         recording = True
                         silence_run = 0
-
-                        # konuşma başlarken prebuffer'ı da ekle
                         collected_frames = list(prebuffer)
-
                         log_time(">>> [AUDIO] Ses algılandı (rolling VAD tetiklendi)...")
                     continue
 
-                # recording=True
                 collected_frames.append(audio_float32.copy())
 
                 if level >= speech_continue_level:
@@ -271,10 +264,8 @@ class PoodleSpeech:
 
                 if silence_finished or segment_too_long:
                     segment_audio = np.concatenate(collected_frames).astype(np.float32)
-
                     duration_sec = len(segment_audio) / float(self.sample_rate)
 
-                    # son bir Silero doğrulaması: artık küçük frame değil, segment bazlı
                     valid_speech = False
                     if duration_sec >= min_segment_sec:
                         valid_speech = self._segment_has_speech(segment_audio)
@@ -293,7 +284,6 @@ class PoodleSpeech:
                         if DEBUG_AUDIO:
                             log_time(">>> [VAD] Segment toplandı ama konuşma doğrulanamadı.")
 
-                    # reset
                     recording = False
                     voiced_run = 0
                     silence_run = 0
@@ -305,6 +295,7 @@ class PoodleSpeech:
 
         finally:
             cleanup_recorder = None
+
             with self._recorder_lock:
                 if self.recorder is recorder:
                     cleanup_recorder = self.recorder
@@ -339,7 +330,6 @@ class PoodleSpeech:
         except Exception as e:
             if DEBUG_AUDIO:
                 log_time(f">>> [SEGMENT VAD ERROR] {type(e).__name__}: {e}")
-            # fallback: energy üzerinden kabul et
             return float(np.max(np.abs(audio_float32))) >= 0.08
 
     # =========================================================
@@ -390,7 +380,7 @@ class PoodleSpeech:
     # =========================================================
     # TTS
     # =========================================================
-    def speak(self, text: str):
+    def speak(self, text):
         cleaned = self._clean_tts_text(text)
         if not cleaned:
             return
@@ -460,45 +450,136 @@ class PoodleSpeech:
 
         return text
 
-    def _speak_now(self, text: str):
+    def _chunk_to_bytes(self, chunk) -> bytes:
+        if chunk is None:
+            return b""
+
+        if isinstance(chunk, (bytes, bytearray)):
+            return bytes(chunk)
+
+        candidate_attrs = [
+            "audio_int16_bytes",
+            "audio_bytes",
+            "pcm_bytes",
+            "buffer",
+            "audio",
+            "samples",
+        ]
+
+        for attr in candidate_attrs:
+            if hasattr(chunk, attr):
+                value = getattr(chunk, attr)
+
+                if value is None:
+                    continue
+
+                if isinstance(value, (bytes, bytearray)):
+                    return bytes(value)
+
+                if isinstance(value, (list, tuple, array.array)):
+                    arr = array.array("h", value)
+                    return arr.tobytes()
+
+                if hasattr(value, "dtype") and hasattr(value, "tobytes"):
+                    arr = np.asarray(value)
+                    if arr.dtype != np.int16:
+                        arr = arr.astype(np.int16)
+                    return arr.tobytes()
+
+        if hasattr(chunk, "dtype") and hasattr(chunk, "tobytes"):
+            arr = np.asarray(chunk)
+            if arr.dtype != np.int16:
+                arr = arr.astype(np.int16)
+            return arr.tobytes()
+
+        try:
+            seq = list(chunk)
+            if seq and isinstance(seq[0], int):
+                arr = array.array("h", seq)
+                return arr.tobytes()
+        except Exception:
+            pass
+
+        raise RuntimeError(f"AudioChunk çözümlenemedi. type={type(chunk)}")
+
+    def _play_wav(self, wav_path: str):
+        system_name = platform.system()
+
+        if system_name == "Darwin":
+            cmd = ["/usr/bin/afplay", wav_path]
+        elif system_name == "Linux":
+            cmd = ["aplay", wav_path]
+        else:
+            raise RuntimeError(f"Desteklenmeyen işletim sistemi: {system_name}")
+
+        result = subprocess.run(
+            cmd,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+
+        if result.returncode != 0:
+            raise RuntimeError(result.stderr.strip() or "Ses oynatma başarısız oldu.")
+
+    def _speak_now(self, text):
         if not text:
             return
 
         log_time(f"Poodle: {text}")
         self._busy = True
 
+        temp_path = None
         try:
             now = time.time()
             delta = now - self._last_tts_time
             if delta < self._tts_cooldown_sec:
                 time.sleep(self._tts_cooldown_sec - delta)
 
-            # 🔥 Piper doğru kullanım (numpy audio üret)
-            audio = self.voice.synthesize(text)
+            sample_rate = self.voice.config.sample_rate
+            pcm_buffer = bytearray()
 
-            # 🔥 WAV'e kendimiz yaz
+            synth_result = self.voice.synthesize(text)
+
+            if synth_result is None:
+                raise RuntimeError("Piper synthesize None döndü.")
+
+            if isinstance(synth_result, np.ndarray):
+                arr = synth_result
+                if arr.dtype != np.int16:
+                    arr = np.clip(arr, -1.0, 1.0)
+                    arr = (arr * 32767.0).astype(np.int16)
+                pcm_buffer.extend(arr.tobytes())
+            elif isinstance(synth_result, (bytes, bytearray)):
+                pcm_buffer.extend(bytes(synth_result))
+            else:
+                for chunk in synth_result:
+                    chunk_bytes = self._chunk_to_bytes(chunk)
+                    if chunk_bytes:
+                        pcm_buffer.extend(chunk_bytes)
+
+            if len(pcm_buffer) == 0:
+                raise RuntimeError("Piper ses verisi üretmedi.")
+
             with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
                 temp_path = tmp.name
 
             with wave.open(temp_path, "wb") as wav_file:
                 wav_file.setnchannels(1)
                 wav_file.setsampwidth(2)
-                wav_file.setframerate(self.voice.config.sample_rate)
-                wav_file.writeframes((audio * 32767).astype("int16").tobytes())
+                wav_file.setframerate(sample_rate)
+                wav_file.writeframes(bytes(pcm_buffer))
 
-            # 🔥 MAC için garanti playback
-            subprocess.run(["afplay", temp_path])
-
+            self._play_wav(temp_path)
             self._last_tts_time = time.time()
 
         except Exception as e:
-            log_time(f">>> [TTS ERROR] {e}")
+            log_time(f">>> [TTS ERROR] {type(e).__name__}: {e}")
 
         finally:
-            try:
-                if 'temp_path' in locals() and os.path.exists(temp_path):
-                    os.remove(temp_path)
-            except:
-                pass
-
             self._busy = False
+            if temp_path and os.path.exists(temp_path):
+                try:
+                    os.remove(temp_path)
+                except Exception:
+                    pass
