@@ -6,17 +6,6 @@ import requests
 
 
 class LLMClient:
-    """
-    Ollama tabanlı istemci.
-
-    Hedef:
-    - LLM'i ana açıklama motoru olarak kullanmak
-    - intent / mode bazlı üretim derinliği sağlamak
-    - deep modda daha zengin cevaplar üretmek
-    - streaming'i korumak
-    - keep_alive ile cold-start maliyetini azaltmak
-    """
-
     def __init__(self):
         self.base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
         self.url = f"{self.base_url}/api/generate"
@@ -40,9 +29,6 @@ class LLMClient:
     def model_name(self) -> str:
         return self.model
 
-    # =========================================================
-    # HEALTH / WARMUP
-    # =========================================================
     def healthcheck(self) -> bool:
         try:
             r = requests.get(
@@ -55,10 +41,6 @@ class LLMClient:
             return False
 
     def warmup(self) -> bool:
-        """
-        Uygulama açılışında bir kez çağrılabilir.
-        Modeli bellekte sıcak tutar.
-        """
         try:
             payload = {
                 "model": self.model,
@@ -81,9 +63,6 @@ class LLMClient:
         except Exception:
             return False
 
-    # =========================================================
-    # GENERATE
-    # =========================================================
     def generate(
         self,
         prompt: str,
@@ -108,9 +87,6 @@ class LLMClient:
         data = r.json()
         return (data.get("response") or "").strip()
 
-    # =========================================================
-    # STREAM
-    # =========================================================
     def stream(
         self,
         prompt: str,
@@ -142,16 +118,23 @@ class LLMClient:
                 except Exception:
                     continue
 
-                chunk = data.get("response", "")
+                chunk = self._clean_stream_chunk(data.get("response", ""))
                 if chunk:
                     yield chunk
 
                 if data.get("done"):
                     break
 
-    # =========================================================
-    # OPTIONS
-    # =========================================================
+    def _clean_stream_chunk(self, chunk: str) -> str:
+        if not chunk:
+            return ""
+
+        chunk = chunk.replace("\r", "")
+        if not chunk.strip():
+            return ""
+
+        return chunk
+
     def _build_options(
         self,
         mode: str = "balanced",
@@ -159,8 +142,6 @@ class LLMClient:
     ) -> Dict[str, object]:
         options = dict(self.default_options)
 
-        # deterministic:
-        # sabit, kısa, risksiz ve yüksek kontrol isteyen cevaplar
         if mode == "deterministic":
             options.update({
                 "temperature": 0.12,
@@ -169,8 +150,6 @@ class LLMClient:
                 "num_predict": 90,
             })
 
-        # balanced:
-        # normal eğitim / sohbet dengesi
         elif mode == "balanced":
             options.update({
                 "temperature": 0.30,
@@ -179,8 +158,6 @@ class LLMClient:
                 "num_predict": 220,
             })
 
-        # deep:
-        # açıklama, strateji, follow-up, detay, örnek
         elif mode == "deep":
             options.update({
                 "temperature": 0.40,
