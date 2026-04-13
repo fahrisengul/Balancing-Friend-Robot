@@ -369,6 +369,29 @@ class MemoryManager:
             conversations = [dict(r) for r in conv_rows]
             telemetry = [dict(r) for r in telem_rows]
             llm_calls = [dict(r) for r in llm_rows]
+
+            retrieval_debug = self.conn.execute(
+                """
+                SELECT session_id, intent, mode, query_text, query_variants_json,
+                       selected_chunks_json, confidence, retrieval_source,
+                       context_chars, created_at
+                FROM retrieval_debug
+                ORDER BY id DESC
+                LIMIT ?
+                """,
+                (limit,),
+            ).fetchall()
+    
+            streaming_debug = self.conn.execute(
+                """
+                SELECT session_id, intent, flush_count, first_flush_ms,
+                       total_stream_ms, total_chunks, spoken_segments_json, created_at
+                FROM streaming_debug
+                ORDER BY id DESC
+                LIMIT ?
+                """,
+                (limit,),
+            ).fetchall()
     
             return {
                 "generated_at": self._now(),
@@ -379,6 +402,8 @@ class MemoryManager:
                     "conversation_count": len(conversations),
                     "telemetry_count": len(telemetry),
                     "llm_call_count": len(llm_calls),
+                    "retrieval_debug": [dict(row) for row in retrieval_debug],
+                    "streaming_debug": [dict(row) for row in streaming_debug],
                 },
             }
             conn.commit()
