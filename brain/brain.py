@@ -1,3 +1,4 @@
+import json
 import time
 from datetime import date
 from typing import Optional, Dict, Any
@@ -203,6 +204,10 @@ class PoodleBrain:
         confidence = float(bundle["confidence"])
         retrieval_source = bundle.get("source", "none")
         memory_used = bool(context.strip())
+        selected_chunks = bundle.get("selected_chunks", [])
+        retrieval_source = bundle.get("source", "none")
+        query_variants = bundle.get("query_variants", [])
+        reranked_preview = bundle.get("reranked_preview", [])
 
         llm_mode = self._select_llm_mode(
             intent=intent,
@@ -210,6 +215,21 @@ class PoodleBrain:
             confidence=confidence,
             selected_chunks=selected_chunks,
         )
+
+        try:
+            self.memory.log_retrieval_debug(
+                session_id=session_id,
+                intent=intent,
+                mode=mode,
+                query_text=effective_text,
+                query_variants_json=json.dumps(query_variants, ensure_ascii=False),
+                selected_chunks_json=json.dumps(reranked_preview, ensure_ascii=False),
+                confidence=confidence,
+                retrieval_source=retrieval_source,
+                context_chars=len(context or ""),
+            )
+        except Exception as e:
+            print(f">>> [LOG RETRIEVAL ERROR] {e}")
 
         prompt = self._build_prompt_v2(
             text=effective_text,
