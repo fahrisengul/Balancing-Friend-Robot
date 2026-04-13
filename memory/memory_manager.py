@@ -457,3 +457,65 @@ class MemoryManager:
     
         except Exception as e:
             print(f">>> [DB INIT ERROR] {e}")
+
+    def log_retrieval_debug(
+        self,
+        session_id,
+        intent,
+        mode,
+        query_text,
+        query_variants_json,
+        selected_chunks_json,
+        confidence,
+        retrieval_source,
+        context_chars,
+    ):
+        self.conn.execute(
+            """
+            INSERT INTO retrieval_debug (
+                session_id, intent, mode, query_text, query_variants_json,
+                selected_chunks_json, confidence, retrieval_source, context_chars
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                session_id,
+                intent,
+                mode,
+                query_text,
+                query_variants_json,
+                selected_chunks_json,
+                confidence,
+                retrieval_source,
+                context_chars,
+            ),
+        )
+        self.conn.commit()
+
+    def log_streaming_debug(
+        self,
+        session_id,
+        intent,
+        flush_count,
+        first_flush_ms,
+        total_stream_ms,
+        total_chunks,
+        spoken_segments_json,
+    ):
+        self.conn.execute(
+            """
+            INSERT INTO streaming_debug (
+                session_id, intent, flush_count, first_flush_ms,
+                total_stream_ms, total_chunks, spoken_segments_json
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                session_id,
+                intent,
+                flush_count,
+                first_flush_ms,
+                total_stream_ms,
+                total_chunks,
+                spoken_segments_json,
+            ),
+        )
+        self.conn.commit()
