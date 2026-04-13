@@ -326,6 +326,26 @@ class Orchestrator:
             self.speech.speak("Şu an küçük bir sorun oluştu.")
             self.speech.flush_pending_tts()
         finally:
+            try:
+                total_stream_ms = int((time.perf_counter() - stream_started_at) * 1000)
+    
+                if hasattr(self.brain, "memory"):
+                    self.brain.memory.log_streaming_debug(
+                        session_id=None,
+                        intent=inferred_intent,
+                        flush_count=flush_count,
+                        first_flush_ms=first_flush_ms,
+                        total_stream_ms=total_stream_ms,
+                        total_chunks=total_chunks,
+                        spoken_segments_json=json.dumps(
+                            spoken_segments[:20],
+                            ensure_ascii=False
+                        ),
+                    )
+    
+            except Exception as e:
+                print(f">>> [LOG STREAMING ERROR] {e}")
+    
             self.set_state("idle")
 
     # =========================================================
