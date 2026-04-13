@@ -554,3 +554,9 @@ class MemoryRetriever:
             topic_counter[topic] = topic_counter.get(topic, 0) + 1
     
         return sorted(topic_counter, key=topic_counter.get, reverse=True)[:3]
+
+    def _refine_query_with_topics(self, base_query, topics):
+        if not topics:
+            return base_query
+    
+        return f"{base_query} {' '.join(topics)}"
