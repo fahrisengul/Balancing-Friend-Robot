@@ -461,37 +461,44 @@ class PoodleSpeech:
         return text
 
     def _speak_now(self, text: str):
-        if not text:
-            return
+    if not text:
+        return
 
-        log_time(f"Poodle: {text}")
-        self._busy = True
+    log_time(f"Poodle: {text}")
+    self._busy = True
 
-        temp_path = None
+    try:
+        now = time.time()
+        delta = now - self._last_tts_time
+        if delta < self._tts_cooldown_sec:
+            time.sleep(self._tts_cooldown_sec - delta)
+
+        # 🔥 Piper doğru kullanım (numpy audio üret)
+        audio = self.voice.synthesize(text)
+
+        # 🔥 WAV'e kendimiz yaz
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+            temp_path = tmp.name
+
+        with wave.open(temp_path, "wb") as wav_file:
+            wav_file.setnchannels(1)
+            wav_file.setsampwidth(2)
+            wav_file.setframerate(self.voice.config.sample_rate)
+            wav_file.writeframes((audio * 32767).astype("int16").tobytes())
+
+        # 🔥 MAC için garanti playback
+        subprocess.run(["afplay", temp_path])
+
+        self._last_tts_time = time.time()
+
+    except Exception as e:
+        log_time(f">>> [TTS ERROR] {e}")
+
+    finally:
         try:
-            now = time.time()
-            delta = now - self._last_tts_time
-            if delta < self._tts_cooldown_sec:
-                time.sleep(self._tts_cooldown_sec - delta)
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+        except:
+            pass
 
-            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
-                temp_path = tmp.name
-
-            with wave.open(temp_path, "wb") as wav_file:
-                wav_file.setnchannels(1)
-                wav_file.setsampwidth(2)
-                wav_file.setframerate(self.voice.config.sample_rate)
-                self.voice.synthesize(text, wav_file)
-
-            cmd = "afplay" if platform.system() == "Darwin" else "aplay"
-            subprocess.run([cmd, temp_path], check=False)
-
-            self._last_tts_time = time.time()
-
-        finally:
-            try:
-                if temp_path and os.path.exists(temp_path):
-                    os.remove(temp_path)
-            except Exception:
-                pass
-            self._busy = False
+        self._busy = False
