@@ -419,6 +419,7 @@ class PoodleBrain:
             return "deep"
 
         return "balanced"
+        
     def _depth_instruction(self, intent: str, mode: str, confidence: float, is_follow_up: bool) -> str:
         if is_follow_up:
             return (
