@@ -68,11 +68,25 @@ class MemoryRetriever:
         context_text = self._assemble_context(selected)
         confidence = self._estimate_confidence(selected)
 
+        reranked_preview = [
+            {
+                "id": x.get("id"),
+                "topic": x.get("topic"),
+                "chunk_type": x.get("chunk_type"),
+                "memory_scope": x.get("memory_scope"),
+                "score": x.get("score"),
+                "final_score": x.get("final_score"),
+            }
+            for x in reranked_hits[:8]
+        ]
+
         return {
             "context_text": context_text,
             "selected_chunks": selected,
             "confidence": confidence,
             "source": "multi_index_rag_v2" if selected else "none",
+            "query_variants": query_bundle.get("query_variants", []),
+            "reranked_preview": reranked_preview,
         }
 
     # =========================================================
