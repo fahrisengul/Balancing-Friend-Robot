@@ -1,97 +1,132 @@
 import pygame
-import math
 import random
+import math
+
 
 class PoodleFace:
     def __init__(self, width=1024, height=600):
         self.width = width
         self.height = height
 
+        self.cx = width // 2
+        self.cy = height // 2
+
         self.state = "idle"
-
-        self.center_x = width // 2
-        self.center_y = height // 2
-
-        self.eye_offset_x = 120
-        self.eye_offset_y = -40
-
-        self.eye_radius = 22
-        self.pupil_radius = 8
-
-        self.target_gaze = (0, 0)
-        self.current_gaze = (0, 0)
-
         self.time = 0
 
-        self.colors = {
-            "idle": (120, 120, 140),
-            "listening": (80, 160, 255),
-            "thinking": (180, 100, 255),
-            "speaking": (80, 255, 200),
-            "error": (255, 80, 80),
-        }
+        # Particle system
+        self.particles = []
 
+    # --------------------------------------------------
+    # STATE
+    # --------------------------------------------------
     def set_state(self, state):
         self.state = state
 
     def update_gaze(self, x, y):
-        dx = (x - self.center_x) / self.width
-        dy = (y - self.center_y) / self.height
+        # artık kullanılmıyor ama API uyumluluğu için bırakıldı
+        pass
 
-        self.target_gaze = (dx * 10, dy * 10)
-
-    def _smooth_gaze(self):
-        cx, cy = self.current_gaze
-        tx, ty = self.target_gaze
-
-        self.current_gaze = (
-            cx + (tx - cx) * 0.1,
-            cy + (ty - cy) * 0.1
-        )
-
-    def draw(self, screen):
-        self.time += 0.05
-        self._smooth_gaze()
-
-        screen.fill((15, 15, 20))  # dark background
-
-        color = self.colors.get(self.state, (120, 120, 140))
-
-        # --- CENTER CORE ---
-        core_radius = 40 + math.sin(self.time * 2) * 3
-        pygame.draw.circle(screen, color, (self.center_x, self.center_y + 60), int(core_radius), 2)
-
-        # --- EYES ---
-        left_eye = (
-            self.center_x - self.eye_offset_x,
-            self.center_y + self.eye_offset_y
-        )
-
-        right_eye = (
-            self.center_x + self.eye_offset_x,
-            self.center_y + self.eye_offset_y
-        )
-
-        for ex, ey in [left_eye, right_eye]:
-            pygame.draw.circle(screen, color, (ex, ey), self.eye_radius, 2)
-
-            gx, gy = self.current_gaze
-            pupil_pos = (int(ex + gx), int(ey + gy))
-
-            pygame.draw.circle(screen, color, pupil_pos, self.pupil_radius)
-
-        # --- AURA / STATE EFFECT ---
-        if self.state == "thinking":
-            r = 80 + math.sin(self.time * 3) * 5
-            pygame.draw.circle(screen, color, (self.center_x, self.center_y), int(r), 1)
-
-        if self.state == "listening":
-            r = 90 + math.sin(self.time * 4) * 8
-            pygame.draw.circle(screen, color, (self.center_x, self.center_y), int(r), 1)
+    # --------------------------------------------------
+    # PARTICLE SYSTEM
+    # --------------------------------------------------
+    def _spawn_particles(self):
+        count = 2
 
         if self.state == "speaking":
-            wave = math.sin(self.time * 8) * 10
-            pygame.draw.circle(screen, color, (self.center_x, self.center_y + 60), int(45 + wave), 2)
+            count = 6
+        elif self.state == "thinking":
+            count = 4
 
-        if self.state == "error":
-            pygame.draw.circle(screen, (255, 0, 0), (self.center_x, self.center_y), 100, 1)
+        for _ in range(count):
+            self.particles.append({
+                "x": self.cx + random.randint(-5, 5),
+                "y": self.cy + random.randint(-80, 80),
+                "vy": random.uniform(-2.5, -0.5),
+                "life": random.randint(30, 80)
+            })
+
+    def _update_particles(self):
+        new_particles = []
+        for p in self.particles:
+            p["y"] += p["vy"]
+            p["life"] -= 1
+
+            if p["life"] > 0:
+                new_particles.append(p)
+
+        self.particles = new_particles
+
+    def _draw_particles(self, screen, color):
+        for p in self.particles:
+            alpha = max(50, min(255, p["life"] * 3))
+            c = (color[0], color[1], color[2])
+            pygame.draw.circle(screen, c, (int(p["x"]), int(p["y"])), 2)
+
+    # --------------------------------------------------
+    # COLOR SYSTEM
+    # --------------------------------------------------
+    def _get_color(self):
+        return {
+            "idle": (80, 100, 140),
+            "listening": (80, 200, 255),
+            "thinking": (180, 100, 255),
+            "speaking": (255, 60, 60),
+            "error": (255, 120, 0),
+        }.get(self.state, (100, 100, 120))
+
+    # --------------------------------------------------
+    # DRAW
+    # --------------------------------------------------
+    def draw(self, screen):
+        self.time += 0.05
+
+        # Background
+        screen.fill((5, 5, 10))
+
+        color = self._get_color()
+
+        # --------------------------------------------------
+        # CORE RINGS
+        # --------------------------------------------------
+        pulse = math.sin(self.time * 2)
+
+        top_y = self.cy - 120
+        bottom_y = self.cy + 120
+
+        for i in range(3):
+            r = 80 + i * 10 + pulse * 3
+            pygame.draw.circle(screen, color, (self.cx, int(top_y)), int(r), 2)
+            pygame.draw.circle(screen, color, (self.cx, int(bottom_y)), int(r), 2)
+
+        # --------------------------------------------------
+        # ENERGY BEAM
+        # --------------------------------------------------
+        beam_width = 4
+
+        if self.state == "speaking":
+            beam_width = 8 + abs(math.sin(self.time * 8)) * 6
+        elif self.state == "thinking":
+            beam_width = 3 + abs(math.sin(self.time * 12)) * 2
+
+        pygame.draw.line(
+            screen,
+            color,
+            (self.cx, top_y),
+            (self.cx, bottom_y),
+            int(beam_width)
+        )
+
+        # --------------------------------------------------
+        # PARTICLES
+        # --------------------------------------------------
+        self._spawn_particles()
+        self._update_particles()
+        self._draw_particles(screen, color)
+
+        # --------------------------------------------------
+        # CORE GLOW (fake glow)
+        # --------------------------------------------------
+        for i in range(3):
+            radius = 40 + i * 10 + pulse * 2
+            pygame.draw.circle(screen, color, (self.cx, self.cy), int(radius), 1)
