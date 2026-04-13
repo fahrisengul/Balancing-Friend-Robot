@@ -543,3 +543,14 @@ class MemoryRetriever:
             queries.append(f"{norm} {' '.join(hint_texts[:2])}")
     
         return list(set(queries))
+
+    def _extract_topics_from_hits(self, hits):
+        topic_counter = {}
+    
+        for h in hits:
+            topic = h.get("topic", "")
+            if not topic:
+                continue
+            topic_counter[topic] = topic_counter.get(topic, 0) + 1
+    
+        return sorted(topic_counter, key=topic_counter.get, reverse=True)[:3]
