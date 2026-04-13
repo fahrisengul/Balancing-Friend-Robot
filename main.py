@@ -22,7 +22,7 @@ def main():
     clock = pygame.time.Clock()
 
     face = PoodleFace(1024, 600)
-    speech = PoodleSpeech(input_device_index=-1)
+    speech = PoodleSpeech()    
     speech.debug_list_input_devices()
     speech.select_default_input_device()
 
