@@ -460,46 +460,45 @@ class PoodleSpeech:
 
         return text
 
-    
-    def _speak_now(self, text: str):
+def _speak_now(self, text: str):
         if not text:
             return
-    
+
         log_time(f"Poodle: {text}")
         self._busy = True
-    
+
         try:
             now = time.time()
             delta = now - self._last_tts_time
             if delta < self._tts_cooldown_sec:
                 time.sleep(self._tts_cooldown_sec - delta)
-    
+
             # 🔥 Piper doğru kullanım (numpy audio üret)
             audio = self.voice.synthesize(text)
-    
+
             # 🔥 WAV'e kendimiz yaz
             with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
                 temp_path = tmp.name
-    
+
             with wave.open(temp_path, "wb") as wav_file:
                 wav_file.setnchannels(1)
                 wav_file.setsampwidth(2)
                 wav_file.setframerate(self.voice.config.sample_rate)
                 wav_file.writeframes((audio * 32767).astype("int16").tobytes())
-    
+
             # 🔥 MAC için garanti playback
             subprocess.run(["afplay", temp_path])
-    
+
             self._last_tts_time = time.time()
-    
+
         except Exception as e:
             log_time(f">>> [TTS ERROR] {e}")
-    
+
         finally:
             try:
-                if os.path.exists(temp_path):
+                if 'temp_path' in locals() and os.path.exists(temp_path):
                     os.remove(temp_path)
             except:
                 pass
-    
+
             self._busy = False
