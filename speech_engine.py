@@ -173,10 +173,7 @@ class PoodleSpeech:
                     log_time(f">>> [RECORDER READ ERROR] {type(e).__name__}: {e}")
                     break
 
-                if self._busy:
-                    collected_audio = []
-                    recording = False
-                    silent_frames = 0
+                if self._busy and not recording:
                     continue
 
                 audio_float32 = np.array(frame, dtype=np.float32) / 32768.0
