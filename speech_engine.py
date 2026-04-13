@@ -6,6 +6,7 @@ import platform
 import subprocess
 import time
 from datetime import datetime
+from collections import deque
 
 from pvrecorder import PvRecorder
 import numpy as np
@@ -15,18 +16,23 @@ from piper.voice import PiperVoice
 from silero_vad import load_silero_vad, get_speech_timestamps
 
 
+DEBUG_AUDIO = False
+
+
 def get_now():
     return datetime.now().strftime("%H:%M:%S.%f")[:-3]
 
 
-def log_time(message):
+def log_time(message: str):
     print(f"[{get_now()}] {message}")
 
 
 class PoodleSpeech:
-    def __init__(self, lang="tr", input_device_index=None):
+    def __init__(self, lang: str = "tr", input_device_index=None):
         self.lang = lang
         self.frame_length = 512
+        self.sample_rate = 16000
+
         self.event_queue = []
 
         self._listener_running = False
@@ -39,6 +45,7 @@ class PoodleSpeech:
 
         self.device_index = input_device_index
 
+        # TTS phrase buffer
         self._pending_phrase = ""
         self._pending_phrase_since = 0.0
         self._min_phrase_chars = 28
@@ -68,18 +75,50 @@ class PoodleSpeech:
         try:
             devices = PvRecorder.get_available_devices()
 
+            # Manuel seçim geldiyse onu kullan
             if self.device_index is not None and self.device_index >= 0:
                 if self.device_index < len(devices):
                     log_time(f">>> [MIC ACTIVE] Manuel seçim: #{self.device_index} {devices[self.device_index]}")
                     return self.device_index
 
-            if devices:
-                self.device_index = 0
-                log_time(f">>> [MIC ACTIVE] Otomatik seçim: #0 {devices[0]}")
+            if not devices:
+                self.device_index = -1
+                log_time(">>> [MIC ACTIVE] Kayıt cihazı bulunamadı, default (-1) kullanılacak.")
                 return self.device_index
 
-            self.device_index = -1
-            log_time(">>> [MIC ACTIVE] Cihaz bulunamadı, default (-1) kullanılacak.")
+            # Otomatik seçim: mikrofon benzeri isimleri öne al
+            preferred_idx = None
+            preferred_keywords = [
+                "mikrofon",
+                "microphone",
+                "macbook pro mikrofonu",
+                "internal",
+                "built-in",
+            ]
+            avoid_keywords = [
+                "speaker",
+                "hoparlor",
+                "hoparlör",
+                "output",
+                "kulaklik cikisi",
+                "kulaklık çıkışı",
+            ]
+
+            for i, name in enumerate(devices):
+                low = name.lower()
+
+                if any(bad in low for bad in avoid_keywords):
+                    continue
+
+                if any(key in low for key in preferred_keywords):
+                    preferred_idx = i
+                    break
+
+            if preferred_idx is None:
+                preferred_idx = 0
+
+            self.device_index = preferred_idx
+            log_time(f">>> [MIC ACTIVE] Otomatik seçim: #{preferred_idx} {devices[preferred_idx]}")
             return self.device_index
 
         except Exception as e:
@@ -93,7 +132,7 @@ class PoodleSpeech:
     def is_muted(self):
         return self._muted
 
-    def set_busy(self, val):
+    def set_busy(self, val: bool):
         self._busy = val
 
     # =========================================================
@@ -117,7 +156,6 @@ class PoodleSpeech:
         if self.listener_thread and self.listener_thread.is_alive():
             self.listener_thread.join(timeout=2.0)
 
-        # Thread kapandıktan sonra recorder hâlâ duruyorsa burada fallback cleanup
         recorder_to_cleanup = None
         with self._recorder_lock:
             if self.recorder is not None:
@@ -143,17 +181,34 @@ class PoodleSpeech:
         return {"type": "none"}
 
     # =========================================================
-    # LISTENER LOOP
+    # LISTENER LOOP (ROLLING-BUFFER VAD)
     # =========================================================
     def _listener_loop(self):
         recorder = None
+
+        # Rolling-buffer / segmentation tuning
+        prebuffer_frames = 12              # yaklaşık 12 * 32ms ≈ 384ms
+        min_voiced_frames_to_start = 4     # konuşmayı başlatmak için
+        silence_frames_to_stop = 18        # yaklaşık 576ms sessizlik
+        max_segment_frames = 260           # yaklaşık 8.3 saniye üst sınır
+
+        speech_start_level = 0.055
+        speech_continue_level = 0.028
+        min_segment_sec = 0.45
+
+        prebuffer = deque(maxlen=prebuffer_frames)
+        collected_frames = []
+        recording = False
+        voiced_run = 0
+        silence_run = 0
+        frame_counter = 0
 
         try:
             log_time(f">>> [LISTENER] Thread başladı. device_index={self.device_index}")
 
             recorder = PvRecorder(
                 device_index=self.device_index if self.device_index is not None else -1,
-                frame_length=self.frame_length
+                frame_length=self.frame_length,
             )
             recorder.start()
 
@@ -162,10 +217,6 @@ class PoodleSpeech:
 
             log_time(">>> [LISTENER] PvRecorder başlatıldı.")
 
-            collected_audio = []
-            silent_frames = 0
-            recording = False
-
             while self._listener_running:
                 try:
                     frame = recorder.read()
@@ -173,66 +224,87 @@ class PoodleSpeech:
                     log_time(f">>> [RECORDER READ ERROR] {type(e).__name__}: {e}")
                     break
 
+                if not self._listener_running:
+                    break
+
+                audio_float32 = np.array(frame, dtype=np.float32) / 32768.0
+                audio_float32 = audio_float32 * 2.0  # hafif gain
+
+                level = float(np.max(np.abs(audio_float32)))
+                frame_counter += 1
+
+                if DEBUG_AUDIO and frame_counter % 8 == 0:
+                    log_time(f">>> [AUDIO RAW] level={level:.4f}")
+
+                # Robot konuşurken yeni kayıt başlatma
                 if self._busy and not recording:
                     continue
 
-                audio_float32 = np.array(frame, dtype=np.float32) / 32768.0
-                audio_float32 = audio_float32 * 2.5
-                level = np.max(np.abs(audio_float32))
-                if level > 0.003:
-                    log_time(f">>> [AUDIO RAW] level={level:.4f}")
-                
-                audio_tensor = torch.from_numpy(audio_float32)
-                
-                speech_ts = get_speech_timestamps(
-                    audio_tensor,
-                    self.vad_model,
-                    sampling_rate=16000,
-                    threshold=0.15
-                )
-                
-                audio_float32 = np.array(frame, dtype=np.float32) / 32768.0
-                audio_tensor = torch.from_numpy(audio_float32)
+                prebuffer.append(audio_float32.copy())
 
-                speech_ts = get_speech_timestamps(
-                    audio_tensor,
-                    self.vad_model,
-                    sampling_rate=16000,
-                    threshold=0.3,
-                )
+                if not recording:
+                    if level >= speech_start_level:
+                        voiced_run += 1
+                    else:
+                        voiced_run = max(0, voiced_run - 1)
 
-                if len(speech_ts) > 0:
-                    if not recording:
-                        log_time(">>> [AUDIO] Ses algılandı (VAD tetiklendi)...")
+                    if voiced_run >= min_voiced_frames_to_start:
                         recording = True
+                        silence_run = 0
 
-                    collected_audio.extend(frame)
-                    silent_frames = 0
+                        # konuşma başlarken prebuffer'ı da ekle
+                        collected_frames = list(prebuffer)
 
-                elif recording:
-                    collected_audio.extend(frame)
-                    silent_frames += 1
+                        log_time(">>> [AUDIO] Ses algılandı (rolling VAD tetiklendi)...")
+                    continue
 
-                    # yaklaşık 1.3 sn sessizlik
-                    if silent_frames > 40:
+                # recording=True
+                collected_frames.append(audio_float32.copy())
+
+                if level >= speech_continue_level:
+                    silence_run = 0
+                else:
+                    silence_run += 1
+
+                segment_too_long = len(collected_frames) >= max_segment_frames
+                silence_finished = silence_run >= silence_frames_to_stop
+
+                if silence_finished or segment_too_long:
+                    segment_audio = np.concatenate(collected_frames).astype(np.float32)
+
+                    duration_sec = len(segment_audio) / float(self.sample_rate)
+
+                    # son bir Silero doğrulaması: artık küçük frame değil, segment bazlı
+                    valid_speech = False
+                    if duration_sec >= min_segment_sec:
+                        valid_speech = self._segment_has_speech(segment_audio)
+
+                    if valid_speech:
                         log_time(">>> [VAD] Konuşma bitti, STT başlıyor...")
-                        audio_data = np.array(collected_audio, dtype=np.int16)
+                        audio_int16 = np.clip(segment_audio, -1.0, 1.0)
+                        audio_int16 = (audio_int16 * 32767.0).astype(np.int16)
+
                         threading.Thread(
                             target=self._process_speech,
-                            args=(audio_data,),
+                            args=(audio_int16,),
                             daemon=True
                         ).start()
+                    else:
+                        if DEBUG_AUDIO:
+                            log_time(">>> [VAD] Segment toplandı ama konuşma doğrulanamadı.")
 
-                        collected_audio = []
-                        recording = False
-                        silent_frames = 0
+                    # reset
+                    recording = False
+                    voiced_run = 0
+                    silence_run = 0
+                    collected_frames = []
+                    prebuffer.clear()
 
         except Exception as e:
             log_time(f">>> [RECORDER ERROR] {type(e).__name__}: {e}")
 
         finally:
             cleanup_recorder = None
-
             with self._recorder_lock:
                 if self.recorder is recorder:
                     cleanup_recorder = self.recorder
@@ -251,10 +323,29 @@ class PoodleSpeech:
 
             log_time(">>> [LISTENER] Thread durdu.")
 
+    def _segment_has_speech(self, audio_float32: np.ndarray) -> bool:
+        if len(audio_float32) == 0:
+            return False
+
+        try:
+            audio_tensor = torch.from_numpy(audio_float32)
+            speech_ts = get_speech_timestamps(
+                audio_tensor,
+                self.vad_model,
+                sampling_rate=self.sample_rate,
+                threshold=0.12,
+            )
+            return len(speech_ts) > 0
+        except Exception as e:
+            if DEBUG_AUDIO:
+                log_time(f">>> [SEGMENT VAD ERROR] {type(e).__name__}: {e}")
+            # fallback: energy üzerinden kabul et
+            return float(np.max(np.abs(audio_float32))) >= 0.08
+
     # =========================================================
     # STT
     # =========================================================
-    def _process_speech(self, audio_int16):
+    def _process_speech(self, audio_int16: np.ndarray):
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
             tmp_path = tmp.name
 
@@ -262,7 +353,7 @@ class PoodleSpeech:
             with wave.open(tmp_path, "wb") as wf:
                 wf.setnchannels(1)
                 wf.setsampwidth(2)
-                wf.setframerate(16000)
+                wf.setframerate(self.sample_rate)
                 wf.writeframes(audio_int16.tobytes())
 
             segments, _ = self.stt_model.transcribe(tmp_path, language=self.lang)
@@ -299,7 +390,7 @@ class PoodleSpeech:
     # =========================================================
     # TTS
     # =========================================================
-    def speak(self, text):
+    def speak(self, text: str):
         cleaned = self._clean_tts_text(text)
         if not cleaned:
             return
@@ -369,7 +460,7 @@ class PoodleSpeech:
 
         return text
 
-    def _speak_now(self, text):
+    def _speak_now(self, text: str):
         if not text:
             return
 
