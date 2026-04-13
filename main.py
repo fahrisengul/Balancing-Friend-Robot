@@ -7,6 +7,7 @@ import sys
 from face_ui import PoodleFace
 from speech_engine import PoodleSpeech
 from brain import PoodleBrain
+from brain.llm_client import LLMClient
 
 
 def main():
@@ -16,7 +17,10 @@ def main():
     clock = pygame.time.Clock()
 
     face = PoodleFace(1024, 600)
-    brain = PoodleBrain()
+    llm = LLMClient()
+    if hasattr(llm, "warmup"):
+        llm.warmup()
+    brain = PoodleBrain(llm)
 
     # Varsayılan mikrofon için -1, listeden seçmek istersen ilgili indexi yaz
     speech = PoodleSpeech(input_device_index=-1)
