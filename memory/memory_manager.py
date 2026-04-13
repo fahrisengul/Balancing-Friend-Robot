@@ -11,6 +11,10 @@ def get_connection():
 
 
 class MemoryManager:
+    def __init__(self):
+        self.conn = sqlite3.connect(...)
+        self.init_db()
+    
     def _now(self):
         return datetime.utcnow().isoformat()
 
@@ -401,3 +405,55 @@ class MemoryManager:
         """
 
         return self.conn.execute(q, tokens).fetchall()
+
+    def init_db(self):
+        """
+        RAG ve Streaming debug tablolarını oluşturur.
+        """
+        try:
+            # RETRIEVAL DEBUG
+            self.conn.execute("""
+            CREATE TABLE IF NOT EXISTS retrieval_debug (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                session_id TEXT,
+                intent TEXT,
+                mode TEXT,
+                query_text TEXT,
+                query_variants_json TEXT,
+                selected_chunks_json TEXT,
+                confidence REAL,
+                retrieval_source TEXT,
+                context_chars INTEGER,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+            """)
+    
+            self.conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_retrieval_debug_created_at
+            ON retrieval_debug(created_at)
+            """)
+    
+            # STREAMING DEBUG
+            self.conn.execute("""
+            CREATE TABLE IF NOT EXISTS streaming_debug (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                session_id TEXT,
+                intent TEXT,
+                flush_count INTEGER,
+                first_flush_ms INTEGER,
+                total_stream_ms INTEGER,
+                total_chunks INTEGER,
+                spoken_segments_json TEXT,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+            """)
+    
+            self.conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_streaming_debug_created_at
+            ON streaming_debug(created_at)
+            """)
+    
+            self.conn.commit()
+    
+        except Exception as e:
+            print(f">>> [DB INIT ERROR] {e}")
