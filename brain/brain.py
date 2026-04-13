@@ -390,7 +390,6 @@ class PoodleBrain:
             "reply": reply,
             "reply_summary": reply[:220],
         }
-
     def _select_llm_mode(
         self,
         intent: str,
@@ -420,7 +419,6 @@ class PoodleBrain:
             return "deep"
 
         return "balanced"
-
     def _depth_instruction(self, intent: str, mode: str, confidence: float, is_follow_up: bool) -> str:
         if is_follow_up:
             return (
