@@ -377,6 +377,7 @@ class MemoryManager:
                     "llm_call_count": len(llm_calls),
                 },
             }
+        
         def get_intent_hints(self, intent: str, mode: str):
             q = """
             SELECT hint, priority
