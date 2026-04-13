@@ -1,5 +1,6 @@
 import sqlite3
 from datetime import datetime, timedelta
+import os
 
 DB_PATH = "memory/poodle.db"
 
@@ -12,7 +13,9 @@ def get_connection():
 
 class MemoryManager:
     def __init__(self):
-        self.conn = sqlite3.connect(...)
+        import sqlite3
+        self.conn = sqlite3.connect(DB_PATH)
+        self.conn.row_factory = sqlite3.Row
         self.init_db()
     
     def _now(self):
