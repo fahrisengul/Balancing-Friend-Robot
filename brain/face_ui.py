@@ -1,102 +1,97 @@
 import pygame
-import random
-import os
 import math
-
+import random
 
 class PoodleFace:
-
     def __init__(self, width=1024, height=600):
         self.width = width
         self.height = height
 
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        bg_path = os.path.join(current_dir, "poddle_v3.png")
-
-        try:
-            self.bg_image = pygame.image.load(bg_path).convert()
-            self.bg_image = pygame.transform.scale(self.bg_image, (self.width, self.height))
-            self.has_bg = True
-        except:
-            self.has_bg = False
-
         self.state = "idle"
 
-        self.eye_scale = 1.0
-        self.target_eye = 1.0
+        self.center_x = width // 2
+        self.center_y = height // 2
 
-        self.mouth_open = 0.0
-        self.talk_phase = 0.0
+        self.eye_offset_x = 120
+        self.eye_offset_y = -40
 
-    # -------------------------------------------------
+        self.eye_radius = 22
+        self.pupil_radius = 8
+
+        self.target_gaze = (0, 0)
+        self.current_gaze = (0, 0)
+
+        self.time = 0
+
+        self.colors = {
+            "idle": (120, 120, 140),
+            "listening": (80, 160, 255),
+            "thinking": (180, 100, 255),
+            "speaking": (80, 255, 200),
+            "error": (255, 80, 80),
+        }
 
     def set_state(self, state):
         self.state = state
 
-        if state == "thinking":
-            self.target_eye = 1.2
+    def update_gaze(self, x, y):
+        dx = (x - self.center_x) / self.width
+        dy = (y - self.center_y) / self.height
 
-        elif state == "speaking":
-            self.target_eye = 0.9
+        self.target_gaze = (dx * 10, dy * 10)
 
-        elif state == "muted":
-            self.target_eye = 0.3
+    def _smooth_gaze(self):
+        cx, cy = self.current_gaze
+        tx, ty = self.target_gaze
 
-        else:
-            self.target_eye = 1.0
-
-    # -------------------------------------------------
-
-    def update(self):
-        self.eye_scale += (self.target_eye - self.eye_scale) * 0.1
-
-    # -------------------------------------------------
-
-    def draw(self, screen):
-
-        if self.has_bg:
-            screen.blit(self.bg_image, (0, 0))
-
-        self._draw_eyes(screen)
-        self._draw_mouth(screen)
-        self._draw_state(screen)
-
-    # -------------------------------------------------
-
-    def _draw_eyes(self, screen):
-
-        cx1, cy1 = 425, 290
-        cx2, cy2 = 605, 290
-
-        w = 70
-        h = int(140 * self.eye_scale)
-
-        pygame.draw.ellipse(screen, (10, 10, 10), (cx1 - w//2, cy1 - h//2, w, h))
-        pygame.draw.ellipse(screen, (10, 10, 10), (cx2 - w//2, cy2 - h//2, w, h))
-
-    # -------------------------------------------------
-
-    def _draw_mouth(self, screen):
-
-        mx, my = 515, 355
-
-        if self.state == "speaking":
-            self.talk_phase += 0.2
-            self.mouth_open = abs(math.sin(self.talk_phase)) * 20
-        else:
-            self.mouth_open *= 0.8
-
-        pygame.draw.ellipse(
-            screen,
-            (10, 10, 10),
-            (mx - 30, my - 10, 60, int(20 + self.mouth_open))
+        self.current_gaze = (
+            cx + (tx - cx) * 0.1,
+            cy + (ty - cy) * 0.1
         )
 
-    # -------------------------------------------------
+    def draw(self, screen):
+        self.time += 0.05
+        self._smooth_gaze()
 
-    def _draw_state(self, screen):
+        screen.fill((15, 15, 20))  # dark background
 
-        font = pygame.font.SysFont("Arial", 18)
+        color = self.colors.get(self.state, (120, 120, 140))
 
-        txt = font.render(self.state.upper(), True, (200, 200, 200))
-        screen.blit(txt, (20, 20))
+        # --- CENTER CORE ---
+        core_radius = 40 + math.sin(self.time * 2) * 3
+        pygame.draw.circle(screen, color, (self.center_x, self.center_y + 60), int(core_radius), 2)
+
+        # --- EYES ---
+        left_eye = (
+            self.center_x - self.eye_offset_x,
+            self.center_y + self.eye_offset_y
+        )
+
+        right_eye = (
+            self.center_x + self.eye_offset_x,
+            self.center_y + self.eye_offset_y
+        )
+
+        for ex, ey in [left_eye, right_eye]:
+            pygame.draw.circle(screen, color, (ex, ey), self.eye_radius, 2)
+
+            gx, gy = self.current_gaze
+            pupil_pos = (int(ex + gx), int(ey + gy))
+
+            pygame.draw.circle(screen, color, pupil_pos, self.pupil_radius)
+
+        # --- AURA / STATE EFFECT ---
+        if self.state == "thinking":
+            r = 80 + math.sin(self.time * 3) * 5
+            pygame.draw.circle(screen, color, (self.center_x, self.center_y), int(r), 1)
+
+        if self.state == "listening":
+            r = 90 + math.sin(self.time * 4) * 8
+            pygame.draw.circle(screen, color, (self.center_x, self.center_y), int(r), 1)
+
+        if self.state == "speaking":
+            wave = math.sin(self.time * 8) * 10
+            pygame.draw.circle(screen, color, (self.center_x, self.center_y + 60), int(45 + wave), 2)
+
+        if self.state == "error":
+            pygame.draw.circle(screen, (255, 0, 0), (self.center_x, self.center_y), 100, 1)
