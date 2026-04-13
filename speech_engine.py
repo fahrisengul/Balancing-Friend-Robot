@@ -177,6 +177,21 @@ class PoodleSpeech:
                     continue
 
                 audio_float32 = np.array(frame, dtype=np.float32) / 32768.0
+                audio_float32 = audio_float32 * 2.5
+                level = np.max(np.abs(audio_float32))
+                if level > 0.003:
+                    log_time(f">>> [AUDIO RAW] level={level:.4f}")
+                
+                audio_tensor = torch.from_numpy(audio_float32)
+                
+                speech_ts = get_speech_timestamps(
+                    audio_tensor,
+                    self.vad_model,
+                    sampling_rate=16000,
+                    threshold=0.15
+                )
+                
+                audio_float32 = np.array(frame, dtype=np.float32) / 32768.0
                 audio_tensor = torch.from_numpy(audio_float32)
 
                 speech_ts = get_speech_timestamps(
