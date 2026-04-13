@@ -1,3 +1,4 @@
+import json
 import threading
 import time
 
@@ -224,6 +225,10 @@ class Orchestrator:
         try:
             cleaned = self._clean_for_speech(text)
             if cleaned:
+                flush_count += 1
+                if first_flush_ms is None:
+                    first_flush_ms = int((time.perf_counter() - stream_started_at) * 1000)
+                spoken_segments.append(cleaned)
                 self.speech.speak(cleaned)
                 self.speech.flush_pending_tts()
         finally:
@@ -233,6 +238,12 @@ class Orchestrator:
     # STREAMING COMMAND FLOW
     # =========================================================
     def _process_command_stream(self, text):
+        stream_started_at = time.perf_counter()
+        first_flush_ms = None
+        flush_count = 0
+        total_chunks = 0
+        spoken_segments = []
+        inferred_intent = "general"
         buffer = _StreamingBuffer(
             min_flush_words=self.min_flush_words,
             max_flush_words=self.max_flush_words,
@@ -258,6 +269,7 @@ class Orchestrator:
                     break
 
                 if item_type == "chunk":
+                    total_chunks += 1
                     buffer.add(chunk_text)
 
                     if buffer.should_flush():
@@ -266,6 +278,10 @@ class Orchestrator:
 
                         if cleaned:
                             self.set_state("speaking")
+                            flush_count += 1
+                            if first_flush_ms is None:
+                                first_flush_ms = int((time.perf_counter() - stream_started_at) * 1000)
+                            spoken_segments.append(cleaned)
                             self.speech.speak(cleaned)
                             self.speech.flush_pending_tts()
                             spoke_anything = True
@@ -276,6 +292,10 @@ class Orchestrator:
 
                     if cleaned:
                         self.set_state("speaking")
+                            flush_count += 1
+                            if first_flush_ms is None:
+                                first_flush_ms = int((time.perf_counter() - stream_started_at) * 1000)
+                            spoken_segments.append(cleaned)
                         self.speech.speak(cleaned)
                         self.speech.flush_pending_tts()
                         spoke_anything = True
@@ -287,6 +307,10 @@ class Orchestrator:
                 cleaned = self._clean_for_speech(remainder)
                 if cleaned:
                     self.set_state("speaking")
+                            flush_count += 1
+                            if first_flush_ms is None:
+                                first_flush_ms = int((time.perf_counter() - stream_started_at) * 1000)
+                            spoken_segments.append(cleaned)
                     self.speech.speak(cleaned)
                     self.speech.flush_pending_tts()
                     spoke_anything = True
