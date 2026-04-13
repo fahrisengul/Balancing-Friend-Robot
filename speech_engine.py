@@ -6,6 +6,7 @@ import platform
 import subprocess
 import time
 from datetime import datetime
+
 from pvrecorder import PvRecorder
 import numpy as np
 import torch
@@ -23,19 +24,20 @@ def log_time(message):
 
 
 class PoodleSpeech:
-    def __init__(self, lang="tr", input_device_index=-1):
+    def __init__(self, lang="tr", input_device_index=None):
         self.lang = lang
         self.frame_length = 512
         self.event_queue = []
 
         self._listener_running = False
-        self._shutting_down = False
         self._busy = False
         self._muted = False
 
         self.recorder = None
         self.listener_thread = None
         self._recorder_lock = threading.Lock()
+
+        self.device_index = input_device_index
 
         self._pending_phrase = ""
         self._pending_phrase_since = 0.0
@@ -48,36 +50,42 @@ class PoodleSpeech:
         self.stt_model = WhisperModel("base", device="cpu", compute_type="int8")
         self.vad_model = load_silero_vad()
         self.voice = PiperVoice.load("tr_TR-fahrettin-medium.onnx")
-
-        self.device_index = input_device_index
         log_time(">>> [SES] Tüm sistemler hazır.")
 
     # =========================================================
-    # DEBUG / DEVICE
+    # DEVICE / DEBUG
     # =========================================================
     def debug_list_input_devices(self):
-        devices = PvRecorder.get_available_devices()
-        log_time(">>> [MIC DEBUG] Cihaz Listesi:")
-        for i, name in enumerate(devices):
-            print(f"    #{i}: {name}")
+        try:
+            devices = PvRecorder.get_available_devices()
+            log_time(">>> [MIC DEBUG] Cihaz Listesi:")
+            for i, name in enumerate(devices):
+                print(f"    #{i}: {name}")
+        except Exception as e:
+            log_time(f">>> [MIC DEBUG ERROR] {type(e).__name__}: {e}")
 
     def select_default_input_device(self):
-        devices = PvRecorder.get_available_devices()
+        try:
+            devices = PvRecorder.get_available_devices()
 
-        if self.device_index is not None and self.device_index >= 0:
-            if self.device_index < len(devices):
-                log_time(f">>> [MIC ACTIVE] Manuel seçim: #{self.device_index} {devices[self.device_index]}")
+            if self.device_index is not None and self.device_index >= 0:
+                if self.device_index < len(devices):
+                    log_time(f">>> [MIC ACTIVE] Manuel seçim: #{self.device_index} {devices[self.device_index]}")
+                    return self.device_index
+
+            if devices:
+                self.device_index = 0
+                log_time(f">>> [MIC ACTIVE] Otomatik seçim: #0 {devices[0]}")
                 return self.device_index
 
-        self.device_index = -1
+            self.device_index = -1
+            log_time(">>> [MIC ACTIVE] Cihaz bulunamadı, default (-1) kullanılacak.")
+            return self.device_index
 
-        try:
-            default_name = devices[0] if devices else "Default"
-            log_time(f">>> [MIC ACTIVE] Otomatik seçim: #0 {default_name}")
-        except Exception:
-            log_time(">>> [MIC ACTIVE] Otomatik seçim: default cihaz")
-
-        return self.device_index
+        except Exception as e:
+            log_time(f">>> [MIC SELECT ERROR] {type(e).__name__}: {e}")
+            self.device_index = -1
+            return self.device_index
 
     # =========================================================
     # STATE
@@ -95,34 +103,37 @@ class PoodleSpeech:
         if self._listener_running:
             return
 
+        if self.device_index is None or self.device_index < 0:
+            self.select_default_input_device()
+
         self._listener_running = True
-        self._shutting_down = False
         self.listener_thread = threading.Thread(target=self._listener_loop, daemon=True)
         self.listener_thread.start()
         log_time("[DINLEME MODU] Arka plan dinlemesi aktif.")
 
     def stop_auto_listener(self):
         self._listener_running = False
-        self._shutting_down = True
 
-        # Thread'in recorder.read() içinden kontrollü çıkabilmesi için
-        # recorder cleanup yalnız burada yapılır.
         if self.listener_thread and self.listener_thread.is_alive():
-            self.listener_thread.join(timeout=2.5)
+            self.listener_thread.join(timeout=2.0)
 
+        # Thread kapandıktan sonra recorder hâlâ duruyorsa burada fallback cleanup
+        recorder_to_cleanup = None
         with self._recorder_lock:
             if self.recorder is not None:
-                try:
-                    self.recorder.stop()
-                except Exception:
-                    pass
-
-                try:
-                    self.recorder.delete()
-                except Exception:
-                    pass
-
+                recorder_to_cleanup = self.recorder
                 self.recorder = None
+
+        if recorder_to_cleanup is not None:
+            try:
+                recorder_to_cleanup.stop()
+            except Exception:
+                pass
+
+            try:
+                recorder_to_cleanup.delete()
+            except Exception:
+                pass
 
         self.listener_thread = None
 
@@ -131,42 +142,35 @@ class PoodleSpeech:
             return self.event_queue.pop(0)
         return {"type": "none"}
 
-    def get_pending_command(self):
-        evt = self.get_pending_event()
-        if evt.get("type") == "command":
-            return evt.get("text")
-        return None
-
     # =========================================================
     # LISTENER LOOP
     # =========================================================
     def _listener_loop(self):
-        local_recorder = None
+        recorder = None
 
         try:
-            local_recorder = PvRecorder(
-                device_index=self.device_index,
+            log_time(f">>> [LISTENER] Thread başladı. device_index={self.device_index}")
+
+            recorder = PvRecorder(
+                device_index=self.device_index if self.device_index is not None else -1,
                 frame_length=self.frame_length
             )
-            local_recorder.start()
+            recorder.start()
 
             with self._recorder_lock:
-                self.recorder = local_recorder
+                self.recorder = recorder
+
+            log_time(">>> [LISTENER] PvRecorder başlatıldı.")
 
             collected_audio = []
             silent_frames = 0
             recording = False
 
-            while self._listener_running and not self._shutting_down:
+            while self._listener_running:
                 try:
-                    frame = local_recorder.read()
+                    frame = recorder.read()
                 except Exception as e:
-                    if self._shutting_down:
-                        break
                     log_time(f">>> [RECORDER READ ERROR] {type(e).__name__}: {e}")
-                    break
-
-                if self._shutting_down:
                     break
 
                 if self._busy:
@@ -197,6 +201,7 @@ class PoodleSpeech:
                     collected_audio.extend(frame)
                     silent_frames += 1
 
+                    # yaklaşık 1.3 sn sessizlik
                     if silent_frames > 40:
                         log_time(">>> [VAD] Konuşma bitti, STT başlıyor...")
                         audio_data = np.array(collected_audio, dtype=np.int16)
@@ -214,17 +219,30 @@ class PoodleSpeech:
             log_time(f">>> [RECORDER ERROR] {type(e).__name__}: {e}")
 
         finally:
-            # Recorder cleanup burada yapılmıyor.
-            # Double delete / race condition'i önlemek için tek cleanup noktası stop_auto_listener().
-            pass
+            cleanup_recorder = None
+
+            with self._recorder_lock:
+                if self.recorder is recorder:
+                    cleanup_recorder = self.recorder
+                    self.recorder = None
+
+            if cleanup_recorder is not None:
+                try:
+                    cleanup_recorder.stop()
+                except Exception:
+                    pass
+
+                try:
+                    cleanup_recorder.delete()
+                except Exception:
+                    pass
+
+            log_time(">>> [LISTENER] Thread durdu.")
 
     # =========================================================
     # STT
     # =========================================================
     def _process_speech(self, audio_int16):
-        if self._shutting_down:
-            return
-
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
             tmp_path = tmp.name
 
@@ -243,9 +261,6 @@ class PoodleSpeech:
                 os.remove(tmp_path)
             except Exception:
                 pass
-
-        if self._shutting_down:
-            return
 
         if not text or len(text) < 2:
             return
@@ -343,7 +358,7 @@ class PoodleSpeech:
         return text
 
     def _speak_now(self, text):
-        if not text or self._shutting_down:
+        if not text:
             return
 
         log_time(f"Poodle: {text}")
