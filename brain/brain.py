@@ -391,7 +391,7 @@ class PoodleBrain:
             "reply_summary": reply[:220],
         }
 
-        def _select_llm_mode(
+    def _select_llm_mode(
         self,
         intent: str,
         mode: str,
