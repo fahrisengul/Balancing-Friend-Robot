@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from db import get_connection
+from .db import get_connection
 
 
 class MemoryManager:
