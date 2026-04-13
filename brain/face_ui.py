@@ -100,3 +100,21 @@ class PoodleFace:
 
         txt = font.render(self.state.upper(), True, (200, 200, 200))
         screen.blit(txt, (20, 20))
+
+    def update_gaze(self, x, y):
+        """
+        main.py uyumluluğu için gaze wrapper.
+        Eğer sınıfta başka bir bakış metodu varsa onu kullanır.
+        """
+        if hasattr(self, "set_gaze_target"):
+            return self.set_gaze_target(x, y)
+
+        if hasattr(self, "look_at"):
+            return self.look_at(x, y)
+
+        if hasattr(self, "set_eye_target"):
+            return self.set_eye_target(x, y)
+
+        # fallback: koordinatları sakla
+        self.gaze_x = x
+        self.gaze_y = y
