@@ -400,4 +400,5 @@ class MemoryManager:
             """
     
             return self.conn.execute(q, tokens).fetchall()
+            
             conn.commit()
