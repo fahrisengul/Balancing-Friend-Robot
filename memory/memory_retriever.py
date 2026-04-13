@@ -521,3 +521,25 @@ class MemoryRetriever:
              .replace("ö", "o")
              .replace("ü", "u")
         )
+
+    def _rewrite_query(self, text: str, intent: str, mode: str):
+        norm = self._normalize(text)
+        tokens = norm.split()
+    
+        # SQL intent hints
+        hints = self.memory.get_intent_hints(intent, mode)
+        hint_texts = [h[0] for h in hints]
+    
+        # SQL topic aliases
+        alias_rows = self.memory.get_topic_aliases(tokens)
+        topic_hints = [r[0] for r in alias_rows]
+    
+        queries = [norm]
+    
+        if topic_hints:
+            queries.append(" ".join(topic_hints))
+    
+        if hint_texts:
+            queries.append(f"{norm} {' '.join(hint_texts[:2])}")
+    
+        return list(set(queries))
