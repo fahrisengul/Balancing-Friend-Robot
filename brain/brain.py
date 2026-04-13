@@ -199,17 +199,26 @@ class PoodleBrain:
         )
 
         context = bundle["context_text"]
+        selected_chunks = bundle.get("selected_chunks", [])
         confidence = float(bundle["confidence"])
+        retrieval_source = bundle.get("source", "none")
         memory_used = bool(context.strip())
 
-        llm_mode = self._select_llm_mode(intent=intent, mode=mode, confidence=confidence)
+        llm_mode = self._select_llm_mode(
+            intent=intent,
+            mode=mode,
+            confidence=confidence,
+            selected_chunks=selected_chunks,
+        )
 
-        prompt = self._build_prompt(
+        prompt = self._build_prompt_v2(
             text=effective_text,
             intent=intent,
             mode=mode,
-            context=context,
             confidence=confidence,
+            retrieval_source=retrieval_source,
+            selected_chunks=selected_chunks,
+            context=context,
             is_follow_up=resolved["is_follow_up"],
         )
 
@@ -299,6 +308,9 @@ class PoodleBrain:
             "başka ne",
             "devam et",
             "onu tekrar",
+            "biraz aç",
+            "daha detaylı",
+            "peki ya",
         ]
 
         is_follow_up = any(marker in norm for marker in follow_up_markers)
@@ -310,25 +322,22 @@ class PoodleBrain:
             }
 
         prev_topic = self.last_turn.get("resolved_text") or ""
-        prev_intent = self.last_turn.get("intent") or "general"
+        prev_reply = self.last_turn.get("reply_summary") or ""
 
         if prev_topic:
-            effective = f"Önceki konu: {prev_topic}. Yeni istek: {raw}"
+            effective = (
+                f"Önceki kullanıcı konusu: {prev_topic}. "
+                f"Önceki yanıt özeti: {prev_reply}. "
+                f"Yeni istek: {raw}"
+            )
         else:
             effective = raw
-
-        # follow-up ise intent'i daha iyi koru
-        if prev_intent in {"concept_explanation", "exam_support", "education_topics"}:
-            return {
-                "is_follow_up": True,
-                "effective_text": effective,
-            }
 
         return {
             "is_follow_up": True,
             "effective_text": effective,
         }
-
+        
     # =========================================================
     # INTERNAL FLOW
     # =========================================================
@@ -379,9 +388,18 @@ class PoodleBrain:
             "intent": intent,
             "mode": mode,
             "reply": reply,
+            "reply_summary": reply[:220],
         }
 
-    def _select_llm_mode(self, intent: str, mode: str, confidence: float) -> str:
+        def _select_llm_mode(
+        self,
+        intent: str,
+        mode: str,
+        confidence: float,
+        selected_chunks: Optional[list] = None,
+    ) -> str:
+        selected_chunks = selected_chunks or []
+
         if intent in {"ask_name", "ask_identity", "audio_check", "thanks", "greeting", "farewell"}:
             return "deterministic"
 
@@ -389,44 +407,19 @@ class PoodleBrain:
             return "deep"
 
         if intent == "education_topics":
+            if confidence >= 0.60 or len(selected_chunks) >= 2:
+                return "deep"
             return "balanced"
-
-        if confidence >= 0.70:
-            return "deep"
-
-        if confidence >= 0.45:
-            return "balanced"
-
-        return "balanced"
-
-    def _build_prompt(
-        self,
-        text: str,
-        intent: str,
-        mode: str,
-        context: str,
-        confidence: float,
-        is_follow_up: bool,
-    ) -> str:
-        parts = [SYSTEM_PROMPT]
 
         if mode == "education":
-            parts.append(EDUCATION_PROMPT)
-        else:
-            parts.append(GENERAL_PROMPT)
+            if confidence >= 0.70:
+                return "deep"
+            return "balanced"
 
-        parts.append(self._depth_instruction(intent=intent, mode=mode, confidence=confidence, is_follow_up=is_follow_up))
+        if confidence >= 0.75:
+            return "deep"
 
-        if context:
-            parts.append("Bağlam:")
-            parts.append(context)
-        else:
-            parts.append("Bağlam: Kullanılabilir ek bağlam bulunamadı. Güvenli ve dürüst kal.")
-
-        parts.append(f"Soru: {text}")
-        parts.append("Cevap:")
-
-        return "\n\n".join(parts).strip()
+        return "balanced"
 
     def _depth_instruction(self, intent: str, mode: str, confidence: float, is_follow_up: bool) -> str:
         if is_follow_up:
@@ -664,3 +657,200 @@ class PoodleBrain:
              .replace("ö", "o")
              .replace("ü", "u")
         )
+
+    def _build_prompt_v2(
+        self,
+        text: str,
+        intent: str,
+        mode: str,
+        confidence: float,
+        retrieval_source: str,
+        selected_chunks: list,
+        context: str,
+        is_follow_up: bool,
+    ) -> str:
+        parts = [SYSTEM_PROMPT]
+
+        if mode == "education":
+            parts.append(EDUCATION_PROMPT)
+        else:
+            parts.append(GENERAL_PROMPT)
+
+        parts.append(self._build_answer_contract(
+            intent=intent,
+            mode=mode,
+            confidence=confidence,
+            is_follow_up=is_follow_up,
+            selected_chunks=selected_chunks,
+        ))
+
+        parts.append(self._build_retrieval_directive(
+            confidence=confidence,
+            retrieval_source=retrieval_source,
+            selected_chunks=selected_chunks,
+        ))
+
+        parts.append(self._build_conversation_frame(
+            text=text,
+            intent=intent,
+            is_follow_up=is_follow_up,
+        ))
+
+        if context:
+            parts.append("KULLANILABILIR BAGLAM")
+            parts.append(context)
+        else:
+            parts.append("KULLANILABILIR BAGLAM")
+            parts.append("Ek bağlam bulunamadı. Güvenli kal, uydurma yapma, yalnız genel ve doğru çerçeve kur.")
+
+        parts.append("YANIT KURALLARI")
+        parts.append(self._build_output_rules(intent=intent, mode=mode, confidence=confidence))
+
+        parts.append("Şimdi kullanıcıya doğrudan yanıt ver.")
+        return "\n\n".join(parts).strip()
+
+    def _build_answer_contract(
+        self,
+        intent: str,
+        mode: str,
+        confidence: float,
+        is_follow_up: bool,
+        selected_chunks: list,
+    ) -> str:
+        if is_follow_up:
+            return (
+                "YANIT AMACI\n"
+                "- Bu soru önceki konuşmanın devamıdır.\n"
+                "- Önceki konuyu koru.\n"
+                "- Gerekirse yeni ayrıntı, örnek veya ek açıklama ver.\n"
+                "- Konuyu değiştirme."
+            )
+
+        if mode == "education":
+            if intent == "education_topics":
+                return (
+                    "YANIT AMACI\n"
+                    "- İlgili konu başlıklarını düzenli biçimde ver.\n"
+                    "- Gerekirse her başlık için çok kısa açıklama ekle.\n"
+                    "- Bağlam güçlüyse daha kapsamlı ol."
+                )
+
+            if intent == "concept_explanation":
+                return (
+                    "YANIT AMACI\n"
+                    "- Önce net tanımı ver.\n"
+                    "- Sonra sade açıklama yap.\n"
+                    "- Uygunsa kısa örnek ekle.\n"
+                    "- Uydurma teknik detay verme."
+                )
+
+            if intent == "exam_support":
+                return (
+                    "YANIT AMACI\n"
+                    "- Önce kısa çerçeve ver.\n"
+                    "- Sonra uygulanabilir öneriler sun.\n"
+                    "- Gerekirse yaygın hata ve çalışma önerisi ekle."
+                )
+
+        if confidence >= 0.75 and len(selected_chunks) >= 2:
+            return (
+                "YANIT AMACI\n"
+                "- Bağlam güçlü.\n"
+                "- Açıklayıcı, değerli ve doğal bir yanıt ver.\n"
+                "- Konu dışına çıkma."
+            )
+
+        return (
+            "YANIT AMACI\n"
+            "- Soruya doğrudan, doğal ve faydalı cevap ver.\n"
+            "- Bilmediğin şeyi uydurma."
+        )
+
+    def _build_retrieval_directive(
+        self,
+        confidence: float,
+        retrieval_source: str,
+        selected_chunks: list,
+    ) -> str:
+        chunk_count = len(selected_chunks)
+
+        if chunk_count == 0:
+            return (
+                "BAGLAM KULLANIM TALIMATI\n"
+                "- Şu an güçlü retrieval bağlamı yok.\n"
+                "- Genel, güvenli ve dürüst kal.\n"
+                "- Kesin olmayan ayrıntıları gerçekmiş gibi sunma."
+            )
+
+        if confidence >= 0.75:
+            return (
+                "BAGLAM KULLANIM TALIMATI\n"
+                "- Retrieval bağlamı güçlü.\n"
+                "- Önceliği bağlamdaki bilgilere ver.\n"
+                "- Bağlamla çelişen çıkarım yapma.\n"
+                "- Gerekirse bilgileri birleştir ama uydurma ekleme."
+            )
+
+        if confidence >= 0.50:
+            return (
+                "BAGLAM KULLANIM TALIMATI\n"
+                "- Retrieval bağlamı orta güçte.\n"
+                "- Bağlamı temel al ama belirsiz kısımlarda dikkatli ol.\n"
+                "- Emin olmadığın ayrıntıyı kesin ifade etme."
+            )
+
+        return (
+            "BAGLAM KULLANIM TALIMATI\n"
+            "- Retrieval bağlamı zayıf.\n"
+            "- Bağlamdan yalnız güvenli parçaları kullan.\n"
+            "- Geri kalan kısımda sade ve temkinli kal."
+        )
+
+    def _build_conversation_frame(self, text: str, intent: str, is_follow_up: bool) -> str:
+        parts = [
+            "KONUSMA CERCeVESI",
+            f"- intent: {intent}",
+        ]
+
+        if is_follow_up:
+            prev = self.last_turn.get("resolved_text") or ""
+            prev_reply = self.last_turn.get("reply") or ""
+
+            if prev:
+                parts.append(f"- onceki_kullanici_konusu: {prev}")
+
+            if prev_reply:
+                parts.append(f"- onceki_yanit_ozeti: {prev_reply[:220]}")
+
+        parts.append(f"- guncel_soru: {text}")
+        return "\n".join(parts)
+
+    def _build_output_rules(self, intent: str, mode: str, confidence: float) -> str:
+        rules = [
+            "- Yalnız Türkçe yaz.",
+            "- İngilizce sözcük karıştırma.",
+            "- Yapay zeka olduğunu söyleme.",
+            "- Gereksiz özür veya meta açıklama yapma.",
+            "- Sorunun istediği derinlikte cevap ver.",
+            "- Cümleleri doğal kur.",
+        ]
+
+        if mode == "education":
+            rules.extend([
+                "- Öğrenci seviyesinde açık anlat.",
+                "- Gerekirse maddeleme kullan.",
+                "- Kavram sorusunda tanım + açıklama + örnek sırasını koru.",
+            ])
+
+        if intent == "education_topics":
+            rules.append("- Konu listesi isteniyorsa düzenli ve kapsayıcı ol.")
+
+        if intent == "exam_support":
+            rules.append("- Öneri verirken uygulanabilir ve somut ol.")
+
+        if confidence >= 0.75:
+            rules.append("- Bağlam güçlü olduğu için daha kapsamlı ama kontrollü ol.")
+        elif confidence < 0.40:
+            rules.append("- Bağlam zayıf olduğu için kesin olmayan detayları abartma.")
+
+        return "\n".join(rules)
