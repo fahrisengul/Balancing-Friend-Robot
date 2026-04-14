@@ -4,7 +4,7 @@ import pygame
 from brain import PoodleBrain
 from speech import PoodleSpeech
 from speech.pipeline import AudioPipeline
-from character_ui import PoodleFace
+from character_ui import PoodleCharacter
 
 
 def main():
@@ -13,7 +13,7 @@ def main():
     pygame.display.set_caption("Poodle Robot - AI Brain")
     clock = pygame.time.Clock()
 
-    face = PoodleFace(1024, 600)
+    face = PoodleCharacter(1024, 600)
     brain = PoodleBrain()
     speech = PoodleSpeech()
 
