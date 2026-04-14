@@ -1,1 +1,1 @@
-from .brain import PoodleBrain
+from .core.brain import PoodleBrain
