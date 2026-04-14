@@ -5,7 +5,7 @@ import time
 import sys
 
 from face_ui import PoodleFace
-from .speech_engine import PoodleSpeech
+from speech import PoodleSpeech
 from brain import PoodleBrain
 from brain.llm_client import LLMClient
 
