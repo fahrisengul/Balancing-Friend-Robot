@@ -92,3 +92,51 @@ CREATE TABLE IF NOT EXISTS system_events (
     detail_text TEXT,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
+
+-- ===============================
+-- CONVERSATION TELEMETRY
+-- ===============================
+CREATE TABLE IF NOT EXISTS conversation_telemetry (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id TEXT,
+    intent TEXT,
+    response_source TEXT,
+    model_name TEXT,
+    latency_ms INTEGER,
+    memory_context_used INTEGER,
+    status TEXT,
+    error_text TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ===============================
+-- RETRIEVAL DEBUG
+-- ===============================
+CREATE TABLE IF NOT EXISTS retrieval_debug (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id TEXT,
+    intent TEXT,
+    mode TEXT,
+    query_text TEXT,
+    query_variants_json TEXT,
+    selected_chunks_json TEXT,
+    confidence REAL,
+    retrieval_source TEXT,
+    context_chars INTEGER,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ===============================
+-- STREAMING DEBUG
+-- ===============================
+CREATE TABLE IF NOT EXISTS streaming_debug (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id TEXT,
+    intent TEXT,
+    flush_count INTEGER,
+    first_flush_ms INTEGER,
+    total_stream_ms INTEGER,
+    total_chunks INTEGER,
+    spoken_segments_json TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
