@@ -87,17 +87,17 @@ class MemoryManager:
                 conn.commit()
         except Exception as e:
             print(f">>> [LOG STREAMING ERROR] {e}")
-            
+
     def cleanup_logs(self):
-    # Geçici stub — ileride gerçek bakım/retention kuralları buraya gelecek
+        # stub
         return
-    # Mevcut diğer log fonksiyonların (llm_call, telemetry, conversation vs.)
-    # aynen kalsın — sadece get_connection kullanıyor olduğundan emin ol.
-
+    
+    
     def rebuild_daily_metrics(self):
-    # Geçici stub
-    return
-
+        # stub
+        return
+    
+    
     def log_conversation(self, raw_text, normalized_text, intent, response_source, reply_text):
         try:
             with get_connection() as conn:
