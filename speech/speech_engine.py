@@ -18,41 +18,29 @@ class PoodleSpeech:
 
         self.lang = lang
 
-        # -------------------------
         # STATE
-        # -------------------------
         self._speaking = False
         self._listener_running = False
         self._listener_thread = None
         self._device_index = 0
-
-        # tts_buffer.py senden _pending_phrase bekliyorsa diye bırakıyorum
         self._pending_phrase = None
 
-        # -------------------------
-        # STT MODEL
-        # -------------------------
+        # STT
         print(f"{ts()} >>> [STT MODEL] yükleniyor...")
         self.stt_model = WhisperModel("base", compute_type="int8")
         print(f"{ts()} >>> [STT MODEL] faster_whisper hazır")
 
-        # -------------------------
-        # TTS ENGINE
-        # -------------------------
+        # TTS
         import pyttsx3
         self._engine = pyttsx3.init()
         self._engine.setProperty("rate", 180)
 
-        # -------------------------
         # SERVICES
-        # -------------------------
         self.stt_service = STTService(self)
         self._tts_buffer = TTSBuffer(self)
 
         print(f"{ts()} >>> [SES] Tüm sistemler hazır.")
 
-    # =========================================================
-    # PUBLIC SPEAK
     # =========================================================
     def speak(self, text):
         print(">>> [SPEAK CALL]")
@@ -63,8 +51,6 @@ class PoodleSpeech:
         print(f"Poodle: {text}")
         self._tts_buffer.speak(text)
 
-    # =========================================================
-    # INTERNAL SPEAK (BUFFER ÇAĞIRIR)
     # =========================================================
     def _speak_now(self, text):
         try:
@@ -79,13 +65,10 @@ class PoodleSpeech:
             self._speaking = False
 
     # =========================================================
-    # LISTENER CONTROL
-    # =========================================================
     def start_auto_listener(self, device_index=0):
         print(f"{ts()} >>> [LISTENER] start_auto_listener entered")
 
         if self._listener_running:
-            print(f"{ts()} >>> [LISTENER] already running")
             return
 
         self._listener_running = True
@@ -111,8 +94,6 @@ class PoodleSpeech:
         print(f"{ts()} >>> [LISTENER] Thread durdu.")
 
     # =========================================================
-    # LISTENER LOOP
-    # =========================================================
     def _listener_loop(self, device_index):
         recorder = None
 
@@ -128,7 +109,6 @@ class PoodleSpeech:
             recording = False
             silence_counter = 0
 
-            # Bunlar senin ortamında çalışan pratik eşikler
             start_threshold = 200
             continue_threshold = 120
             silence_limit = 12
@@ -136,18 +116,13 @@ class PoodleSpeech:
             while self._listener_running:
                 pcm = recorder.read()
 
-                try:
-                    level = max(abs(x) for x in pcm)
-                except ValueError:
-                    level = 0
+                level = max(abs(x) for x in pcm)
 
-                # konuşma başladı
                 if not recording and level > start_threshold:
                     recording = True
                     silence_counter = 0
                     frames.extend(pcm)
 
-                # konuşma devam ediyor
                 elif recording:
                     frames.extend(pcm)
 
@@ -156,7 +131,6 @@ class PoodleSpeech:
                     else:
                         silence_counter += 1
 
-                    # konuşma bitti
                     if silence_counter > silence_limit:
                         print(f"{ts()} >>> [VAD] Konuşma bitti, STT başlıyor...")
                         self._process_audio(frames)
@@ -171,19 +145,11 @@ class PoodleSpeech:
 
         finally:
             if recorder:
-                try:
-                    recorder.stop()
-                except Exception:
-                    pass
-                try:
-                    recorder.delete()
-                except Exception:
-                    pass
+                recorder.stop()
+                recorder.delete()
 
             print(f"{ts()} >>> [LISTENER] Thread durdu.")
 
-    # =========================================================
-    # AUDIO -> STT -> REPLY -> TTS
     # =========================================================
     def _process_audio(self, frames):
         try:
@@ -201,18 +167,37 @@ class PoodleSpeech:
             print(f"{ts()} >>> [STT ERROR] {e}")
 
     # =========================================================
-    # SIMPLE REPLY LOGIC
+    # 🔥 GELİŞTİRİLMİŞ REPLY LOGIC
     # =========================================================
     def _generate_reply(self, text):
         low = text.lower().strip()
 
-        if "merhaba" in low:
+        # normalize
+        low = low.replace(".", "").replace(",", "").replace("?", "")
+
+        # selam varyasyonları
+        if any(x in low for x in ["merhaba", "selam", "slm", "hello"]):
             return "Selam!"
-        if "nasılsın" in low:
+
+        # nasılsın varyasyonları
+        if any(x in low for x in ["nasılsın", "naber", "iyi misin"]):
             return "İyiyim. Sen nasılsın?"
-        if "orada mısın" in low:
-            return "Tabii ki buradayım."
-        if "teşekkür" in low:
+
+        # teşekkür varyasyonları
+        if any(x in low for x in ["teşekkür", "sağ ol", "thanks"]):
             return "Rica ederim."
 
+        # rica ederim yakala (karşılıklı diyalog)
+        if "rica ederim" in low:
+            return "Ne demek, her zaman."
+
+        # orada mısın
+        if "orada mısın" in low:
+            return "Buradayım."
+
+        # kullanıcı zaten anlamadım diyorsa loop’a girme
+        if "anlamadım" in low:
+            return "Daha net söyleyebilir misin?"
+
+        # fallback
         return "Son kısmı tam anlayamadım."
