@@ -2,6 +2,7 @@ import threading
 import time
 from datetime import datetime
 
+from faster_whisper import WhisperModel
 from speech.tts_buffer import TTSBuffer
 from speech.stt_service import STTService
 
@@ -16,22 +17,38 @@ class PoodleSpeech:
 
         self.lang = lang
 
-        # --- STATE ---
+        # =========================
+        # 🔴 CRITICAL STATE (FIX)
+        # =========================
         self._speaking = False
         self._pending_phrase = None
+
         self._listener_running = False
         self._paused = False
 
-        # --- STT ---
-        self.stt_service = STTService(self)
+        # =========================
+        # 🎤 STT MODEL (CRITICAL FIX)
+        # =========================
+        print(f"{ts()} >>> [STT MODEL] yükleniyor...")
+        self.stt_model = WhisperModel(
+            "base",
+            device="cpu",
+            compute_type="int8"
+        )
+        print(f"{ts()} >>> [STT MODEL] faster_whisper hazır")
 
-        # --- TTS ---
+        # =========================
+        # 🎧 SERVICES
+        # =========================
+        self.stt_service = STTService(self)
         self._tts_buffer = TTSBuffer(self)
 
         print(">>> [TTS INIT] mode=safe_fallback, device=None")
         print(f"{ts()} >>> [SES] Tüm sistemler hazır.")
 
-        # --- LISTENER THREAD ---
+        # =========================
+        # 🎤 THREAD
+        # =========================
         self._listener_thread = None
 
     # =========================
@@ -54,6 +71,7 @@ class PoodleSpeech:
 
     def stop_auto_listener(self):
         print(f"{ts()} >>> [LISTENER] stop_auto_listener entered")
+
         self._listener_running = False
 
         if self._listener_thread:
@@ -68,8 +86,8 @@ class PoodleSpeech:
             from pvrecorder import PvRecorder
 
             recorder = PvRecorder(device_index=device_index, frame_length=512)
-
             recorder.start()
+
             print(f"{ts()} >>> [LISTENER] PvRecorder başlatıldı.")
 
             frames = []
@@ -78,10 +96,8 @@ class PoodleSpeech:
 
             while self._listener_running:
                 frame = recorder.read()
-
                 level = max(abs(x) for x in frame)
 
-                # Basit VAD
                 if level > 200:
                     recording = True
                     silence_counter = 0
@@ -92,7 +108,6 @@ class PoodleSpeech:
                     frames.extend(frame)
 
                     if silence_counter > 10:
-                        # konuşma bitti
                         print(f"{ts()} >>> [VAD] Konuşma bitti, STT başlıyor...")
                         self._process_audio(frames)
                         frames = []
@@ -113,7 +128,7 @@ class PoodleSpeech:
             print(f"{ts()} >>> [LISTENER] Thread durdu.")
 
     # =========================
-    # 🎧 STT PROCESS
+    # 🎧 STT PIPELINE
     # =========================
     def _process_audio(self, frames):
         try:
@@ -124,15 +139,17 @@ class PoodleSpeech:
 
             print(f"{ts()} >>> [STT] '{text}'")
 
-            # direkt konuş
+            # 🔴 BURASI SENİN PIPELINE'INDA NORMALDE DIŞARIDA
+            # burada sadece fallback cevap var
             reply = self._generate_reply(text)
+
             self.speak(reply)
 
         except Exception as e:
             print(f"{ts()} >>> [STT ERROR] {e}")
 
     # =========================
-    # 🧠 SIMPLE BRAIN
+    # 🧠 TEMP BRAIN
     # =========================
     def _generate_reply(self, text):
         text = text.lower()
