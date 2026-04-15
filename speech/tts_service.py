@@ -1,12 +1,13 @@
+from pathlib import Path
 import subprocess
 import tempfile
 import os
+
 from memory.processing.system_params import SystemParams
-from piper import PiperVoice
+from piper.voice import PiperVoice
 
 
 class TTSService:
-
     def __init__(self, speech_engine=None):
         self.speech_engine = speech_engine
 
@@ -14,11 +15,10 @@ class TTSService:
         self.output_mode = self.config.get("output_mode", "system_default")
         self.output_name = self.config.get("output_name")
 
-        # 🔥 Piper init (bir kere yüklenir)
-        self.voice = PiperVoice.load(
-            model_path="models/tr_TR-voice.onnx",   # senin model path
-            config_path="models/tr_TR-voice.json"
-        )
+        project_root = Path(__file__).resolve().parents[1]
+        model_path = project_root / "models" / "tr_TR-fahrettin-medium.onnx"
+
+        self.voice = PiperVoice.load(str(model_path))
 
         print(f">>> [TTS INIT] mode={self.output_mode}, device={self.output_name}")
 
@@ -32,12 +32,14 @@ class TTSService:
         except Exception as e:
             print(f">>> [TTS ERROR] {e}")
 
+    def speak_now(self, text: str):
+        self.speak(text)
+
     def _generate_wav(self, text: str):
         temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
         path = temp_file.name
         temp_file.close()
 
-        # 🔥 GERÇEK SES ÜRETİMİ
         with open(path, "wb") as f:
             self.voice.synthesize(text, f)
 
@@ -46,24 +48,22 @@ class TTSService:
     def _play_audio(self, path: str):
         try:
             if self.output_mode == "system_default":
-                subprocess.run(["afplay", path])
+                subprocess.run(["afplay", path], check=False)
 
             elif self.output_mode == "macbook_builtin":
-                print(">>> [TTS] MacBook hoparlör")
-                subprocess.run(["afplay", path])
+                print(">>> [TTS] MacBook hoparlör (system default fallback)")
+                subprocess.run(["afplay", path], check=False)
 
             elif self.output_mode == "jabra_preferred":
-                print(">>> [TTS] Jabra (system routing)")
-                subprocess.run(["afplay", path])
+                print(">>> [TTS] Jabra tercih edildi (OS routing gerekli, system default fallback)")
+                subprocess.run(["afplay", path], check=False)
 
             else:
-                subprocess.run(["afplay", path])
+                print(">>> [TTS] Unknown mode, fallback")
+                subprocess.run(["afplay", path], check=False)
 
         finally:
             try:
                 os.remove(path)
             except Exception:
                 pass
-
-    def speak_now(self, text: str):
-        self.speak(text)
