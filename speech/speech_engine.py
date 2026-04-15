@@ -1,5 +1,6 @@
 import threading
 from datetime import datetime
+from pathlib import Path
 
 from faster_whisper import WhisperModel
 from piper.voice import PiperVoice
@@ -42,9 +43,10 @@ class PoodleSpeech:
         self.log_time(">>> Modeller yükleniyor (Whisper/VAD/Piper)...")
         self.stt_model = WhisperModel("base", device="cpu", compute_type="int8")
         self.vad_model = load_silero_vad()
-        self.voice = PiperVoice.load("tr_TR-fahrettin-medium.onnx")
+        project_root = Path(__file__).resolve().parents[1]
+        model_path = project_root / "models" / "tr_TR-fahrettin-medium.onnx"
+        self.voice = PiperVoice.load(str(model_path))
         self.log_time(">>> [SES] Tüm sistemler hazır.")
-
         self._vad_listener = RollingVADListener(self)
         self._stt_service = STTService(self)
         self._tts_service = TTSService(self)
