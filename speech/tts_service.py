@@ -6,7 +6,10 @@ from memory.processing.system_params import SystemParams
 
 class TTSService:
 
-    def __init__(self):
+    def __init__(self, speech_engine=None):
+        # speech_engine opsiyonel (backward compatibility)
+        self.speech_engine = speech_engine
+
         self.config = SystemParams.get_audio_config()
         self.output_mode = self.config.get("output_mode", "system_default")
         self.output_name = self.config.get("output_name")
