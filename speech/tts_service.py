@@ -2,6 +2,8 @@ from pathlib import Path
 import subprocess
 import tempfile
 import os
+import wave
+import tempfile
 
 from memory.processing.system_params import SystemParams
 from piper.voice import PiperVoice
@@ -39,10 +41,13 @@ class TTSService:
         temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
         path = temp_file.name
         temp_file.close()
-
-        with open(path, "wb") as f:
-            self.voice.synthesize(text, f)
-
+    
+        with wave.open(path, "wb") as wav_file:
+            wav_file.setnchannels(1)
+            wav_file.setsampwidth(2)
+            wav_file.setframerate(self.voice.config.sample_rate)
+            self.voice.synthesize(text, wav_file)
+    
         return path
 
     def _play_audio(self, path: str):
