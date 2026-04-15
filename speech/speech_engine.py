@@ -289,11 +289,18 @@ class PoodleSpeech:
     # TTS
     # ---------------------------------------------------------
     def speak(self, text):
-        if not text:
-            return
 
-        log_time(f"Poodle: {text}")
+    if getattr(self, "_speaking", False):
+        print(">>> [SPEAK BLOCKED] already speaking")
+        return
+
+    self._speaking = True
+
+    try:
+        print(f"Poodle: {text}")
         self._tts_buffer.speak(text)
+    finally:
+        self._speaking = False
 
     def _speak_now(self, text):
         self.pause_listening()
