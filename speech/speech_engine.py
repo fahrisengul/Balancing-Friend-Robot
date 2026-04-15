@@ -27,35 +27,30 @@ class PoodleSpeech:
         self.frame_length = 512
         self.device_index = input_device_index
         self.event_queue = []
-
+    
         self._listener_running = False
         self._busy = False
         self._muted = False
         self._paused = False
         self._listener_thread = None
         self.recorder = None
-
+    
         log_time(">>> Modeller yükleniyor (Whisper/VAD/Piper)...")
-
-        self.stt_service = STTService(self)
+    
+        # ✅ BURAYA GELECEK
+        try:
+            self.stt_service = STTService(self)
+        except TypeError:
             try:
-                self.stt_service = STTService(self)
+                self.stt_service = STTService(lang=self.lang)
             except TypeError:
-                try:
-                    self.stt_service = STTService(lang=self.lang)
-                except TypeError:
-        self.stt_service = STTService()
+                self.stt_service = STTService()
+    
         self._tts_service = TTSService(self)
         self._tts_buffer = TTSBuffer(self)
-
+    
         log_time(">>> [SES] Tüm sistemler hazır.")
-
-        debug_list_input_devices(log_fn=log_time)
-        self.device_index = select_default_input_device(
-            current_index=self.device_index,
-            log_fn=log_time,
-        )
-
+        
     # ---------------------------------------------------------
     # Listener control
     # ---------------------------------------------------------
