@@ -14,7 +14,6 @@ class TTSService:
 
         self.config = SystemParams.get_audio_config()
         self.output_mode = self.config.get("output_mode", "system_default")
-        self.output_name = self.config.get("output_name")
 
         project_root = Path(__file__).resolve().parents[1]
         model_path = project_root / "models" / "tr_TR-fahrettin-medium.onnx"
@@ -24,7 +23,7 @@ class TTSService:
 
         self.voice = PiperVoice.load(str(model_path))
 
-        print(f">>> [TTS INIT] mode={self.output_mode}, device={self.output_name}")
+        print(f">>> [TTS INIT] mode={self.output_mode}")
 
     def speak(self, text: str):
         if not text:
@@ -56,19 +55,7 @@ class TTSService:
 
     def _play_audio(self, path: str):
         try:
-            if self.output_mode == "system_default":
-                subprocess.run(["afplay", path], check=False)
-
-            elif self.output_mode == "macbook_only":
-                subprocess.run(["afplay", path], check=False)
-
-            elif self.output_mode == "safe_fallback":
-                subprocess.run(["afplay", path], check=False)
-                subprocess.run(["afplay", path], check=False)
-
-            else:
-                subprocess.run(["afplay", path], check=False)
-
+            subprocess.run(["afplay", path], check=False)
         finally:
             try:
                 os.remove(path)
