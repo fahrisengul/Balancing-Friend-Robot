@@ -32,6 +32,7 @@ class TTSService:
 
         try:
             wav_path = self._generate_wav(text)
+            print(f">>> [TTS DEBUG] wav created: {wav_path}")
             self._play_audio(wav_path)
         except Exception as e:
             print(f">>> [TTS ERROR] {e}")
@@ -54,21 +55,9 @@ class TTSService:
 
     def _play_audio(self, path: str):
         try:
-            if self.output_mode == "system_default":
-                subprocess.run(["afplay", path], check=False)
+            print(f">>> [TTS DEBUG] playing: {path}")
 
-            elif self.output_mode == "macbook_builtin":
-                print(">>> [TTS] MacBook hoparlör (system default fallback)")
-                subprocess.run(["afplay", path], check=False)
+            subprocess.run(["afplay", path], check=False)
 
-            elif self.output_mode == "jabra_preferred":
-                print(">>> [TTS] Jabra tercih edildi (system default fallback)")
-                subprocess.run(["afplay", path], check=False)
-
-            else:
-                print(">>> [TTS] Unknown mode, fallback")
-                subprocess.run(["afplay", path], check=False)
-
-        finally:
-            print(f">>> [TTS DEBUG] wav kept: {path}")
-                pass
+        except Exception as e:
+            print(f">>> [TTS PLAY ERROR] {e}")
