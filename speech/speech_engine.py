@@ -26,6 +26,7 @@ def log_time(message):
 
 class PoodleSpeech:
     def __init__(self, lang="tr", input_device_index=0):
+        self._pending_phrase = None
         self.lang = lang
         self.frame_length = 512
         self.input_samplerate = 16000
@@ -36,7 +37,6 @@ class PoodleSpeech:
         self._busy = False
         self._paused = False
         self._muted = False
-        self._pending_phrase = None
 
         self.device_index = input_device_index
         self.recorder = None
