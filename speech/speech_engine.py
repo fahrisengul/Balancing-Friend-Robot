@@ -36,8 +36,7 @@ class PoodleSpeech:
         self.recorder = None
     
         log_time(">>> Modeller yükleniyor (Whisper/VAD/Piper)...")
-    
-        # ✅ BURAYA GELECEK
+        
         try:
             self.stt_service = STTService(self)
         except TypeError:
@@ -49,8 +48,7 @@ class PoodleSpeech:
         self._tts_service = TTSService(self)
         self._tts_buffer = TTSBuffer(self)
     
-        log_time(">>> [SES] Tüm sistemler hazır.")
-        
+        log_time(">>> [SES] Tüm sistemler hazır.")        
     # ---------------------------------------------------------
     # Listener control
     # ---------------------------------------------------------
