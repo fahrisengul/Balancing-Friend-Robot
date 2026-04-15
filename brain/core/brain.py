@@ -3,10 +3,10 @@ import time
 from datetime import date
 from typing import Dict, Any
 
-from memory.memory_manager import MemoryManager
-from memory.memory_writer import MemoryWriter
-from memory.memory_retriever import MemoryRetriever
-from memory.faiss_adapter import FaissAdapter
+from memory.processing.memory_manager import MemoryManager
+from memory.processing.memory_writer import MemoryWriter
+from memory.retrieval.memory_retriever import MemoryRetriever
+from memory.retrieval.faiss_adapter import FaissAdapter
 
 from ..models import BrainResult
 from ..response.response_policy import ResponsePolicy
