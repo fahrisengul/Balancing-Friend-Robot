@@ -70,7 +70,5 @@ class TTSService:
                 subprocess.run(["afplay", path], check=False)
 
         finally:
-            try:
-                os.remove(path)
-            except Exception:
+            print(f">>> [TTS DEBUG] wav kept: {path}")
                 pass
