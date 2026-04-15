@@ -38,6 +38,13 @@ class PoodleSpeech:
         log_time(">>> Modeller yükleniyor (Whisper/VAD/Piper)...")
 
         self.stt_service = STTService(self)
+            try:
+                self.stt_service = STTService(self)
+            except TypeError:
+                try:
+                    self.stt_service = STTService(lang=self.lang)
+                except TypeError:
+        self.stt_service = STTService()
         self._tts_service = TTSService(self)
         self._tts_buffer = TTSBuffer(self)
 
