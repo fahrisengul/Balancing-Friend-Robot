@@ -140,3 +140,11 @@ class PoodleSpeech:
 
     def flush_pending_tts(self):
         self._tts_buffer.flush_pending_tts()
+
+    def pause_listening(self):
+        if hasattr(self, "listener"):
+            self.listener.pause()
+    
+    def resume_listening(self):
+        if hasattr(self, "listener"):
+            self.listener.resume()
