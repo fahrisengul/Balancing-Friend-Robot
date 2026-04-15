@@ -1,5 +1,4 @@
 from pathlib import Path
-import os
 import subprocess
 import tempfile
 import wave
@@ -14,7 +13,6 @@ class TTSService:
 
         self.config = SystemParams.get_audio_config()
         self.output_mode = self.config.get("output_mode", "system_default")
-        self.output_name = self.config.get("output_name")
 
         project_root = Path(__file__).resolve().parents[1]
         model_path = project_root / "models" / "tr_TR-fahrettin-medium.onnx"
@@ -24,7 +22,7 @@ class TTSService:
 
         self.voice = PiperVoice.load(str(model_path))
 
-        print(f">>> [TTS INIT] mode={self.output_mode}, device={self.output_name}")
+        print(f">>> [TTS INIT] mode={self.output_mode}")
 
     def speak(self, text: str):
         if not text:
@@ -52,12 +50,6 @@ class TTSService:
             self.voice.synthesize(text, wav_file)
 
         return path
-
     def _play_audio(self, path: str):
-        try:
-            print(f">>> [TTS DEBUG] playing: {path}")
-
-            subprocess.run(["afplay", path], check=False)
-
-        except Exception as e:
-            print(f">>> [TTS PLAY ERROR] {e}")
+        print(f">>> [TTS DEBUG] playing: {path}")
+        subprocess.run(["afplay", path], check=False)
