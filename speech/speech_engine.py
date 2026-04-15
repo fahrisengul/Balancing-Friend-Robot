@@ -65,10 +65,13 @@ class PoodleSpeech:
             self._speaking = False
 
     # =========================================================
+    # LISTENER CONTROL
+    # =========================================================
     def start_auto_listener(self, device_index=0):
         print(f"{ts()} >>> [LISTENER] start_auto_listener entered")
 
         if self._listener_running:
+            print(f"{ts()} >>> [LISTENER] already running")
             return
 
         self._listener_running = True
@@ -94,6 +97,8 @@ class PoodleSpeech:
         print(f"{ts()} >>> [LISTENER] Thread durdu.")
 
     # =========================================================
+    # LISTENER LOOP
+    # =========================================================
     def _listener_loop(self, device_index):
         recorder = None
 
@@ -109,14 +114,18 @@ class PoodleSpeech:
             recording = False
             silence_counter = 0
 
+            # 🔧 TUNED VALUES
             start_threshold = 200
             continue_threshold = 120
-            silence_limit = 12
+            silence_limit = 6   # 🔥 12 → 6 (kritik fix)
 
             while self._listener_running:
                 pcm = recorder.read()
 
-                level = max(abs(x) for x in pcm)
+                try:
+                    level = max(abs(x) for x in pcm)
+                except ValueError:
+                    level = 0
 
                 if not recording and level > start_threshold:
                     recording = True
@@ -134,70 +143,75 @@ class PoodleSpeech:
                     if silence_counter > silence_limit:
                         print(f"{ts()} >>> [VAD] Konuşma bitti, STT başlıyor...")
                         self._process_audio(frames)
+
                         frames = []
                         recording = False
                         silence_counter = 0
 
-                time.sleep(0.01)
-
         except Exception as e:
-            print(f"{ts()} >>> [LISTENER ERROR] {e}")
+            print(f">>> [LISTENER ERROR] {e}")
 
         finally:
             if recorder:
                 recorder.stop()
                 recorder.delete()
 
-            print(f"{ts()} >>> [LISTENER] Thread durdu.")
-
+    # =========================================================
+    # AUDIO PROCESS
     # =========================================================
     def _process_audio(self, frames):
         try:
-            text = self.stt_service.process_speech(frames, sample_rate=16000)
+            text = self.stt_service.process_speech(frames)
+
+            print(f"{ts()} >>> [STT] '{text}'")
 
             if not text:
                 return
 
-            print(f"{ts()} >>> [STT] '{text}'")
+            # 🔥 CLEAN TEXT
+            text = text.strip().lower()
+
+            # 🔥 NOISE FILTER
+            if len(text) < 3:
+                return
+
+            # 🔥 BAD STT FILTER
+            if any(x in text for x in ["sum kısmı", "çamaran", "yamadı"]):
+                return
 
             reply = self._generate_reply(text)
-            self.speak(reply)
+
+            if reply:
+                self.speak(reply)
 
         except Exception as e:
-            print(f"{ts()} >>> [STT ERROR] {e}")
+            print(f">>> [PROCESS ERROR] {e}")
 
     # =========================================================
-    # 🔥 GELİŞTİRİLMİŞ REPLY LOGIC
+    # 🔥 NEW REPLY ENGINE (KRİTİK)
     # =========================================================
     def _generate_reply(self, text):
-        low = text.lower().strip()
-
         # normalize
-        low = low.replace(".", "").replace(",", "").replace("?", "")
+        t = text.lower().strip()
 
-        # selam varyasyonları
-        if any(x in low for x in ["merhaba", "selam", "slm", "hello"]):
+        # greeting
+        if any(x in t for x in ["merhaba", "selam", "mahaba"]):
             return "Selam!"
 
-        # nasılsın varyasyonları
-        if any(x in low for x in ["nasılsın", "naber", "iyi misin"]):
+        # nasılsın
+        if "nasılsın" in t:
             return "İyiyim. Sen nasılsın?"
 
-        # teşekkür varyasyonları
-        if any(x in low for x in ["teşekkür", "sağ ol", "thanks"]):
+        # teşekkür
+        if "teşekkür" in t:
             return "Rica ederim."
 
-        # rica ederim yakala (karşılıklı diyalog)
-        if "rica ederim" in low:
-            return "Ne demek, her zaman."
+        # aynalama (mirror)
+        if len(t) > 5 and len(t) < 40:
+            return t.capitalize()
 
-        # orada mısın
-        if "orada mısın" in low:
-            return "Buradayım."
+        # 🔥 fallback (ama spam değil!)
+        if len(t) < 6:
+            return None
 
-        # kullanıcı zaten anlamadım diyorsa loop’a girme
-        if "anlamadım" in low:
-            return "Daha net söyleyebilir misin?"
-
-        # fallback
-        return "Son kısmı tam anlayamadım."
+        return "Tam anlayamadım, tekrar söyler misin?"
