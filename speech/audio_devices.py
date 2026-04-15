@@ -1,62 +1,59 @@
-from pvrecorder import PvRecorder
+import pvrecorder
+from memory.processing.system_params import SystemParams
 
 
-def debug_list_input_devices(log_fn):
-    try:
-        devices = PvRecorder.get_available_devices()
-        log_fn(">>> [MIC DEBUG] Cihaz Listesi:")
-        for i, name in enumerate(devices):
-            print(f"    #{i}: {name}")
-    except Exception as e:
-        log_fn(f">>> [MIC DEBUG ERROR] {type(e).__name__}: {e}")
+def list_audio_devices():
+    devices = pvrecorder.PvRecorder.get_available_devices()
+
+    print(">>> [MIC DEBUG] Cihaz Listesi:")
+    for i, d in enumerate(devices):
+        print(f"    #{i}: {d}")
+
+    return devices
 
 
-def select_default_input_device(current_index, log_fn):
-    try:
-        devices = PvRecorder.get_available_devices()
+def find_device_by_name(devices, name):
+    if not name:
+        return None
 
-        if current_index is not None and current_index >= 0:
-            if current_index < len(devices):
-                log_fn(f">>> [MIC ACTIVE] Manuel seçim: #{current_index} {devices[current_index]}")
-                return current_index
+    for i, d in enumerate(devices):
+        if name.lower() in d.lower():
+            return i
 
-        if not devices:
-            log_fn(">>> [MIC ACTIVE] Kayıt cihazı bulunamadı, default (-1) kullanılacak.")
-            return -1
+    return None
 
-        preferred_idx = None
-        preferred_keywords = [
-            "mikrofon",
-            "microphone",
-            "macbook pro mikrofonu",
-            "internal",
-            "built-in",
-        ]
-        avoid_keywords = [
-            "speaker",
-            "hoparlor",
-            "hoparlör",
-            "output",
-            "kulaklik cikisi",
-            "kulaklık çıkışı",
-        ]
 
-        for i, name in enumerate(devices):
-            low = name.lower()
+def select_input_device():
+    devices = list_audio_devices()
 
-            if any(bad in low for bad in avoid_keywords):
-                continue
+    config = SystemParams.get_audio_config()
 
-            if any(key in low for key in preferred_keywords):
-                preferred_idx = i
-                break
+    preferred_name = config.get("input_name")
+    preferred_index = config.get("input_index")
 
-        if preferred_idx is None:
-            preferred_idx = 0
+    # 1️⃣ İsim ile eşleştir
+    index = find_device_by_name(devices, preferred_name)
+    if index is not None:
+        print(f">>> [MIC SELECT] İsim ile seçildi: #{index} {devices[index]}")
+        return index
 
-        log_fn(f">>> [MIC ACTIVE] Otomatik seçim: #{preferred_idx} {devices[preferred_idx]}")
-        return preferred_idx
+    # 2️⃣ Index fallback
+    if preferred_index is not None:
+        try:
+            idx = int(preferred_index)
+            if 0 <= idx < len(devices):
+                print(f">>> [MIC SELECT] Index ile seçildi: #{idx} {devices[idx]}")
+                return idx
+        except Exception:
+            pass
 
-    except Exception as e:
-        log_fn(f">>> [MIC SELECT ERROR] {type(e).__name__}: {e}")
-        return -1
+    # 3️⃣ Otomatik seçim (fallback)
+    print(">>> [MIC SELECT] Otomatik seçim (fallback)")
+
+    for i, d in enumerate(devices):
+        if "macbook" in d.lower():
+            print(f">>> [MIC AUTO] #{i} {d}")
+            return i
+
+    print(">>> [MIC AUTO] Default index 0")
+    return 0
