@@ -216,7 +216,6 @@ class PoodleSpeech:
         from .audio_devices import debug_list_input_devices
         debug_list_input_devices(log_fn=log_time)
     
-    
     def select_default_input_device(self):
         from .audio_devices import select_default_input_device
         self.device_index = select_default_input_device(
