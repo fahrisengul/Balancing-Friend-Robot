@@ -140,3 +140,12 @@ CREATE TABLE IF NOT EXISTS streaming_debug (
     spoken_segments_json TEXT,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
+
+-- ===============================
+-- SYSTEM PARAMS
+-- ===============================
+CREATE TABLE IF NOT EXISTS system_params (
+    param_key TEXT PRIMARY KEY,
+    param_value TEXT,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
