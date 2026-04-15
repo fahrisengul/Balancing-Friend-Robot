@@ -36,6 +36,7 @@ class PoodleSpeech:
         self._busy = False
         self._paused = False
         self._muted = False
+        self._pending_phrase = None
 
         self.device_index = input_device_index
         self.recorder = None
