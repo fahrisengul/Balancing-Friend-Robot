@@ -154,7 +154,7 @@ class PoodleSpeech:
                     audio_tensor,
                     self.vad_model,
                     sampling_rate=self.input_samplerate,
-                    threshold=0.3,
+                    threshold=0.15,
                 )
 
                 if len(speech_ts) > 0:
