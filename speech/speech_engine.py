@@ -189,6 +189,20 @@ class PoodleSpeech:
         except Exception as e:
             print(f">>> [TTS ERROR] {e}")
 
-        finally:
-            self._speaking = False
-            self._pending_phrase = None
+    def _speak_now(self, text):   
+        try:
+            import pyttsx3
+    
+            if not hasattr(self, "_engine"):
+                self._engine = pyttsx3.init()
+                self._engine.setProperty('rate', 180)
+    
+            self._engine.say(text)
+            self._engine.runAndWait()
+    
+        except Exception as e:
+            print(f">>> [PYTTSX ERROR] {e}")
+    
+            finally:
+                self._speaking = False
+                self._pending_phrase = None
