@@ -93,3 +93,58 @@ class MemoryManager:
         return
     # Mevcut diğer log fonksiyonların (llm_call, telemetry, conversation vs.)
     # aynen kalsın — sadece get_connection kullanıyor olduğundan emin ol.
+
+    def rebuild_daily_metrics(self):
+    # Geçici stub
+    return
+
+    def log_conversation(self, raw_text, normalized_text, intent, response_source, reply_text):
+        try:
+            with get_connection() as conn:
+                conn.execute("""
+                    INSERT INTO conversation_logs
+                    (raw_text, normalized_text, intent, response_source, reply_text)
+                    VALUES (?, ?, ?, ?, ?)
+                """, (
+                    raw_text,
+                    normalized_text,
+                    intent,
+                    response_source,
+                    reply_text,
+                ))
+                conn.commit()
+        except Exception as e:
+            print(f">>> [LOG CONVERSATION ERROR] {e}")
+    
+    
+    def log_conversation_telemetry(
+        self,
+        session_id=None,
+        intent=None,
+        response_source=None,
+        model_name=None,
+        latency_ms=None,
+        memory_context_used=False,
+        status="ok",
+        error_text=None,
+    ):
+        try:
+            with get_connection() as conn:
+                conn.execute("""
+                    INSERT INTO conversation_logs
+                    (session_id, intent, response_source, model_name, latency_ms,
+                     memory_context_used, status, error_text)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    session_id,
+                    intent,
+                    response_source,
+                    model_name,
+                    latency_ms,
+                    1 if memory_context_used else 0,
+                    status,
+                    error_text,
+                ))
+                conn.commit()
+        except Exception as e:
+            print(f">>> [LOG TELEMETRY ERROR] {e}")
