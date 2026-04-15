@@ -1,9 +1,8 @@
 from pathlib import Path
+import os
 import subprocess
 import tempfile
-import os
 import wave
-import tempfile
 
 from memory.processing.system_params import SystemParams
 from piper.voice import PiperVoice
@@ -19,6 +18,9 @@ class TTSService:
 
         project_root = Path(__file__).resolve().parents[1]
         model_path = project_root / "models" / "tr_TR-fahrettin-medium.onnx"
+
+        if not model_path.exists():
+            raise FileNotFoundError(f"TTS model bulunamadı: {model_path}")
 
         self.voice = PiperVoice.load(str(model_path))
 
@@ -37,17 +39,17 @@ class TTSService:
     def speak_now(self, text: str):
         self.speak(text)
 
-    def _generate_wav(self, text: str):
+    def _generate_wav(self, text: str) -> str:
         temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
         path = temp_file.name
         temp_file.close()
-    
+
         with wave.open(path, "wb") as wav_file:
             wav_file.setnchannels(1)
             wav_file.setsampwidth(2)
             wav_file.setframerate(self.voice.config.sample_rate)
             self.voice.synthesize(text, wav_file)
-    
+
         return path
 
     def _play_audio(self, path: str):
@@ -60,7 +62,7 @@ class TTSService:
                 subprocess.run(["afplay", path], check=False)
 
             elif self.output_mode == "jabra_preferred":
-                print(">>> [TTS] Jabra tercih edildi (OS routing gerekli, system default fallback)")
+                print(">>> [TTS] Jabra tercih edildi (system default fallback)")
                 subprocess.run(["afplay", path], check=False)
 
             else:
