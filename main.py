@@ -1,4 +1,3 @@
-import sys
 import time
 import random
 import threading
@@ -7,7 +6,6 @@ import pygame
 
 from brain import PoodleBrain
 from speech import PoodleSpeech
-from speech.pipeline import AudioPipeline
 
 try:
     from character_ui import PoodleFace
@@ -63,70 +61,49 @@ def main():
     boot("brain created")
 
     boot("creating speech...")
-    speech = PoodleSpeech(input_device_index=0)
+    speech = PoodleSpeech()
     boot("speech created")
 
-    boot("creating pipeline...")
-    pipeline = AudioPipeline(speech=speech, brain=brain, face=face)
-    boot("pipeline created")
-
-    running = True
-    last_interaction_time = time.time()
-    idle_look_timer = 0
-
     boot("starting auto listener...")
-    speech.start_auto_listener()
+    speech.start_auto_listener(device_index=0)
     boot("auto listener started")
 
     print("\n--- Poodle Robot Aktif ---")
 
-    try:
-        loop_count = 0
+    running = True
+    last_interaction_time = time.time()
+    idle_look_timer = 0
+    loop_count = 0
 
+    try:
         while running:
             loop_count += 1
             now = time.time()
 
-            # DEBUG: loop yaşıyor mu?
             if loop_count % 300 == 0:
                 boot(f"main loop alive, count={loop_count}")
 
-            try:
-                evt = speech.get_pending_event()
-                if evt.get("type") != "none":
-                    boot(f"event received: {evt}")
-                    pipeline.process_event(evt)
-                    last_interaction_time = now
-            except Exception as e:
-                boot(f"event handling error: {type(e).__name__}: {e}")
-                traceback.print_exc()
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    boot("pygame.QUIT received")
+                    running = False
 
-            try:
-                for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
-                        boot("pygame.QUIT received")
+                elif event.type == pygame.KEYDOWN:
+                    boot(f"KEYDOWN received: {event.key}")
+
+                    if event.key == pygame.K_q:
+                        boot("Q pressed -> exiting")
                         running = False
 
-                    elif event.type == pygame.KEYDOWN:
-                        boot(f"KEYDOWN received: {event.key}")
+                    elif event.key == pygame.K_SPACE:
+                        boot("SPACE pressed -> test speak")
+                        threading.Thread(
+                            target=lambda: speech.speak("Selam!"),
+                            daemon=True,
+                        ).start()
 
-                        if event.key == pygame.K_q:
-                            boot("Q pressed -> exiting")
-                            running = False
-
-                        elif event.key == pygame.K_SPACE:
-                            boot("SPACE pressed -> test command thread")
-                            threading.Thread(
-                                target=lambda: pipeline._handle_command("Merhaba"),
-                                daemon=True,
-                            ).start()
-            except Exception as e:
-                boot(f"pygame event loop error: {type(e).__name__}: {e}")
-                traceback.print_exc()
-                running = False
-
-            try:
-                if face is not None:
+            if face is not None:
+                try:
                     if now - last_interaction_time > 10:
                         if now > idle_look_timer:
                             rx = random.randint(200, 800)
@@ -141,21 +118,15 @@ def main():
 
                     if hasattr(face, "draw"):
                         face.draw(screen)
-            except Exception as e:
-                boot(f"face draw/update error: {type(e).__name__}: {e}")
-                traceback.print_exc()
-                running = False
+                except Exception as e:
+                    boot(f"face error: {type(e).__name__}: {e}")
+                    traceback.print_exc()
 
-            try:
-                pygame.display.flip()
-                clock.tick(30)
-            except Exception as e:
-                boot(f"display/clock error: {type(e).__name__}: {e}")
-                traceback.print_exc()
-                running = False
+            pygame.display.flip()
+            clock.tick(30)
 
     except Exception as e:
-        boot(f"main() outer exception: {type(e).__name__}: {e}")
+        boot(f"main loop exception: {type(e).__name__}: {e}")
         traceback.print_exc()
 
     finally:
@@ -166,15 +137,8 @@ def main():
             boot(f"stop_auto_listener error: {type(e).__name__}: {e}")
             traceback.print_exc()
 
-        try:
-            pygame.quit()
-            boot("pygame.quit done")
-        except Exception as e:
-            boot(f"pygame.quit error: {type(e).__name__}: {e}")
-            traceback.print_exc()
-
-        boot("sys.exit about to run")
-        sys.exit()
+        pygame.quit()
+        boot("pygame.quit done")
 
 
 if __name__ == "__main__":
