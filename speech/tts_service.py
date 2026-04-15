@@ -44,11 +44,13 @@ class TTSService:
         path = temp_file.name
         temp_file.close()
 
+        audio = self.voice.synthesize(text)
+
         with wave.open(path, "wb") as wav_file:
             wav_file.setnchannels(1)
             wav_file.setsampwidth(2)
             wav_file.setframerate(self.voice.config.sample_rate)
-            self.voice.synthesize(text, wav_file)
+            wav_file.writeframes(audio)
 
         return path
 
