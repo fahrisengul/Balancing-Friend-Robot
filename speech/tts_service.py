@@ -39,21 +39,22 @@ class TTSService:
     def speak_now(self, text: str):
         self.speak(text)
 
+
     def _generate_wav(self, text: str) -> str:
-        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
-        path = temp_file.name
-        temp_file.close()
+    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
+    path = temp_file.name
+    temp_file.close()
 
-        audio = self.voice.synthesize(text)
+    with wave.open(path, "wb") as wav_file:
+        wav_file.setnchannels(1)
+        wav_file.setsampwidth(2)
+        wav_file.setframerate(self.voice.config.sample_rate)
 
-        with wave.open(path, "wb") as wav_file:
-            wav_file.setnchannels(1)
-            wav_file.setsampwidth(2)
-            wav_file.setframerate(self.voice.config.sample_rate)
-            wav_file.writeframes(audio)
+        for chunk in self.voice.synthesize(text):
+            wav_file.writeframes(chunk.audio_int16_bytes)
 
-        return path
-
+    return path
+    
     def _play_audio(self, path: str):
         try:
             # 🔊 Production routing
