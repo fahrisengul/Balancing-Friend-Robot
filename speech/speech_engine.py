@@ -190,22 +190,22 @@ class PoodleSpeech:
             print(f">>> [TTS ERROR] {e}")
 
     def _speak_now(self, text):
-            print(f"Poodle: {text}")
-    
-            try:
-                self._speaking = True
-    
-                self._engine.say(text)
-                self._engine.runAndWait()
-    
-            except Exception as e:
-                print(f">>> [TTS ERROR] {e}")
-    
-            finally:
-                self._speaking = False
-    
-                # pending varsa tekrar konuş
-                if self._pending_phrase:
-                    next_text = self._pending_phrase
-                    self._pending_phrase = None
-                    self.speak(next_text)
+        print(f"Poodle: {text}")
+
+        try:
+            self._speaking = True
+
+            self._engine.say(text)
+            self._engine.runAndWait()
+
+        except Exception as e:
+            print(f">>> [TTS ERROR] {e}")
+
+        finally:
+            self._speaking = False
+
+            # pending varsa tekrar konuş
+            if self._pending_phrase:
+                next_text = self._pending_phrase
+                self._pending_phrase = None
+                self.speak(next_text)
