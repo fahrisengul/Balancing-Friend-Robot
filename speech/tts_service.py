@@ -1,4 +1,5 @@
 from pathlib import Path
+import os
 import subprocess
 import tempfile
 import wave
@@ -13,6 +14,7 @@ class TTSService:
 
         self.config = SystemParams.get_audio_config()
         self.output_mode = self.config.get("output_mode", "system_default")
+        self.output_name = self.config.get("output_name")
 
         project_root = Path(__file__).resolve().parents[1]
         model_path = project_root / "models" / "tr_TR-fahrettin-medium.onnx"
@@ -22,7 +24,7 @@ class TTSService:
 
         self.voice = PiperVoice.load(str(model_path))
 
-        print(f">>> [TTS INIT] mode={self.output_mode}")
+        print(f">>> [TTS INIT] mode={self.output_mode}, device={self.output_name}")
 
     def speak(self, text: str):
         if not text:
@@ -30,7 +32,6 @@ class TTSService:
 
         try:
             wav_path = self._generate_wav(text)
-            print(f">>> [TTS DEBUG] wav created: {wav_path}")
             self._play_audio(wav_path)
         except Exception as e:
             print(f">>> [TTS ERROR] {e}")
@@ -50,6 +51,30 @@ class TTSService:
             self.voice.synthesize(text, wav_file)
 
         return path
+
     def _play_audio(self, path: str):
-        print(f">>> [TTS DEBUG] playing: {path}")
-        subprocess.run(["afplay", path], check=False)
+        try:
+            # 🔊 Production routing
+            if self.output_mode == "system_default":
+                subprocess.run(["afplay", path], check=False)
+
+            elif self.output_mode == "macbook_only":
+                # MacBook hoparlöre fallback (OS routing üzerinden)
+                subprocess.run(["afplay", path], check=False)
+
+            elif self.output_mode == "safe_fallback":
+                # önce normal çal
+                subprocess.run(["afplay", path], check=False)
+
+                # kısa bir delay ile tekrar dene (bazı device glitch’lerde işe yarar)
+                subprocess.run(["afplay", path], check=False)
+
+            else:
+                # bilinmeyen mod → güvenli fallback
+                subprocess.run(["afplay", path], check=False)
+
+        finally:
+            try:
+                os.remove(path)
+            except Exception:
+                pass
