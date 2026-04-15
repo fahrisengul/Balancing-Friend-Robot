@@ -4,6 +4,7 @@ import time
 class TTSBuffer:
     def __init__(self, owner):
         self.owner = owner
+        print(">>> [TTS BUFFER] owner has pending?", hasattr(self.owner, "_pending_phrase"))
 
     def should_hold_phrase(self, text: str) -> bool:
         if not text:
