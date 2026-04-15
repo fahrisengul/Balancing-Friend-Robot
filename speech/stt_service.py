@@ -1,64 +1,31 @@
-import os
-import wave
-import tempfile
 import numpy as np
 
 
 class STTService:
     def __init__(self, owner):
-        self.owner = owner  # speech_engine referansı
+        self.owner = owner
 
-    def process_speech(self, audio_int16):
+    def process_speech(self, audio_int16: np.ndarray) -> str:
         """
-        audio_int16: numpy array (int16, mono, 16kHz)
+        audio_int16: numpy array (int16 mono)
         """
 
         if audio_int16 is None or len(audio_int16) == 0:
             return ""
 
         try:
-            # -------------------------------------------------
-            # 1. Audio normalize (garanti altına al)
-            # -------------------------------------------------
-            audio_int16 = np.array(audio_int16, dtype=np.int16)
+            # Whisper expects float32 [-1,1]
+            audio_float = audio_int16.astype(np.float32) / 32768.0
 
-            # -------------------------------------------------
-            # 2. TEMP WAV oluştur
-            # -------------------------------------------------
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
-                tmp_path = tmp.name
-
-            with wave.open(tmp_path, "wb") as wf:
-                wf.setnchannels(1)       # mono
-                wf.setsampwidth(2)       # int16 → 2 byte
-                wf.setframerate(16000)   # 🔥 CRITICAL FIX
-                wf.writeframes(audio_int16.tobytes())
-
-            # -------------------------------------------------
-            # 3. Whisper / STT çağrısı
-            # -------------------------------------------------
-            segments, _ = self.owner.stt_model.transcribe(
-                tmp_path,
-                language=self.owner.lang
+            result = self.owner.stt_model.transcribe(
+                audio_float,
+                language=self.owner.lang,
+                fp16=False
             )
 
-            # -------------------------------------------------
-            # 4. Segment → text
-            # -------------------------------------------------
-            text = " ".join([seg.text for seg in segments]).strip()
-
+            text = result.get("text", "").strip()
             return text
 
         except Exception as e:
-            print(f">>> [STT INTERNAL ERROR] {type(e).__name__}: {e}")
+            print(f">>> [STT ERROR] {type(e).__name__}: {e}")
             return ""
-
-        finally:
-            # -------------------------------------------------
-            # 5. TEMP CLEANUP
-            # -------------------------------------------------
-            try:
-                if 'tmp_path' in locals() and os.path.exists(tmp_path):
-                    os.remove(tmp_path)
-            except Exception:
-                pass
