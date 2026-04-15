@@ -1,12 +1,18 @@
 import sqlite3
 from pathlib import Path
 from typing import Optional
+from contextlib import contextmanager
 
+MEMORY_DIR = Path(__file__).resolve().parents[1]
+DB_PATH = MEMORY_DIR / "poddle.db"
 
-BASE_DIR = Path(__file__).resolve().parent
-DB_PATH = BASE_DIR / "poodle.db"
-SCHEMA_PATH = BASE_DIR / "schema.sql"
-
+@contextmanager
+def get_connection():
+    conn = sqlite3.connect(str(DB_PATH), check_same_thread=False)
+    try:
+        yield conn
+    finally:
+        conn.close()
 
 def get_connection(db_path: Optional[Path] = None) -> sqlite3.Connection:
     """
