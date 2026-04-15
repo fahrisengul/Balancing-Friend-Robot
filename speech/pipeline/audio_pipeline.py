@@ -41,58 +41,31 @@ class AudioPipeline:
         except Exception as e:
             print(f">>> [LOG STREAMING ERROR] {e}")
 
-    def _speak_text(self, text: str, intent: str):
-        stream_started_at = time.perf_counter()
-        spoken_segments: list[str] = []
-        flush_count = 0
-        first_flush_ms = None
-
+    def _speak_text(self, text, intent=None):
         try:
-            self._set_face_state("speaking")
-
-            cleaned = (text or "").strip()
-            if not cleaned:
-                return
-
-            self.speech.speak(cleaned)
-            spoken_segments.append(cleaned)
-            flush_count += 1
-
-            if first_flush_ms is None:
-                first_flush_ms = int((time.perf_counter() - stream_started_at) * 1000)
-
-            self.speech.flush_pending_tts()
-
+            # 🔴 mic kapat
+            if hasattr(self.speech, "pause_listening"):
+                self.speech.pause_listening()
+    
+            self.speech.speak(text)
+    
         finally:
-            self._log_streaming_debug(
-                intent=intent,
-                started_at=stream_started_at,
-                spoken_segments=spoken_segments,
-                flush_count=flush_count,
-                first_flush_ms=first_flush_ms,
-            )
-            self._set_face_state("idle")
+            # 🟢 mic aç
+            if hasattr(self.speech, "resume_listening"):
+                self.speech.resume_listening()
 
-    def _handle_command(self, text: str):
-        self.speech.set_busy(True)
-
+    def _handle_command(self, text):
         try:
-            self._set_face_state("thinking")
-            result = self.brain.handle(text)
-            reply = getattr(result, "reply_text", str(result))
-            intent = getattr(result, "intent", "general")
-
-            self._speak_text(reply, intent=intent)
-
+            reply = self.brain.respond(text)
+    
+            # 📝 LOG GERİ GELDİ
+            print(f"[POODLE] {reply}")
+    
+            self._speak_text(reply)
+    
         except Exception as e:
-            print(f">>> [PIPELINE ERROR] {type(e).__name__}: {e}")
-            self._set_face_state("error")
+            print(f">>> [PIPELINE ERROR] {e}")
             self.speech.speak("Bir sorun yaşadım.")
-            self.speech.flush_pending_tts()
-
-        finally:
-            self.speech.set_busy(False)
-            self._set_face_state("idle")
 
     def _handle_sleep(self):
         self._set_face_state("idle")
