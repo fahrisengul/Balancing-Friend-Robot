@@ -7,7 +7,7 @@ class STTService:
     def __init__(self, owner):
         self.owner = owner
 
-    def process_speech(self, audio_int16):
+    def process_speech(self, audio, sample_rate=16000):
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
             tmp_path = tmp.name
 
