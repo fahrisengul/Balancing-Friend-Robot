@@ -164,7 +164,7 @@ class PoodleSpeech:
     # ---------------------------------------------------------
     def _process_speech(self, audio_int16):
         try:
-            text = self.stt_service.process_speech(audio_int16)
+            text = self.stt_service.process_speech(audio_int16, sample_rate=16000)
         except Exception as e:
             log_time(f">>> [STT ERROR] {type(e).__name__}: {e}")
             return
