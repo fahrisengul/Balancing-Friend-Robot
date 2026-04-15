@@ -211,3 +211,15 @@ class PoodleSpeech:
 
         log_time(f"Poodle: {text}")
         self._tts_buffer.speak(text)
+
+    def debug_list_input_devices(self):
+        from .audio_devices import debug_list_input_devices
+        debug_list_input_devices(log_fn=log_time)
+    
+    
+    def select_default_input_device(self):
+        from .audio_devices import select_default_input_device
+        self.device_index = select_default_input_device(
+            current_index=self.device_index,
+            log_fn=log_time,
+        )
