@@ -1,19 +1,13 @@
 import threading
+import time
 from datetime import datetime
 
 import numpy as np
-import torch
 from pvrecorder import PvRecorder
-from faster_whisper import WhisperModel
-from silero_vad import load_silero_vad, get_speech_timestamps
 
-from .audio_devices import (
-    debug_list_input_devices as _debug_list_input_devices,
-    select_default_input_device as _select_default_input_device,
-)
 from .stt_service import STTService
-from .tts_buffer import TTSBuffer
 from .tts_service import TTSService
+from .tts_buffer import TTSBuffer
 
 
 def get_now():
@@ -25,81 +19,44 @@ def log_time(message):
 
 
 class PoodleSpeech:
-    def __init__(self, lang="tr", input_device_index=-1):
+    def __init__(self, brain=None, lang="tr", input_device_index=0):
+        self.brain = brain
         self.lang = lang
+
         self.frame_length = 512
         self.input_samplerate = 16000
-        self.event_queue = []
+
+        self.device_index = input_device_index
 
         self._listener_running = False
         self._busy = False
         self._paused = False
-        self._muted = False
+
         self._listener_thread = None
         self.recorder = None
 
-        self.device_index = input_device_index
-
         log_time(">>> Modeller yükleniyor (Whisper/VAD/Piper)...")
 
+        # Whisper model (owner üzerinden STTService kullanacak)
+        from faster_whisper import WhisperModel
         self.stt_model = WhisperModel("base", device="cpu", compute_type="int8")
-        self.vad_model = load_silero_vad()
 
         self.stt_service = STTService(self)
+
         self._tts_service = TTSService(self)
         self._tts_buffer = TTSBuffer(self)
 
         log_time(">>> [SES] Tüm sistemler hazır.")
 
     # ---------------------------------------------------------
-    # Compatibility wrappers
-    # ---------------------------------------------------------
-    def debug_list_input_devices(self):
-        _debug_list_input_devices(log_fn=log_time)
-
-    def select_default_input_device(self):
-        self.device_index = _select_default_input_device(
-            current_index=self.device_index,
-            log_fn=log_time,
-        )
-        return self.device_index
-
-    # ---------------------------------------------------------
-    # State control
-    # ---------------------------------------------------------
-    def is_muted(self):
-        return self._muted
-
-    def set_busy(self, value: bool):
-        self._busy = bool(value)
-
-    def pause_listening(self):
-        self._busy = True
-        self._paused = True
-
-    def resume_listening(self):
-        self._paused = False
-        self._busy = False
-
-    # ---------------------------------------------------------
-    # Queue
-    # ---------------------------------------------------------
-    def get_pending_event(self):
-        if self.event_queue:
-            return self.event_queue.pop(0)
-        return {"type": "none"}
-
-    # ---------------------------------------------------------
-    # Listener lifecycle
+    # LISTENER CONTROL
     # ---------------------------------------------------------
     def start_auto_listener(self):
         if self._listener_running:
             return
 
-        self.debug_list_input_devices()
-        self.select_default_input_device()
-
         self._listener_running = True
+
         self._listener_thread = threading.Thread(
             target=self._listener_loop,
             daemon=True,
@@ -124,10 +81,13 @@ class PoodleSpeech:
         log_time(">>> [LISTENER] Thread durdu.")
 
     # ---------------------------------------------------------
-    # Listener loop
+    # LISTENER LOOP (FIXED)
     # ---------------------------------------------------------
     def _listener_loop(self):
-        recorder = PvRecorder(device_index=self.device_index, frame_length=self.frame_length)
+        recorder = PvRecorder(
+            device_index=self.device_index,
+            frame_length=self.frame_length,
+        )
         self.recorder = recorder
         recorder.start()
 
@@ -136,6 +96,11 @@ class PoodleSpeech:
         collected_audio = []
         silent_frames = 0
         recording = False
+
+        # 🔥 SENİN ORTAMINA UYGUN EŞİKLER
+        start_threshold = 0.006
+        continue_threshold = 0.004
+        max_silence_frames = 25
 
         try:
             while self._listener_running:
@@ -148,28 +113,39 @@ class PoodleSpeech:
                     continue
 
                 audio_float32 = np.array(frame, dtype=np.float32) / 32768.0
-                audio_tensor = torch.from_numpy(audio_float32)
 
-                speech_ts = get_speech_timestamps(
-                    audio_tensor,
-                    self.vad_model,
-                    sampling_rate=self.input_samplerate,
-                    threshold=0.15,
-                )
+                # RMS hesap
+                rms = float(np.sqrt(np.mean(np.square(audio_float32))))
 
-                if len(speech_ts) > 0:
-                    if not recording:
-                        log_time(">>> [AUDIO] Ses algılandı (rolling VAD tetiklendi)...")
+                # Debug (istersen kaldır)
+                if rms > 0.002:
+                    log_time(f">>> [MIC LEVEL] {rms:.4f}")
+
+                # ----------------------
+                # START DETECTION
+                # ----------------------
+                if not recording:
+                    if rms >= start_threshold:
+                        log_time(">>> [AUDIO] Ses algılandı...")
                         recording = True
+                        collected_audio.extend(frame)
+                        silent_frames = 0
 
+                # ----------------------
+                # RECORDING
+                # ----------------------
+                else:
                     collected_audio.extend(frame)
-                    silent_frames = 0
 
-                elif recording:
-                    collected_audio.extend(frame)
-                    silent_frames += 1
+                    if rms >= continue_threshold:
+                        silent_frames = 0
+                    else:
+                        silent_frames += 1
 
-                    if silent_frames > 40:
+                    # ----------------------
+                    # END DETECTION
+                    # ----------------------
+                    if silent_frames > max_silence_frames:
                         log_time(">>> [VAD] Konuşma bitti, STT başlıyor...")
 
                         audio_data = np.array(collected_audio, dtype=np.int16)
@@ -198,7 +174,7 @@ class PoodleSpeech:
                 pass
 
     # ---------------------------------------------------------
-    # STT
+    # STT → BRAIN → TTS
     # ---------------------------------------------------------
     def _process_speech(self, audio_int16):
         try:
@@ -210,30 +186,24 @@ class PoodleSpeech:
             log_time(f">>> [STT ERROR] {type(e).__name__}: {e}")
             return
 
-        if not text or len(str(text).strip()) < 2:
+        if not text or len(text.strip()) < 2:
             return
-
-        if not isinstance(text, str):
-            text = str(text)
 
         log_time(f">>> [STT] '{text}'")
 
-        low = text.lower()
+        # Brain
+        if self.brain:
+            try:
+                reply = self.brain.ask_poodle(text)
+            except Exception:
+                reply = "Anlayamadım."
+        else:
+            reply = "Anladım."
 
-        if any(w in low for w in ["sus", "sessiz ol", "dur"]):
-            self._muted = True
-            log_time(">>> [MODE] Sessiz mod.")
-            self.event_queue.append({"type": "sleep"})
-            return
+        log_time(f">>> [POODLE] {reply}")
 
-        if self._muted and "hey" in low:
-            self._muted = False
-            log_time(">>> [MODE] Aktif mod.")
-            self.event_queue.append({"type": "resumed"})
-            return
-
-        if not self._muted:
-            self.event_queue.append({"type": "command", "text": text})
+        # Speak
+        self._speak_now(reply)
 
     # ---------------------------------------------------------
     # TTS
@@ -241,13 +211,13 @@ class PoodleSpeech:
     def speak(self, text):
         if not text:
             return
-
         log_time(f"Poodle: {text}")
         self._tts_buffer.speak(text)
 
     def _speak_now(self, text):
-        self.pause_listening()
+        self._busy = True
         try:
             self._tts_service.speak_now(text)
         finally:
-            self.resume_listening()
+            time.sleep(0.3)
+            self._busy = False
