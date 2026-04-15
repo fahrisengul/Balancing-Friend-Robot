@@ -40,6 +40,6 @@ class SystemParams:
         return {
             "input_name": SystemParams.get_param("audio_input_device_name"),
             "input_index": SystemParams.get_param("audio_input_device_index"),
-            "output_mode": SystemParams.get_param("audio_output_mode", "system_default"),
+            "output_mode": SystemParams.set_param("audio_output_mode", "safe_fallback"),
             "output_name": SystemParams.get_param("audio_output_device_name"),
         }
