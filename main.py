@@ -35,7 +35,7 @@ def main():
 
     face = build_face(1024, 600)
     brain = PoodleBrain()
-    speech = PoodleSpeech(input_device_index=-1)
+    speech = PoodleSpeech(input_device_index=0)
     pipeline = AudioPipeline(speech=speech, brain=brain, face=face)
 
     running = True
