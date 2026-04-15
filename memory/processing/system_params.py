@@ -27,7 +27,8 @@ class SystemParams:
     @staticmethod
     def get_audio_config():
         return {
+           "input_name": SystemParams.get_param("audio_input_device_name", None),
+            "input_index": SystemParams.get_param("audio_input_device_index", None),
             "output_mode": SystemParams.get_param("audio_output_mode", "system_default"),
             "output_name": SystemParams.get_param("audio_output_device_name", None),
-            "input_name": SystemParams.get_param("audio_input_device_name", None),
         }
