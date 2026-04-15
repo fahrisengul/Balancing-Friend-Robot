@@ -148,3 +148,34 @@ class MemoryManager:
                 conn.commit()
         except Exception as e:
             print(f">>> [LOG TELEMETRY ERROR] {e}")
+    def log_llm_call(
+        self,
+        session_id=None,
+        intent=None,
+        model_name=None,
+        prompt_chars=None,
+        response_chars=None,
+        latency_ms=None,
+        status="ok",
+        error_text=None,
+    ):
+        try:
+            with get_connection() as conn:
+                conn.execute("""
+                    INSERT INTO llm_calls
+                    (session_id, intent, model_name, prompt_chars, response_chars,
+                     latency_ms, status, error_text)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    session_id,
+                    intent,
+                    model_name,
+                    prompt_chars,
+                    response_chars,
+                    latency_ms,
+                    status,
+                    error_text,
+                ))
+                conn.commit()
+        except Exception as e:
+            print(f">>> [LOG LLM ERROR] {e}")
