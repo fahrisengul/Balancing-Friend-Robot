@@ -166,7 +166,25 @@ class PoodleSpeech:
             wf.writeframes(audio_int16.tobytes())
 
         try:
-            text = self.stt_service.transcribe_file(tmp_path)
+            text = None
+
+            try:
+                if hasattr(self.stt_service, "transcribe_file"):
+                    text = self.stt_service.transcribe_file(tmp_path)
+            
+                elif hasattr(self.stt_service, "transcribe"):
+                    text = self.stt_service.transcribe(tmp_path)
+            
+                elif hasattr(self.stt_service, "transcribe_audio"):
+                    text = self.stt_service.transcribe_audio(tmp_path)
+            
+                else:
+                    raise AttributeError("STTService uygun metod bulamadı")
+            
+            except Exception as e:
+                log_time(f">>> [STT ERROR] {type(e).__name__}: {e}")
+                return
+                
         finally:
             try:
                 os.remove(tmp_path)
