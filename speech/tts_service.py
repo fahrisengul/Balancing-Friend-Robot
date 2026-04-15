@@ -65,3 +65,6 @@ class TTSService:
 
     def speak_now(self, text: str):
         self.speak(text)
+
+    def rebuild_daily_metrics(self):
+        return
