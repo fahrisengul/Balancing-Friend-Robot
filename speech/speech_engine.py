@@ -2,59 +2,65 @@ import threading
 import time
 from datetime import datetime
 
+import numpy as np
 from faster_whisper import WhisperModel
 from speech.tts_buffer import TTSBuffer
 from speech.stt_service import STTService
 
 
 def ts():
-    return datetime.now().strftime("[%H:%M:%S.%f]")[:-3]
+    return datetime.now().strftime("[%H:%M:%S.%f]")[:-3] + "]"
 
 
 class PoodleSpeech:
-    def __init__(self):
-        print(">>> Modeller yükleniyor (Whisper/VAD/Piper)...")
+    def __init__(self, lang="tr"):
+        print(f"{ts()} >>> Modeller yükleniyor (Whisper/VAD/Piper)...")
+
+        self.lang = lang
 
         # -------------------------
         # STATE
         # -------------------------
         self._speaking = False
+        self._listener_running = False
+        self._listener_thread = None
+        self._device_index = 0
+
+        # tts_buffer.py senden _pending_phrase bekliyorsa diye bırakıyorum
+        self._pending_phrase = None
 
         # -------------------------
         # STT MODEL
         # -------------------------
-        from faster_whisper import WhisperModel
-
-        print(">>> [STT MODEL] yükleniyor...")
+        print(f"{ts()} >>> [STT MODEL] yükleniyor...")
         self.stt_model = WhisperModel("base", compute_type="int8")
-        print(">>> [STT MODEL] faster_whisper hazır")
+        print(f"{ts()} >>> [STT MODEL] faster_whisper hazır")
 
         # -------------------------
-        # TTS ENGINE (GARANTİ)
+        # TTS ENGINE
         # -------------------------
         import pyttsx3
-
         self._engine = pyttsx3.init()
         self._engine.setProperty("rate", 180)
 
         # -------------------------
         # SERVICES
         # -------------------------
-        from speech.stt_service import STTService
-        from speech.tts_buffer import TTSBuffer
-
         self.stt_service = STTService(self)
         self._tts_buffer = TTSBuffer(self)
 
-        print(">>> [SES] Tüm sistemler hazır.")
+        print(f"{ts()} >>> [SES] Tüm sistemler hazır.")
 
     # =========================================================
     # PUBLIC SPEAK
     # =========================================================
     def speak(self, text):
         print(">>> [SPEAK CALL]")
-        print(f"Poodle: {text}")
 
+        if not text:
+            return
+
+        print(f"Poodle: {text}")
         self._tts_buffer.speak(text)
 
     # =========================================================
@@ -63,71 +69,150 @@ class PoodleSpeech:
     def _speak_now(self, text):
         try:
             self._speaking = True
-
             print(">>> [TTS START]")
-
             self._engine.say(text)
             self._engine.runAndWait()
-
             print(">>> [TTS END]")
-
         except Exception as e:
             print(f">>> [TTS ERROR] {e}")
-
         finally:
             self._speaking = False
 
     # =========================================================
-    # LISTENER CONTROL (GERİ EKLENDİ)
+    # LISTENER CONTROL
     # =========================================================
     def start_auto_listener(self, device_index=0):
-        print(">>> [LISTENER] start_auto_listener entered")
-    
-        import threading
-        import pvrecorder
-    
+        print(f"{ts()} >>> [LISTENER] start_auto_listener entered")
+
+        if self._listener_running:
+            print(f"{ts()} >>> [LISTENER] already running")
+            return
+
         self._listener_running = True
         self._device_index = device_index
-    
-        def _loop():
-            print(f">>> [LISTENER] Thread başladı. device_index={device_index}")
-    
-            recorder = None
-    
-            try:
-                recorder = pvrecorder.PvRecorder(device_index=device_index, frame_length=512)
-                recorder.start()
-                print(">>> [LISTENER] PvRecorder başlatıldı.")
-    
-                while self._listener_running:
-                    pcm = recorder.read()
-    
-                    # STT pipeline
-                    self.stt_service.process_audio_chunk(pcm)
-    
-            except Exception as e:
-                print(f">>> [LISTENER ERROR] {e}")
-    
-            finally:
-                if recorder:
-                    try:
-                        recorder.stop()
-                        recorder.delete()
-                    except:
-                        pass
-    
-                print(">>> [LISTENER] Thread durdu.")
-    
-        self._listener_thread = threading.Thread(target=_loop, daemon=True)
+
+        self._listener_thread = threading.Thread(
+            target=self._listener_loop,
+            args=(device_index,),
+            daemon=True
+        )
         self._listener_thread.start()
-    
-    
+
+        print(f"{ts()} >>> [LISTENER] Thread başladı. device_index={device_index}")
+
     def stop_auto_listener(self):
-        print(">>> [LISTENER] stop_auto_listener entered")
-    
+        print(f"{ts()} >>> [LISTENER] stop_auto_listener entered")
+
         self._listener_running = False
-    
-        if hasattr(self, "_listener_thread"):
+
+        if self._listener_thread:
             self._listener_thread.join(timeout=2)
-    
-        print(">>> [LISTENER] Thread durdu.")
+
+        print(f"{ts()} >>> [LISTENER] Thread durdu.")
+
+    # =========================================================
+    # LISTENER LOOP
+    # =========================================================
+    def _listener_loop(self, device_index):
+        recorder = None
+
+        try:
+            from pvrecorder import PvRecorder
+
+            recorder = PvRecorder(device_index=device_index, frame_length=512)
+            recorder.start()
+
+            print(f"{ts()} >>> [LISTENER] PvRecorder başlatıldı.")
+
+            frames = []
+            recording = False
+            silence_counter = 0
+
+            # Bunlar senin ortamında çalışan pratik eşikler
+            start_threshold = 200
+            continue_threshold = 120
+            silence_limit = 12
+
+            while self._listener_running:
+                pcm = recorder.read()
+
+                try:
+                    level = max(abs(x) for x in pcm)
+                except ValueError:
+                    level = 0
+
+                # konuşma başladı
+                if not recording and level > start_threshold:
+                    recording = True
+                    silence_counter = 0
+                    frames.extend(pcm)
+
+                # konuşma devam ediyor
+                elif recording:
+                    frames.extend(pcm)
+
+                    if level > continue_threshold:
+                        silence_counter = 0
+                    else:
+                        silence_counter += 1
+
+                    # konuşma bitti
+                    if silence_counter > silence_limit:
+                        print(f"{ts()} >>> [VAD] Konuşma bitti, STT başlıyor...")
+                        self._process_audio(frames)
+                        frames = []
+                        recording = False
+                        silence_counter = 0
+
+                time.sleep(0.01)
+
+        except Exception as e:
+            print(f"{ts()} >>> [LISTENER ERROR] {e}")
+
+        finally:
+            if recorder:
+                try:
+                    recorder.stop()
+                except Exception:
+                    pass
+                try:
+                    recorder.delete()
+                except Exception:
+                    pass
+
+            print(f"{ts()} >>> [LISTENER] Thread durdu.")
+
+    # =========================================================
+    # AUDIO -> STT -> REPLY -> TTS
+    # =========================================================
+    def _process_audio(self, frames):
+        try:
+            text = self.stt_service.process_speech(frames, sample_rate=16000)
+
+            if not text:
+                return
+
+            print(f"{ts()} >>> [STT] '{text}'")
+
+            reply = self._generate_reply(text)
+            self.speak(reply)
+
+        except Exception as e:
+            print(f"{ts()} >>> [STT ERROR] {e}")
+
+    # =========================================================
+    # SIMPLE REPLY LOGIC
+    # =========================================================
+    def _generate_reply(self, text):
+        low = text.lower().strip()
+
+        if "merhaba" in low:
+            return "Selam!"
+        if "nasılsın" in low:
+            return "İyiyim. Sen nasılsın?"
+        if "orada mısın" in low:
+            return "Tabii ki buradayım."
+        if "teşekkür" in low:
+            return "Rica ederim."
+
+        return "Son kısmı tam anlayamadım."
