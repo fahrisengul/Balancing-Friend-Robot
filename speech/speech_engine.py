@@ -1,8 +1,6 @@
 import threading
-import time
 from datetime import datetime
 
-import numpy as np
 from faster_whisper import WhisperModel
 from speech.tts_buffer import TTSBuffer
 from speech.stt_service import STTService
@@ -23,7 +21,6 @@ class PoodleSpeech:
         self._listener_running = False
         self._listener_thread = None
         self._device_index = 0
-        self._pending_phrase = None
 
         # STT
         print(f"{ts()} >>> [STT MODEL] yükleniyor...")
@@ -42,6 +39,8 @@ class PoodleSpeech:
         print(f"{ts()} >>> [SES] Tüm sistemler hazır.")
 
     # =========================================================
+    # SPEAK
+    # =========================================================
     def speak(self, text):
         print(">>> [SPEAK CALL]")
 
@@ -51,7 +50,6 @@ class PoodleSpeech:
         print(f"Poodle: {text}")
         self._tts_buffer.speak(text)
 
-    # =========================================================
     def _speak_now(self, text):
         try:
             self._speaking = True
@@ -71,7 +69,6 @@ class PoodleSpeech:
         print(f"{ts()} >>> [LISTENER] start_auto_listener entered")
 
         if self._listener_running:
-            print(f"{ts()} >>> [LISTENER] already running")
             return
 
         self._listener_running = True
@@ -114,10 +111,10 @@ class PoodleSpeech:
             recording = False
             silence_counter = 0
 
-            # 🔧 TUNED VALUES
+            # 🔧 TUNED
             start_threshold = 200
             continue_threshold = 120
-            silence_limit = 6   # 🔥 12 → 6 (kritik fix)
+            silence_limit = 6   # ← optimize edildi
 
             while self._listener_running:
                 pcm = recorder.read()
@@ -168,15 +165,20 @@ class PoodleSpeech:
             if not text:
                 return
 
-            # 🔥 CLEAN TEXT
             text = text.strip().lower()
 
-            # 🔥 NOISE FILTER
-            if len(text) < 3:
+            # 🔴 NOISE FILTER (kritik)
+            if len(text) < 2:
                 return
 
-            # 🔥 BAD STT FILTER
-            if any(x in text for x in ["sum kısmı", "çamaran", "yamadı"]):
+            if len(text.split()) == 1 and len(text) < 4:
+                return
+
+            bad_patterns = [
+                "mesasını", "çamaran", "yamadı",
+                "sum kısmı", "tamamen diyemedim"
+            ]
+            if any(b in text for b in bad_patterns):
                 return
 
             reply = self._generate_reply(text)
@@ -188,30 +190,36 @@ class PoodleSpeech:
             print(f">>> [PROCESS ERROR] {e}")
 
     # =========================================================
-    # 🔥 NEW REPLY ENGINE (KRİTİK)
+    # RESPONSE ENGINE (FIXED)
     # =========================================================
     def _generate_reply(self, text):
-        # normalize
         t = text.lower().strip()
 
-        # greeting
+        # SHORT INTENTS
+        if t in ["evet", "evet.", "tamam", "ok", "peki", "hmm"]:
+            return "Tamam."
+
+        if t in ["hayır", "yok"]:
+            return "Peki."
+
+        # GREETING
         if any(x in t for x in ["merhaba", "selam", "mahaba"]):
             return "Selam!"
 
-        # nasılsın
+        # NASILSIN
         if "nasılsın" in t:
             return "İyiyim. Sen nasılsın?"
 
-        # teşekkür
+        # TEŞEKKÜR
         if "teşekkür" in t:
             return "Rica ederim."
 
-        # aynalama (mirror)
-        if len(t) > 5 and len(t) < 40:
+        # MIRROR
+        if 4 < len(t) < 30:
             return t.capitalize()
 
-        # 🔥 fallback (ama spam değil!)
-        if len(t) < 6:
+        # SMART FALLBACK
+        if len(t) < 5:
             return None
 
         return "Tam anlayamadım, tekrar söyler misin?"
