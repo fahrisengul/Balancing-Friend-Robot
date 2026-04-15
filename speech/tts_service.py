@@ -62,3 +62,6 @@ class TTSService:
                 os.remove(path)
             except Exception:
                 pass
+
+    def speak_now(self, text: str):
+        self.speak(text)
