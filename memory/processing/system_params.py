@@ -5,15 +5,14 @@ class SystemParams:
 
     @staticmethod
     def get_param(key: str, default=None):
-        conn = get_connection()
-        cur = conn.cursor()
+        with get_connection() as conn:
+            cur = conn.cursor()
 
-        cur.execute(
-            "SELECT param_value FROM system_params WHERE param_key = ?",
-            (key,)
-        )
-        row = cur.fetchone()
-        conn.close()
+            cur.execute(
+                "SELECT param_value FROM system_params WHERE param_key = ?",
+                (key,)
+            )
+            row = cur.fetchone()
 
         if row:
             return row[0]
@@ -22,20 +21,19 @@ class SystemParams:
 
     @staticmethod
     def set_param(key: str, value: str):
-        conn = get_connection()
-        cur = conn.cursor()
+        with get_connection() as conn:
+            cur = conn.cursor()
 
-        cur.execute("""
-            INSERT INTO system_params (param_key, param_value)
-            VALUES (?, ?)
-            ON CONFLICT(param_key)
-            DO UPDATE SET
-                param_value = excluded.param_value,
-                updated_at = CURRENT_TIMESTAMP
-        """, (key, str(value)))
+            cur.execute("""
+                INSERT INTO system_params (param_key, param_value)
+                VALUES (?, ?)
+                ON CONFLICT(param_key)
+                DO UPDATE SET
+                    param_value = excluded.param_value,
+                    updated_at = CURRENT_TIMESTAMP
+            """, (key, str(value)))
 
-        conn.commit()
-        conn.close()
+            conn.commit()
 
     @staticmethod
     def get_audio_config():
