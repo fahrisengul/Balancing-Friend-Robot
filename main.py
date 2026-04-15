@@ -21,10 +21,9 @@ def main():
     pipeline = AudioPipeline(speech=speech, brain=brain, face=face)
 
     # Audio setup
-    speech.debug_list_input_devices()
-    speech.select_default_input_device()
+    speech = PoodleSpeech()
     speech.start_auto_listener()
-
+    
     print("\n--- Poodle Robot Aktif ---")
 
     running = True
